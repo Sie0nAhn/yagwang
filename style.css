@@ -1,0 +1,811 @@
+/* ============================================================
+   야광(夜光) — 당신이 모르는 사이
+   디자인 캔버스 1440 x 805 를 화면 크기에 맞춰 스케일
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --stage-w: 1440px;
+  --stage-h: 805px;
+  --scale: 1;
+
+  --font-kr: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+  --font-grotesk: "Helvetica Neue", Helvetica, Arial, "Pretendard Variable", sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* UI 액센트 */
+  --acc: #1eff66;
+  /* 선택 중인 영상의 색 (JS 가 갱신) */
+  --tint: #1eff66;
+  --tint-soft: rgba(30,255,102,.35);
+
+  --line: rgba(255,255,255,.16);
+  --dim: rgba(255,255,255,.45);
+}
+
+html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+body { font-family: var(--font-kr); color: #fff; cursor: none; }
+
+.viewport { position: fixed; inset: 0; background: #000; }
+
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: calc(var(--stage-w) / -2);
+  margin-top: calc(var(--stage-h) / -2);
+  width: var(--stage-w);
+  height: var(--stage-h);
+  background: #000;
+  overflow: hidden;
+  transform: scale(var(--scale));
+  transform-origin: center center;
+}
+
+/* 초소형 모노 메타 레이블 */
+.meta {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.meta__k { color: var(--dim); }
+.meta__v { color: #fff; }
+
+/* ============================================================
+   화면
+   ============================================================ */
+.screen { position: absolute; inset: 0; opacity: 0; visibility: hidden; }
+.screen.is-active { opacity: 1; visibility: visible; }
+
+/* ---------------- 배경 ---------------- */
+.aura {
+  position: absolute;
+  inset: -12%;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(100px);
+  opacity: .28;
+}
+.aura__blob {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  background: var(--tint);
+  opacity: .3;
+  will-change: transform;
+}
+.aura__blob--a { left: 6%;  top: 24%; width: 620px; height: 620px; }
+.aura__blob--b { left: 54%; top: -6%; width: 520px; height: 520px; opacity: .2; }
+.aura__blob--c { left: 28%; top: 58%; width: 780px; height: 460px; opacity: .16; }
+
+.dust { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.dust span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  background: #fff;
+  will-change: transform, opacity;
+}
+
+/* ============================================================
+   영상 그리드
+   ============================================================ */
+.screen--grid { z-index: 2; }
+
+.plane-wrap {
+  position: absolute;
+  inset: 0;
+  perspective: 1150px;          /* 낮을수록 가장자리가 어안처럼 크게 휜다 */
+  perspective-origin: 50% 50%;
+}
+
+/* 크기와 중앙 정렬 여백은 JS 가 PLANE_W / PLANE_H 로 직접 넣는다.
+   (여기에 숫자를 박아두면 격자 간격을 바꿀 때마다 어긋난다) */
+.plane {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* 그리드 위아래를 검게 눌러주는 페이드 */
+.grid-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, #000 0%, rgba(0,0,0,0) 16%, rgba(0,0,0,0) 76%, rgba(0,0,0,.92) 100%),
+    linear-gradient(to right,  rgba(0,0,0,.9) 0%, rgba(0,0,0,0) 12%, rgba(0,0,0,0) 88%, rgba(0,0,0,.9) 100%);
+}
+
+/* ---------------- 타일 ---------------- */
+.tile {
+  position: absolute;
+  width: 360px;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* 원본 영상 요소 — 화면에는 안 나오고 캔버스의 소스로만 쓰인다 */
+.video-source {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 타일 위 레이블 */
+.tile__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  height: 22px;
+  margin-bottom: 9px;
+}
+.tile__name {
+  font-family: var(--font-kr);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  color: #fff;
+  transition: color 350ms ease;
+}
+.tile__no {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  transition: color 350ms ease;
+}
+
+/* 타일 아래 태그 */
+.tile__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 20px;
+  margin-top: 10px;
+}
+.tile__tags { display: flex; gap: 5px; }
+.tile__tag {
+  padding: 3px 7px 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+  transition: border-color 350ms ease, color 350ms ease;
+}
+.tile__year {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--dim);
+}
+
+/* 영상 */
+/* 면이 휘면서 남는 바깥은 비워 둬야 해서 배경도 테두리도 두지 않는다 */
+.tile__media {
+  position: relative;
+  width: 360px;
+  height: 270px;
+  overflow: hidden;
+}
+
+/* 영상 레이어 — 낮은 해상도로 그린 뒤 늘려서 자잘한 알갱이를 남긴다.
+   채도를 낮추고 대비를 눌러 파스텔 톤으로 */
+.tile__pix {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: var(--grade, none) saturate(.6) contrast(.74) brightness(1.16) blur(var(--sblur, 0px));
+}
+
+/* ASCII 레이어 */
+.tile__ascii {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* 해칭은 캔버스 안에서 그린다 (drawTilePixels) — 휜 면 바깥으로 새지 않도록 */
+.tile__hatch { display: none; }
+/* 커서가 올라간 타일 */
+.tile.is-focus .tile__name { color: var(--acc); }
+.tile.is-focus .tile__no { color: var(--acc); }
+.tile.is-focus .tile__tag { border-color: rgba(30,255,102,.5); color: var(--acc); }
+.tile.is-focus .tile__pix {
+  filter: var(--grade, none) saturate(.9) contrast(.9) brightness(1.2) blur(var(--sblur, 0px));
+}
+
+/* 영상 위 그레인·픽셀 텍스처 (VIDEO_FX 켤 때만 생성) */
+.tile__tex {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  background-position: var(--tex-x, 0) var(--tex-y, 0);
+  mix-blend-mode: overlay;
+  opacity: .3;
+}
+.tile__px {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.55) 0 1px, rgba(0,0,0,0) 1px 6px),
+    repeating-linear-gradient(0deg,  rgba(0,0,0,.55) 0 1px, rgba(0,0,0,0) 1px 6px);
+  mix-blend-mode: multiply;
+  opacity: .24;
+}
+
+/* ============================================================
+   중앙 2단 레이블 — 로딩부터 끝까지 같은 자리
+   ============================================================ */
+.titlebar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  padding: 0 12%;            /* 두 레이블이 중앙에서 31% / 69% 지점에 오도록 */
+  pointer-events: none;
+}
+.titlebar p {
+  flex: 1;
+  font-family: var(--font-kr);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -.015em;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 2px 20px rgba(0,0,0,.95), 0 0 40px rgba(0,0,0,.8);
+}
+.titlebar__left span { display: block; }
+/* 상태 알림 한 줄, 그 아래가 실제 지시문 */
+.titlebar__sys { color: rgba(255,255,255,.55); }
+
+/* 로딩 중에는 기관명, 영상이 뜨면 질문으로 바뀐다 */
+.titlebar__hanja {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .28em;
+  color: rgba(255,255,255,.5);
+}
+/* .titlebar__left span 보다 우선해야 해서 두 단계로 적는다 */
+.titlebar__left .titlebar__ask { display: none; }
+
+/* 모노 폰트에 한글이 없어 대체 글꼴로 튀는 걸 막는다 */
+.meta__kr {
+  font-family: var(--font-kr);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: -.01em;
+  text-transform: none;
+}
+
+.meta__k--title {
+  color: #fff;
+  font-weight: 500;
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+/* ============================================================
+   HUD
+   ============================================================ */
+.hud { position: absolute; inset: 0; z-index: 55; pointer-events: none; }
+.meta--tl { left: 40px; top: 36px; }
+.meta--tr { right: 40px; top: 36px; }
+.meta--orb-tl { left: 40px; top: 36px; z-index: 12; }
+
+/* ============================================================
+   하단 필 내비게이션
+   ============================================================ */
+.pillnav {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  z-index: 62;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.12);
+}
+.pillnav__item {
+  padding: 10px 20px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255,255,255,.72);
+  font-family: var(--font-kr);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  cursor: none;
+  transition: background 400ms ease, color 400ms ease;
+}
+.pillnav__item.is-active { background: #fff; color: #000; }
+
+/* ============================================================
+   하단 라인 — 로딩 진행 → 선택 게이지
+   ============================================================ */
+.baseline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  z-index: 70;
+  background: rgba(255,255,255,.08);
+}
+.baseline__fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--acc);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  box-shadow: 0 0 18px rgba(30,255,102,.55);
+}
+
+/* ============================================================
+   로딩
+   ============================================================ */
+/* 중앙 레이블(z 60)·하단 바(z 70)는 로딩 화면 위에 그대로 떠 있는다 */
+.loader {
+  position: absolute;
+  inset: 0;
+  z-index: 58;
+  background: #000;
+}
+.loader__label {
+  position: absolute;
+  bottom: 26px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.loader__label--l { left: 40px; }
+.loader__label--r { right: 40px; color: #fff; }
+
+/* ============================================================
+   구슬 화면
+   ============================================================ */
+.screen--orb { z-index: 3; }
+
+.orb-head {
+  position: absolute;
+  left: 40px;
+  top: 118px;
+  width: 620px;
+  font-family: var(--font-kr);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.42;
+  letter-spacing: -.025em;
+  z-index: 12;
+}
+.orb-head span { display: block; }
+
+.orb-body {
+  position: absolute;
+  left: 40px;
+  top: 322px;
+  width: 452px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: rgba(255,255,255,.62);
+  z-index: 12;
+}
+
+.orb-actions {
+  position: absolute;
+  left: 40px;
+  top: 412px;
+  display: flex;
+  gap: 10px;
+  z-index: 13;
+}
+
+.ghost-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-kr);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: none;
+  white-space: nowrap;
+  transition: border-color 350ms ease, background 350ms ease;
+}
+.ghost-btn--go { border-color: rgba(30,255,102,.45); }
+.ghost-btn:not(.ghost-btn--go) { color: rgba(255,255,255,.6); padding-left: 22px; }
+.ghost-btn__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--acc);
+  box-shadow: 0 0 10px var(--acc);
+}
+.ghost-btn.is-armed { border-color: var(--acc); background: rgba(30,255,102,.1); }
+
+.orb-caption {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 30px;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+.orb-caption__name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: #fff;
+}
+.orb-caption__meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 9px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.orb-caption__meta .dot {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+/* ---------------- 구슬 ---------------- */
+.marble-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 470px;
+  height: 470px;
+  margin: -258px 0 0 130px;
+  perspective: 900px;
+  z-index: 6;
+
+  --hue: 0deg;
+  --sat: 1;
+  --bri: 1;
+  --glow: rgba(255,96,32,.30);
+  --glow-soft: rgba(255,90,30,.32);
+}
+
+.marble {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  /* hue-rotate 가 구슬 안쪽(본체·결·림라이트)을 한꺼번에 물들이고,
+     흰 하이라이트는 색상 회전의 영향을 받지 않아 유리질감이 유지된다.
+     drop-shadow 는 필터 체인 마지막이라 지정한 색 그대로 나온다. */
+  filter:
+    hue-rotate(var(--hue))
+    saturate(var(--sat))
+    brightness(var(--bri))
+    drop-shadow(0 30px 60px var(--glow));
+  transition: filter 1100ms cubic-bezier(.4,0,.2,1);
+}
+
+.marble > * { position: absolute; inset: 0; border-radius: 50%; }
+
+.marble__body { background: url("assets/marble.png") center / 100% 100% no-repeat; }
+
+.marble__swirl {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255,232,190,0)    0px,
+    rgba(255,238,205,.30)  46px,
+    rgba(255,150,60,.26)  104px,
+    rgba(120,30,10,.22)   150px,
+    rgba(255,232,190,0)   200px
+  );
+  background-size: 200px 100%;
+  mix-blend-mode: overlay;
+  opacity: .75;
+  animation: marble-spin 11s linear infinite;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 42%, rgba(0,0,0,.35) 78%, transparent 99%);
+          mask-image: radial-gradient(circle at 50% 50%, #000 42%, rgba(0,0,0,.35) 78%, transparent 99%);
+}
+.marble__swirl--slow {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,0)    0px,
+    rgba(255,255,255,.20) 70px,
+    rgba(255,90,20,.18)  170px,
+    rgba(255,255,255,0)  260px
+  );
+  background-size: 260px 100%;
+  opacity: .5;
+  animation: marble-spin-slow 17s linear infinite reverse;
+}
+.marble__shade {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.5) 88%, rgba(0,0,0,.78) 100%),
+    radial-gradient(circle at 30% 24%, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 42%);
+}
+.marble__spec {
+  background:
+    radial-gradient(ellipse 54px 38px at 27% 22%, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 70%),
+    radial-gradient(ellipse 115px 54px at 68% 84%, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 72%);
+  mix-blend-mode: screen;
+}
+.marble__rim {
+  box-shadow:
+    inset 0 0 60px rgba(255,120,40,.35),
+    inset -14px -18px 50px rgba(255,190,120,.35),
+    0 0 90px rgba(255,110,40,.25);
+}
+
+.marble-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -48px;
+  width: 340px;
+  height: 48px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, var(--glow-soft) 0%, transparent 72%);
+  filter: blur(6px);
+  transition: background 1100ms cubic-bezier(.4,0,.2,1);
+}
+
+.marble-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 470px;
+  height: 470px;
+  margin: -235px 0 0 -235px;
+  border-radius: 50%;
+  border: 2px solid var(--acc);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes marble-spin {
+  from { background-position: 0 0; }
+  to   { background-position: -400px 0; }
+}
+@keyframes marble-spin-slow {
+  from { background-position: 0 0; }
+  to   { background-position: -520px 0; }
+}
+
+/* ============================================================
+   영상 / 구슬빛 정원
+   ============================================================ */
+.screen--film { z-index: 4; background: #000; }
+.screen--film video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* 유튜브로 재생할 때 쓰는 자리. 로컬 파일이 있으면 아예 안 쓴다. */
+.film-yt {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: none;
+  background: #000;
+}
+.film-yt.is-on { display: block; }
+.film-yt iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.film-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  z-index: 3;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+  text-shadow: 0 1px 8px #000;
+  pointer-events: none;
+}
+
+/* 배경을 검정으로 — 전환 중에 정원의 보라색이 새어나오지 않게 */
+.screen--garden { z-index: 5; background: #000; }
+.screen--garden iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* 정원은 자체 마우스 조작이 있어서 실제 커서를 돌려준다 */
+body.is-garden { cursor: auto; }
+
+/* ============================================================
+   장면 전환 — 검정으로 덮었다 걷어낸다
+   ============================================================ */
+.fade {
+  position: absolute;
+  inset: 0;
+  z-index: 76;
+  background: #000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ============================================================
+   타일 → 구슬 응축
+   ============================================================ */
+.morph {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 290px;
+  height: 290px;
+  z-index: 80;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: 0 0 60px var(--tint-soft);
+}
+.morph canvas { width: 100%; height: 100%; display: block; }
+
+/* ============================================================
+   손끝 커서
+   ============================================================ */
+.cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 86px;
+  height: 86px;
+  margin: -43px 0 0 -43px;
+  z-index: 85;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+.cursor__ring { position: absolute; inset: 0; transform: rotate(-90deg); overflow: visible; }
+.cursor__track { fill: none; stroke: rgba(255,255,255,.28); stroke-width: 3; }
+.cursor__prog {
+  fill: none;
+  stroke: var(--acc);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 276.5;
+  stroke-dashoffset: 276.5;
+  filter: drop-shadow(0 0 10px var(--acc));
+}
+.cursor__dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 12px var(--acc), 0 0 26px var(--tint-soft);
+}
+
+/* ============================================================
+   손 인식 카메라
+   ============================================================ */
+.camera-box {
+  position: absolute;
+  left: 40px;
+  bottom: 34px;
+  width: 196px;
+  height: 125px;
+  z-index: 61;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0a0c0f;
+}
+/* 원본 카메라 영상은 캔버스로만 그린다 (display:none 은 프레임이 멈출 수 있어 사용하지 않음) */
+.camera-box video { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.camera-box canvas { width: 100%; height: 100%; display: block; }
+
+.camera-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 0 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: #0a0c0f;
+  transition: opacity 400ms ease;
+}
+.camera-status.is-hidden { opacity: 0; }
+
+.camera-tag {
+  position: absolute;
+  left: 9px;
+  bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.8);
+  text-shadow: 0 1px 6px #000;
+}
+
+/* 필터 정의용 SVG */
+.grade-defs { position: absolute; width: 0; height: 0; pointer-events: none; }

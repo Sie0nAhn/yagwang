@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>야광(夜光) — 당신이 모르는 사이</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+</head>
+<body>
+
+<div class="viewport">
+  <div class="stage" id="stage">
+
+    <!-- 배경 오로라 / 먼지 -->
+    <div class="aura" id="aura">
+      <span class="aura__blob aura__blob--a"></span>
+      <span class="aura__blob aura__blob--b"></span>
+      <span class="aura__blob aura__blob--c"></span>
+    </div>
+    <div class="dust" id="dust"></div>
+
+    <!-- ============ 영상 그리드 ============ -->
+    <section class="screen screen--grid" id="screenGrid">
+      <div class="plane-wrap">
+        <div class="plane" id="plane"></div>
+      </div>
+      <div class="grid-fade"></div>
+    </section>
+
+    <!-- ============ 구슬 ============ -->
+    <section class="screen screen--orb" id="screenOrb">
+      <h2 class="orb-head" id="orbHead">
+        <span>자원 식별 완료.</span>
+        <span>귀하가 흘리고 간 감각을</span>
+        <span>구슬 형태로 응축하여 접수했습니다.</span>
+      </h2>
+
+      <p class="orb-body">
+        보관 번호 YK-2087로 이동하여, 당신이 모르는 사이에<br />보존되어 온 것들을 확인 하십시오
+      </p>
+
+      <div class="orb-actions">
+        <button class="ghost-btn ghost-btn--go" id="btnGo">
+          <span class="ghost-btn__dot"></span>
+          <span>확인하러 가기</span>
+        </button>
+        <button class="ghost-btn" id="btnBack">
+          <span>다시 고르기</span>
+        </button>
+      </div>
+
+      <div class="marble-stage" id="marbleStage">
+        <div class="marble-shadow"></div>
+        <div class="marble-ring" id="marbleRing"></div>
+        <div class="marble" id="marble">
+          <div class="marble__body"></div>
+          <div class="marble__swirl"></div>
+          <div class="marble__swirl marble__swirl--slow"></div>
+          <div class="marble__shade"></div>
+          <div class="marble__spec"></div>
+          <div class="marble__rim"></div>
+        </div>
+
+        <div class="orb-caption" id="orbCaption">
+          <p class="orb-caption__name">고요한 정적의 소리</p>
+          <p class="orb-caption__meta">
+            <span>orb</span><span class="dot"></span><span id="orbIndex">05</span><span class="dot"></span><span>2026</span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 영상 ============ -->
+    <section class="screen screen--film" id="screenFilm">
+      <!-- 로컬 파일이 있으면 이걸로, 없으면 아래 유튜브로 재생한다 -->
+      <video id="film" playsinline preload="none"></video>
+      <div class="film-yt" id="filmYt"></div>
+      <p class="film-hint" id="filmHint">꾹 누르면 건너뜁니다</p>
+    </section>
+
+    <!-- ============ 구슬빛 정원 ============ -->
+    <section class="screen screen--garden" id="screenGarden">
+      <iframe id="garden" title="구슬빛 정원" allow="autoplay; fullscreen"></iframe>
+    </section>
+
+    <!-- 장면이 바뀔 때 덮는 검정 — 모든 전환은 이걸로 페이드 -->
+    <div class="fade" id="fade"></div>
+
+    <!-- ============ 항상 떠 있는 요소들 ============ -->
+
+    <!-- 중앙 2단 레이블 : 로딩부터 끝까지 같은 자리 -->
+    <div class="titlebar" id="titlebar">
+      <p class="titlebar__left">
+        <!-- 로딩 중 -->
+        <span class="titlebar__boot" id="titleBoot">
+          <span>야광감각관리 공단</span>
+          <span class="titlebar__hanja">夜光 感覺 管理 公團</span>
+        </span>
+        <!-- 영상이 뜬 뒤 -->
+        <span class="titlebar__ask" id="titleAsk">
+          <span class="titlebar__sys">사유 데이터 유실 감지되었습니다.</span>
+          <span>본인의 파편을 선택하십시오.</span>
+        </span>
+      </p>
+      <p class="titlebar__right" id="focusName">당신이 모르는 사이</p>
+    </div>
+
+    <!-- 좌상단 / 우상단 메타 -->
+    <div class="hud" id="hud">
+      <p class="meta meta--tl">
+        <span class="meta__k meta__kr meta__k--title" id="hudKey">야광(夜光)</span>
+        <span class="meta__v" id="hudIndex">01 / 08</span>
+      </p>
+      <p class="meta meta--tr">
+        <span class="meta__k meta__kr">야광</span>
+        <span class="meta__v meta__kr">감각 보관소</span>
+      </p>
+    </div>
+
+    <!-- 하단 필 내비게이션 -->
+    <nav class="pillnav" id="pillnav">
+      <button class="pillnav__item is-active" data-screen="grid">자원 아카이브</button>
+      <button class="pillnav__item" data-screen="orb">구슬</button>
+    </nav>
+
+    <!-- 손 인식 카메라 -->
+    <div class="camera-box" id="cameraBox">
+      <video id="cam" playsinline muted></video>
+      <canvas id="camCanvas" width="600" height="382"></canvas>
+      <p class="camera-status" id="camStatus">connecting</p>
+      <p class="camera-tag">hand tracking</p>
+    </div>
+
+    <!-- 하단 라인 : 로딩 진행 → 선택 게이지로 이어진다 -->
+    <div class="baseline">
+      <span class="baseline__fill" id="baselineFill"></span>
+    </div>
+
+    <!-- 카드 → 구슬 응축 연출 -->
+    <div class="morph" id="morph"></div>
+
+    <!-- 손끝 커서 -->
+    <div class="cursor" id="cursor">
+      <svg class="cursor__ring" viewBox="0 0 100 100">
+        <circle class="cursor__track" cx="50" cy="50" r="44" />
+        <circle class="cursor__prog" id="cursorProg" cx="50" cy="50" r="44" />
+      </svg>
+      <span class="cursor__dot"></span>
+    </div>
+
+    <!-- ============ 로딩 ============ -->
+    <div class="loader" id="loader">
+      <p class="loader__label loader__label--l">loading assets</p>
+      <p class="loader__label loader__label--r"><span id="loaderPct">000</span>%</p>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
