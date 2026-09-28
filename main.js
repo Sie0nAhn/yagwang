@@ -89,6 +89,7 @@ const FOLLOW = {
 /* 꾹 눌러 고르기 */
 const HOLD = {
   time: 2.4,       // 게이지가 다 차는 데 걸리는 시간(초)
+  mouse: 1.1,      // 마우스로 누를 때는 잘못 눌릴 일이 없으니 짧게
   // 실측: 편 손 0.76 / 반쯤 오므린 손 0.28 / 실제로 꼬집으면 0.03
   pinchOn: 0.22,   // 엄지-검지가 이보다 가까워야 '꼬집었다'
   pinchOff: 0.40,  // 이보다 벌어지면 놓은 것
@@ -1023,14 +1024,21 @@ async function toGarden() {
   filmEl.pause();
   stopYt();
   await transition(async () => {
-    if (!gardenLoaded) {
-      gardenFrame.src = "gooseulbit-garden.html";
-      gardenLoaded = true;
-      await new Promise((res) => {
-        const t = setTimeout(res, 6000);
-        gardenFrame.addEventListener("load", () => { clearTimeout(t); res(); }, { once: true });
-      });
-    }
+    // 정원은 아카이브가 뜰 때부터 미리 띄워 둔다. 그래서 들어갈 때쯤이면
+    // 이미 한참 돌아가 있고, 앞사람이 열어 본 구슬도 그대로 남아 있다.
+    // ("읽은 기억" 이 처음부터 셋 다 차 있고 '기억 셋을 보셨습니다' 가 떠 있는 게 이것 때문)
+    // 들어가는 순간 새로 띄워 언제나 첫 상태에서 시작하게 한다.
+    await new Promise((res) => {
+      const t = setTimeout(res, 6000);
+      gardenFrame.addEventListener("load", () => { clearTimeout(t); res(); }, { once: true });
+      try {
+        if (gardenLoaded && gardenFrame.contentWindow) gardenFrame.contentWindow.location.reload();
+        else { gardenFrame.src = "gooseulbit-garden.html"; gardenLoaded = true; }
+      } catch {
+        gardenFrame.src = "gooseulbit-garden.html";
+        gardenLoaded = true;
+      }
+    });
     // 정원을 보는 동안 뒤 영상을 미리 받아둔다
     if (FILM[1].local) loadFilmFile(FILM[1]);
 
@@ -1218,9 +1226,12 @@ function drawHold() {
   baselineFill.style.transform = `scaleX(${hold.p})`;
 }
 
-function startHold() {
+/* byMouse : 마우스로 누른 것. 꼬집기는 잘못 잡힐 수 있어 오래 끌지만,
+   마우스 클릭은 틀릴 일이 없으니 절반만 기다린다. */
+function startHold(byMouse) {
   if (holding || locked || !ready) return;
   holding = true;
+  const wait = byMouse ? HOLD.mouse : HOLD.time;
   gsap.to(cursorEl, { scale: 1.3, duration: 0.3, ease: "back.out(3)" });
   if (current === "orb") btnBack.classList.add("is-armed");
 
@@ -1230,7 +1241,7 @@ function startHold() {
     panRate = PAN_RATE_SNAP;
     panTarget.x = 0;
     // 큰 화면이 천천히 다가온다
-    gsap.to(featureEl, { scale: 1.04, duration: HOLD.time * 0.8, ease: "power2.out" });
+    gsap.to(featureEl, { scale: 1.04, duration: wait * 0.8, ease: "power2.out" });
   }
   // 게이지는 언제나 빈 상태에서 시작한다.
   // (직전에 남은 진행률을 이어받으면 순식간에 다 찬 것처럼 보인다)
@@ -1238,7 +1249,7 @@ function startHold() {
   drawHold();
   // overwrite: 놓았다 다시 잡을 때 되돌리던 tween 과 겹치지 않게
   holdTween = gsap.to(hold, {
-    p: 1, duration: HOLD.time, ease: "none", overwrite: true, onUpdate: drawHold,
+    p: 1, duration: wait, ease: "none", overwrite: true, onUpdate: drawHold,
     onComplete: () => {
       endHold(true);
       pinchLatch = true;                  // 손을 펴기 전엔 다시 선택되지 않게
@@ -1267,14 +1278,17 @@ function endHold(done) {
   else gsap.to(hold, { p: 0, duration: 0.3, ease: "power2.out", overwrite: true, onUpdate: drawHold });
 }
 
-/* 마우스 폴백 */
+/* 마우스 폴백.
+   커서 위치만 손이 있을 때 양보하고, 누르는 건 언제나 받는다.
+   (카메라가 켜져 있으면 손이 아닌 것도 잠깐씩 손으로 잡혀서,
+    handActive 로 막아두면 마우스로는 영영 못 고르는 수가 있다) */
 window.addEventListener("mousemove", (e) => {
   if (handActive) return;
   const p = toStage(e.clientX, e.clientY);
   moveCursor(p.x, p.y);
 });
-window.addEventListener("mousedown", () => { if (!handActive) startHold(); });
-window.addEventListener("mouseup", () => { if (!handActive) endHold(false); });
+window.addEventListener("mousedown", () => startHold(true));
+window.addEventListener("mouseup", () => endHold(false));
 
 /* ============================================================
    로딩
