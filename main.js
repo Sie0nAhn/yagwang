@@ -841,23 +841,29 @@ let gardenLoaded = false;
 let ytPlayer = null;
 
 /* 각 영상을 로컬 파일로 틀 수 있는지 미리 확인한다.
-   본편이 아예 없는 저장소(인터랙션만 올린 경우)면 구슬까지만 돌아간다. */
+   본편이 아예 없는 저장소(인터랙션만 올린 경우)면 구슬까지만 돌아간다.
+
+   확인은 스크립트가 뜨자마자 시작한다. 아카이브가 다 뜬 뒤에 시작하면
+   그 사이 영상 아홉 개와 정원을 받느라 확인이 밀리고, 아직 안 끝난 채로
+   관객이 '확인하러 가기' 를 누르면 본편이 없는 줄 알고 아카이브로 되돌아간다.
+   두 파일도 나란히 물어본다 (하나씩 기다릴 이유가 없다). */
 let hasFilm = false;
 
-async function probeFilms() {
-  for (const seg of FILM) {
+const filmProbe = (async () => {
+  await Promise.all(FILM.map(async (seg) => {
     try {
       const r = await fetch(seg.file, { method: "HEAD" });
       seg.local = r.ok;
     } catch { seg.local = false; }
     seg.usable = seg.local || (USE_YOUTUBE && !!seg.yt);
-  }
+  }));
   hasFilm = FILM.every((s) => s.usable);
   if (!hasFilm) {
     btnGo.style.display = "none";
     console.info("[야광] 본편 영상이 없어 구슬까지만 동작합니다.");
   }
-}
+  return hasFilm;
+})();
 
 /* 검정으로 덮기 / 걷어내기 */
 function fadeOut() {
@@ -989,6 +995,8 @@ function hideChrome(hidden) {
 /* 구슬 → 영상 앞부분 */
 async function toFilm(segment) {
   if (locked) return;
+  await filmProbe;                      // 확인이 끝난 뒤에 판단한다
+  if (locked || current === "film") return;   // 기다리는 사이 이미 넘어갔을 수 있다
   if (!hasFilm) return back();          // 본편이 없는 저장소면 아카이브로
   const from = current;
   if (from === "garden") releaseGardenHand();   // 카메라 돌려받기
@@ -1138,7 +1146,7 @@ window.addEventListener("message", (e) => {
 function advance() {
   if (locked) return;
   if (current === "grid") select();
-  else if (current === "orb") (hasFilm ? toFilm(0) : back());
+  else if (current === "orb") toFilm(0);      // 본편이 없으면 toFilm 이 알아서 되돌린다
   else if (current === "film") (filmSegment === 0 ? toGarden() : toArchive());
   else if (current === "garden") toFilmTail();
 }
@@ -1409,7 +1417,7 @@ function reveal() {
 
   // 아카이브가 뜬 뒤부터 본편 영상과 정원을 뒤에서 받아둔다
   tl.add(() => {
-    probeFilms().then(() => {
+    filmProbe.then(() => {
       if (FILM[0].local) loadFilmFile(FILM[0]);   // 앞 영상 미리 받기
     });
     if (!gardenLoaded) { gardenFrame.src = "gooseulbit-garden.html"; gardenLoaded = true; }
