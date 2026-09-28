@@ -101,40 +101,117 @@ body { font-family: var(--font-kr); color: #fff; cursor: none; }
    ============================================================ */
 .screen--grid { z-index: 2; }
 
-.plane-wrap {
+/* ── 지금 고른 영상 (왼쪽 큰 화면) ────────────────── */
+.feature {
   position: absolute;
-  inset: 0;
-  perspective: 1150px;          /* 낮을수록 가장자리가 어안처럼 크게 휜다 */
-  perspective-origin: 50% 50%;
-}
-
-/* 크기와 중앙 정렬 여백은 JS 가 PLANE_W / PLANE_H 로 직접 넣는다.
-   (여기에 숫자를 박아두면 격자 간격을 바꿀 때마다 어긋난다) */
-.plane {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform-style: preserve-3d;
+  left: 52px;
+  top: 158px;
+  width: 580px;
+  height: 414px;
+  overflow: hidden;
+  /* 켜질 때 transform 이 걸려도 ascii 의 screen 합성이 바뀌지 않게 고정해 둔다 */
+  isolation: isolate;
   will-change: transform;
 }
+.feature__pix,
+.feature__ascii {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* 글자 뒤에 아주 흐리게 깔리는 바탕. 사각형 테두리가 드러나지 않게 가장자리를 날린다. */
+.feature__pix {
+  filter: blur(20px) brightness(.42) saturate(1.2);
+  opacity: .7;
+  -webkit-mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, #000 40%, transparent 100%);
+          mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, #000 40%, transparent 100%);
+}
+.feature__ascii { mix-blend-mode: screen; pointer-events: none; }
 
-/* 그리드 위아래를 검게 눌러주는 페이드 */
+.feature__label {
+  position: absolute;
+  left: 52px;
+  top: 622px;
+  z-index: 12;
+}
+.feature__name {
+  font-family: var(--font-kr);
+  font-size: 54px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.03em;
+  white-space: nowrap;
+}
+.feature__slug {
+  margin-top: 8px;
+  font-family: var(--font-grotesk);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -.01em;
+  color: rgba(255,255,255,.6);
+}
+
+/* ── 오른쪽으로 이어지는 목록 ──────────────────────── */
+.strip-wrap {
+  position: absolute;
+  left: 760px;
+  top: 238px;
+  right: 0;
+  height: 340px;
+  overflow: hidden;
+}
+/* 칸은 자리(left)로 놓는다. 흐름(flex)으로 두면 순서를 돌릴 수 없고,
+   GSAP 이 transform 을 쓰기 때문에 자리와 움직임이 서로 엉킨다. */
+.strip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+.strip__item {
+  position: absolute;
+  top: 0;
+  width: 372px;
+}
+.strip__thumb {
+  width: 372px;
+  height: 209px;
+  display: block;
+  background: #d9d9d9;
+  filter: saturate(.62) contrast(.8) brightness(1.02);
+  opacity: .74;
+  transition: filter 400ms ease, opacity 400ms ease;
+}
+.strip__name {
+  margin-top: 22px;
+  font-family: var(--font-kr);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+.strip__slug {
+  margin-top: 3px;
+  font-family: var(--font-grotesk);
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255,255,255,.4);
+}
+/* 목록은 아직 고르지 않은 것들이라 전부 한 톤 죽인다.
+   지금 고른 영상은 왼쪽 큰 화면이 맡고 있으니 여기서 강조하지 않는다. */
+.strip__name { color: rgba(255,255,255,.8); }
+
+/* 오른쪽 끝이 어둠으로 빠지게 */
 .grid-fade {
   position: absolute;
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  background:
-    linear-gradient(to bottom, #000 0%, rgba(0,0,0,0) 16%, rgba(0,0,0,0) 76%, rgba(0,0,0,.92) 100%),
-    linear-gradient(to right,  rgba(0,0,0,.9) 0%, rgba(0,0,0,0) 12%, rgba(0,0,0,0) 88%, rgba(0,0,0,.9) 100%);
-}
-
-/* ---------------- 타일 ---------------- */
-.tile {
-  position: absolute;
-  width: 360px;
-  transform-style: preserve-3d;
-  will-change: transform, opacity;
+  background: linear-gradient(to right, rgba(0,0,0,0) 72%, rgba(0,0,0,.85) 100%);
 }
 
 /* 원본 영상 요소 — 화면에는 안 나오고 캔버스의 소스로만 쓰인다 */
@@ -149,150 +226,38 @@ body { font-family: var(--font-kr); color: #fff; cursor: none; }
   z-index: -1;
 }
 
-/* 타일 위 레이블 */
-.tile__top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  height: 22px;
-  margin-bottom: 9px;
-}
-.tile__name {
-  font-family: var(--font-kr);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -.01em;
-  white-space: nowrap;
-  color: #fff;
-  transition: color 350ms ease;
-}
-.tile__no {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--dim);
-  transition: color 350ms ease;
-}
-
-/* 타일 아래 태그 */
-.tile__bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: 20px;
-  margin-top: 10px;
-}
-.tile__tags { display: flex; gap: 5px; }
-.tile__tag {
-  padding: 3px 7px 4px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  line-height: 1;
-  letter-spacing: .03em;
-  text-transform: uppercase;
-  color: var(--dim);
-  white-space: nowrap;
-  transition: border-color 350ms ease, color 350ms ease;
-}
-.tile__year {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--dim);
-}
-
-/* 영상 */
-/* 면이 휘면서 남는 바깥은 비워 둬야 해서 배경도 테두리도 두지 않는다 */
-.tile__media {
-  position: relative;
-  width: 360px;
-  height: 270px;
-  overflow: hidden;
-}
-
-/* 영상 레이어 — 낮은 해상도로 그린 뒤 늘려서 자잘한 알갱이를 남긴다.
-   채도를 낮추고 대비를 눌러 파스텔 톤으로 */
-.tile__pix {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  filter: var(--grade, none) saturate(.6) contrast(.74) brightness(1.16) blur(var(--sblur, 0px));
-}
-
-/* ASCII 레이어 */
-.tile__ascii {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 2;
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-
-/* 해칭은 캔버스 안에서 그린다 (drawTilePixels) — 휜 면 바깥으로 새지 않도록 */
-.tile__hatch { display: none; }
-/* 커서가 올라간 타일 */
-.tile.is-focus .tile__name { color: var(--acc); }
-.tile.is-focus .tile__no { color: var(--acc); }
-.tile.is-focus .tile__tag { border-color: rgba(30,255,102,.5); color: var(--acc); }
-.tile.is-focus .tile__pix {
-  filter: var(--grade, none) saturate(.9) contrast(.9) brightness(1.2) blur(var(--sblur, 0px));
-}
-
-/* 영상 위 그레인·픽셀 텍스처 (VIDEO_FX 켤 때만 생성) */
-.tile__tex {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 120px 120px;
-  background-position: var(--tex-x, 0) var(--tex-y, 0);
-  mix-blend-mode: overlay;
-  opacity: .3;
-}
-.tile__px {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image:
-    repeating-linear-gradient(90deg, rgba(0,0,0,.55) 0 1px, rgba(0,0,0,0) 1px 6px),
-    repeating-linear-gradient(0deg,  rgba(0,0,0,.55) 0 1px, rgba(0,0,0,0) 1px 6px);
-  mix-blend-mode: multiply;
-  opacity: .24;
-}
 
 /* ============================================================
    중앙 2단 레이블 — 로딩부터 끝까지 같은 자리
    ============================================================ */
+/* 질문은 왼쪽 위. 로딩 중에는 화면 한가운데에 기관명이 놓인다. */
 .titlebar {
   position: absolute;
+  left: 52px;
+  top: 62px;
+  z-index: 60;
+  pointer-events: none;
+  transition: none;
+}
+.titlebar p {
+  font-family: var(--font-kr);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  text-shadow: 0 2px 20px rgba(0,0,0,.95);
+}
+/* 오른쪽 레이블은 새 레이아웃에서 쓰지 않는다 (이름은 큰 영상 밑에) */
+.titlebar__right { display: none; }
+
+/* 로딩 중일 때만 가운데로 */
+body.is-booting .titlebar {
   left: 0;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  padding: 0 12%;            /* 두 레이블이 중앙에서 31% / 69% 지점에 오도록 */
-  pointer-events: none;
-}
-.titlebar p {
-  flex: 1;
-  font-family: var(--font-kr);
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.5;
-  letter-spacing: -.015em;
   text-align: center;
-  white-space: nowrap;
-  text-shadow: 0 2px 20px rgba(0,0,0,.95), 0 0 40px rgba(0,0,0,.8);
 }
 .titlebar__left span { display: block; }
 /* 상태 알림 한 줄, 그 아래가 실제 지시문 */
@@ -329,7 +294,8 @@ body { font-family: var(--font-kr); color: #fff; cursor: none; }
    HUD
    ============================================================ */
 .hud { position: absolute; inset: 0; z-index: 55; pointer-events: none; }
-.meta--tl { left: 40px; top: 36px; }
+/* 번호도 기관명과 함께 오른쪽 위에 모아둔다 (왼쪽 위는 질문 자리) */
+.meta--tl { right: 40px; top: 60px; justify-content: flex-end; }
 .meta--tr { right: 40px; top: 36px; }
 .meta--orb-tl { left: 40px; top: 36px; z-index: 12; }
 
@@ -403,10 +369,11 @@ body { font-family: var(--font-kr); color: #fff; cursor: none; }
 .loader__label {
   position: absolute;
   bottom: 26px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  font-family: var(--font-kr);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: -.01em;
+  text-transform: none;
   color: var(--dim);
 }
 .loader__label--l { left: 40px; }
@@ -763,7 +730,7 @@ body.is-garden { cursor: auto; }
    ============================================================ */
 .camera-box {
   position: absolute;
-  left: 40px;
+  right: 40px;
   bottom: 34px;
   width: 196px;
   height: 125px;
@@ -784,11 +751,12 @@ body.is-garden { cursor: auto; }
   place-items: center;
   text-align: center;
   padding: 0 14px;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-kr);
+  font-weight: 600;
+  font-size: 11px;
   line-height: 1.6;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  letter-spacing: -.01em;
+  text-transform: none;
   color: var(--dim);
   background: #0a0c0f;
   transition: opacity 400ms ease;
@@ -799,10 +767,11 @@ body.is-garden { cursor: auto; }
   position: absolute;
   left: 9px;
   bottom: 8px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: .05em;
-  text-transform: uppercase;
+  font-family: var(--font-kr);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: -.01em;
+  text-transform: none;
   color: rgba(255,255,255,.8);
   text-shadow: 0 1px 6px #000;
 }

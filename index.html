@@ -26,8 +26,19 @@
 
     <!-- ============ 영상 그리드 ============ -->
     <section class="screen screen--grid" id="screenGrid">
-      <div class="plane-wrap">
-        <div class="plane" id="plane"></div>
+      <!-- 지금 고른 영상 — 문자 매트릭스로 다시 그려 CRT 처럼 휘어 보인다 -->
+      <div class="feature" id="feature">
+        <canvas class="feature__pix" id="featPix"></canvas>
+        <canvas class="feature__ascii" id="featAscii"></canvas>
+      </div>
+      <div class="feature__label">
+        <p class="feature__name" id="featName">낯선 타인의 온기</p>
+        <p class="feature__slug" id="featSlug">warmth from a stranger</p>
+      </div>
+
+      <!-- 오른쪽으로 이어지는 목록 -->
+      <div class="strip-wrap">
+        <div class="strip" id="strip"></div>
       </div>
       <div class="grid-fade"></div>
     </section>
@@ -69,7 +80,7 @@
         <div class="orb-caption" id="orbCaption">
           <p class="orb-caption__name">고요한 정적의 소리</p>
           <p class="orb-caption__meta">
-            <span>orb</span><span class="dot"></span><span id="orbIndex">05</span><span class="dot"></span><span>2026</span>
+            <span>구슬</span><span class="dot"></span><span id="orbIndex">05</span><span class="dot"></span><span>2026</span>
           </p>
         </div>
       </div>
@@ -114,7 +125,7 @@
     <div class="hud" id="hud">
       <p class="meta meta--tl">
         <span class="meta__k meta__kr meta__k--title" id="hudKey">야광(夜光)</span>
-        <span class="meta__v" id="hudIndex">01 / 08</span>
+        <span class="meta__v" id="hudIndex">01 / 09</span>
       </p>
       <p class="meta meta--tr">
         <span class="meta__k meta__kr">야광</span>
@@ -132,8 +143,8 @@
     <div class="camera-box" id="cameraBox">
       <video id="cam" playsinline muted></video>
       <canvas id="camCanvas" width="600" height="382"></canvas>
-      <p class="camera-status" id="camStatus">connecting</p>
-      <p class="camera-tag">hand tracking</p>
+      <p class="camera-status" id="camStatus">연결 중</p>
+      <p class="camera-tag">손 인식</p>
     </div>
 
     <!-- 하단 라인 : 로딩 진행 → 선택 게이지로 이어진다 -->
@@ -155,7 +166,7 @@
 
     <!-- ============ 로딩 ============ -->
     <div class="loader" id="loader">
-      <p class="loader__label loader__label--l">loading assets</p>
+      <p class="loader__label loader__label--l">자원 불러오는 중</p>
       <p class="loader__label loader__label--r"><span id="loaderPct">000</span>%</p>
     </div>
 

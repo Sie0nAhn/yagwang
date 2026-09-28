@@ -19,47 +19,47 @@ const VIDEO_FX = false;
    ============================================================ */
 const VIDEOS = [
   {
-    name: "서늘한 새벽공기", file: "01-dawn-air.mp4", tags: ["빛", "온도"], tint: "#6f83e8",
+    name: "서늘한 새벽공기", file: "01-dawn-air.mp4", en: "the cool before dawn", tags: ["빛", "온도"], tint: "#6f83e8",
     marble: { hue: 208, sat: 1.2, bri: 0.82, glow: "rgba(74,108,240,.34)" },
     grade: ["#6d7cbe", "#aba4e0", "#fff1f8"],
   },
   {
-    name: "오후 4시의 햇살", file: "02-afternoon-light.mp4", tags: ["온도", "시간"], tint: "#ff9b4d",
+    name: "오후 4시의 햇살", file: "02-afternoon-light.mp4", en: "light at four o\u2019clock", tags: ["온도", "시간"], tint: "#ff9b4d",
     marble: { hue: 8, sat: 1.1, bri: 1.03, glow: "rgba(255,140,40,.34)" },
     grade: ["#eb9670", "#ffd6ab", "#fffaee"],
   },
   {
-    name: "윤슬의 빤짝임", file: "03-water-glitter.mp4", tags: ["물", "빛"], tint: "#4fd2e6",
+    name: "윤슬의 빤짝임", file: "03-water-glitter.mp4", en: "sunlight broken on water", tags: ["물", "빛"], tint: "#4fd2e6",
     marble: { hue: 169, sat: 0.95, bri: 1.05, glow: "rgba(70,207,230,.32)" },
     grade: ["#6ea7c4", "#abe0e9", "#f8feff"],
   },
   {
-    name: "계절의 경계면", file: "04-season-edge.mp4", tags: ["계절", "촉감"], tint: "#7fdc9b",
+    name: "계절의 경계면", file: "04-season-edge.mp4", en: "the seam between seasons", tags: ["계절", "촉감"], tint: "#7fdc9b",
     marble: { hue: 112, sat: 0.95, bri: 1.0, glow: "rgba(121,220,143,.30)" },
     grade: ["#87ae91", "#c6e8c2", "#fcfff4"],
   },
   {
-    name: "고요한 정적의 소리", file: "05-silence.mp4", tags: ["소리", "여백"], tint: "#b9b4e8",
+    name: "고요한 정적의 소리", file: "05-silence.mp4", en: "the sound of stillness", tags: ["소리", "여백"], tint: "#b9b4e8",
     marble: { hue: 224, sat: 0.62, bri: 1.02, glow: "rgba(169,166,220,.30)" },
     grade: ["#9291aa", "#cbc8db", "#fbfafd"],
   },
   {
-    name: "낯선 타인의 온기", file: "06-stranger-warmth.mp4", tags: ["온도", "사람"], tint: "#ff8a70",
+    name: "낯선 타인의 온기", file: "06-stranger-warmth.mp4", en: "warmth from a stranger", tags: ["온도", "사람"], tint: "#ff8a70",
     marble: { hue: 352, sat: 1.05, bri: 1.0, glow: "rgba(255,122,92,.34)" },
     grade: ["#d68d7b", "#ffc3b1", "#fff6ef"],
   },
   {
-    name: "비 오는 날의 흙냄새", file: "07-petrichor.mp4", tags: ["냄새", "날씨"], tint: "#c9c076",
+    name: "비 오는 날의 흙냄새", file: "07-petrichor.mp4", en: "earth after the rain", tags: ["냄새", "날씨"], tint: "#c9c076",
     marble: { hue: 26, sat: 0.68, bri: 0.93, glow: "rgba(179,154,77,.30)" },
     grade: ["#909b71", "#d0cc9e", "#faf8ea"],
   },
   {
-    name: "이유없는 설렘", file: "08-flutter.mp4", tags: ["감정", "심박"], tint: "#ff77b8",
+    name: "이유없는 설렘", file: "08-flutter.mp4", en: "a flutter without reason", tags: ["감정", "심박"], tint: "#ff77b8",
     marble: { hue: 314, sat: 1.05, bri: 1.02, glow: "rgba(255,94,168,.34)" },
     grade: ["#c980ad", "#ffbfdb", "#fff4fa"],
   },
   {
-    name: "첫눈을 보던 감각", file: "09-first-snow.mp4", tags: ["눈", "계절"], tint: "#bcd8f5",
+    name: "첫눈을 보던 감각", file: "09-first-snow.mp4", en: "watching the first snow", tags: ["눈", "계절"], tint: "#bcd8f5",
     marble: { hue: 190, sat: 0.5, bri: 1.1, glow: "rgba(188,216,245,.32)" },
     grade: ["#8fa7c4", "#cfdff2", "#ffffff"],
   },
@@ -74,6 +74,26 @@ const indexLabel = (vi) => `${String(vi + 1).padStart(2, "0")} / ${TOTAL_LABEL}`
 
 /* 프레임이 한 번 밀렸다고 애니메이션이 슬로모션으로 늘어지지 않게 */
 gsap.ticker.lagSmoothing(1000, 33);
+
+/* ============================================================
+   반응 속도 — 클수록 느긋하게 따라온다
+   ============================================================ */
+const FOLLOW = {
+  hand: 0.07,      // 손 좌표를 매 프레임 얼마나 반영할지 (작을수록 손떨림이 죽는다)
+  cursor: 0.9,     // 커서가 따라오는 시간(초)
+  pan: 3.4,        // 목록이 흘러가는 시간(초)
+  aura: 4.2,       // 배경이 밀려가는 시간(초)
+  dwell: 320,      // 이만큼 머물러야 다른 영상으로 넘어간다(ms)
+};
+
+/* 꾹 눌러 고르기 */
+const HOLD = {
+  time: 2.4,       // 게이지가 다 차는 데 걸리는 시간(초)
+  // 실측: 편 손 0.76 / 반쯤 오므린 손 0.28 / 실제로 꼬집으면 0.03
+  pinchOn: 0.22,   // 엄지-검지가 이보다 가까워야 '꼬집었다'
+  pinchOff: 0.40,  // 이보다 벌어지면 놓은 것
+  grace: 700,      // 손이 처음 잡히고 이 시간 동안은 꼬집어도 무시(ms)
+};
 
 /* ============================================================
    스테이지
@@ -225,57 +245,50 @@ function initAmbient() {
 initAmbient();
 
 /* ============================================================
-   영상 그리드
+   자원 아카이브 — 왼쪽 큰 화면 + 오른쪽으로 이어지는 목록
    ============================================================ */
-/* 8열 × 4행 = 32칸. 8개 영상을 반복해서 다 채운다.
-   실제 <video> 는 8개뿐이고, 같은 영상을 여러 타일이 나눠 그린다. */
-const GRID_COLS = 8;
-const GRID_ROWS = 4;
-const TILE_W = 360;                          // 4:3 가로형
-const TILE_MEDIA_H = 270;
-const TILE_H = 31 + TILE_MEDIA_H + 30;       // 위 레이블 + 영상 + 아래 태그 = 331
-const COL_PITCH = 416;                       // 좌우 간격 56px
-/* 행 간격을 타일보다 159px 넉넉하게 잡아, 그 빈 줄의 한가운데가
-   화면 세로 중앙과 맞아떨어지게 한다 → 중앙 레이블이 타일 사이에 놓인다 */
-const ROW_PITCH = 490;
-const COL_X0 = (COL_PITCH - TILE_W) / 2;     // 45
-const ROW_Y0 = (ROW_PITCH - TILE_H) / 2;     // 59.5
-const PLANE_W = GRID_COLS * COL_PITCH;       // 3200
-const PLANE_H = GRID_ROWS * ROW_PITCH;       // 2280
+const FEAT_W = 580;          // 큰 화면 — 7:5. style.css 의 .feature 와 같아야 한다
+const FEAT_H = 414;
+const THUMB_W = 372;         // 목록 썸네일
+const THUMB_H = 209;
+const STRIP_PITCH = 420;     // 썸네일 + 간격
+const STRIP_LEFT = 760;      // 목록 첫 칸의 화면 위치 (style.css 의 .strip-wrap 과 같아야 한다)
+const STRIP_TOP = 238;
 
-const PAN_X = (PLANE_W - STAGE_W) / 2;       // 좌우로 밀 수 있는 범위
-const PAN_Y = (PLANE_H - STAGE_H) / 2;
+const HOVER_PAD = 26;        // 첫 칸 판정에 주는 여유
+const HOVER_STEP = 1.1;      // 첫 칸에 계속 얹고 있을 때 다음 영상으로 넘어가는 간격(초)
+const SLIDE_TIME = 0.55;     // 목록이 한 칸 미끄러지는 시간
 
-/* 화면 해상도 — 숫자가 클수록 캔버스가 작아져서 가벼워진다 */
-const PIXEL_BASE = 2.8;
-const PIXEL_HOLD = 1.6;    // 꾹 누르는 동안은 또렷하게
-const PIXEL_BOOT = 30;     // 로딩 중에는 아주 굵게
+const PIXEL_BASE = 2.4;      // 썸네일 알갱이 굵기
+const PIXEL_BOOT = 30;       // 로딩 중에는 아주 굵게
 
-/* ASCII 레이어 */
-const ASCII_CELL = 9;                            // 글자 한 칸(px)
-const ASCII_RAMP = "..·:ee//++**==22%%##@@";       // 임계값 위쪽 밝기를 이 문자들로
-const ASCII_ALPHA = 0.8;
-const ASCII_MIN_LUM = 0.56;                        // 이보다 밝은 데에만 글자가 맺힌다
+/* 큰 화면을 이루는 문자 매트릭스 */
+const ASCII_CELL = 8;                        // 글자 한 칸(px) — 작을수록 촘촘
+const ASCII_RAMP = " .·:~=+*xX%#@@";         // 어두움 → 밝음
+const BARREL = 0.11;                         // 화면이 휘는 정도 (0 이면 평평)
+const ASCII_SAT = 2.1;                       // 글자 색의 채도 (1 이면 원본)
+const ASCII_GAIN = 1.5;                      // 글자 색의 밝기
+const ASCII_GAMMA = 0.82;                    // 1 보다 작으면 밝은 쪽이 더 살아난다
+const ASCII_FLOOR = 0.07;                    // 이보다 어두운 칸은 아예 비워 검정을 남긴다
 
-const planeEl = document.getElementById("plane");
+/* 영상 원본을 옮겨 담을 작은 캔버스 (프레임당 영상당 한 번만) */
+const SRC_W = 288;
+const SRC_H = 216;
+
+const stripEl = document.getElementById("strip");
+const featPix = document.getElementById("featPix");
+const featAscii = document.getElementById("featAscii");
+const featCtx = featPix.getContext("2d", { alpha: false });
+const featAsciiCtx = featAscii.getContext("2d");
+const featNameEl = document.getElementById("featName");
+const featSlugEl = document.getElementById("featSlug");
+const featureEl = document.getElementById("feature");
+
 const tiles = [];
 
-// 플레인 실제 크기 = 계산값. CSS 에 박아두면 격자를 바꿀 때마다 어긋난다.
-planeEl.style.width = PLANE_W + "px";
-planeEl.style.height = PLANE_H + "px";
-planeEl.style.marginLeft = -PLANE_W / 2 + "px";
-planeEl.style.marginTop = -PLANE_H / 2 + "px";
-
-function placeTile(el, col, row) {
-  el.style.left = COL_X0 + col * COL_PITCH + "px";
-  el.style.top = ROW_Y0 + row * ROW_PITCH + "px";
-}
-
-/* 실제 영상 요소는 8개뿐 — 32칸이 이 8개를 나눠 그린다 */
+/* 실제 영상 요소는 영상 개수만큼만 */
 const videoPool = VIDEOS.map((data) => {
   const v = document.createElement("video");
-  // 파일명은 영문. 한글 파일명은 맥(NFD)과 깃허브(요청은 NFC)에서 서로 다른
-  // 이름으로 취급돼 배포 후 404 가 난다.
   v.src = data.file;
   v.muted = true;
   v.loop = true;
@@ -288,71 +301,6 @@ const videoPool = VIDEOS.map((data) => {
   return v;
 });
 
-for (let row = 0; row < GRID_ROWS; row++) {
-  for (let col = 0; col < GRID_COLS; col++) {
-    // 줄마다 3칸씩 밀어서 채운다 — 위아래·좌우 어느 쪽도 같은 영상이 붙지 않게
-    const vi = (col + row * 3) % N;
-    const data = VIDEOS[vi];
-
-    const el = document.createElement("div");
-    el.className = "tile";
-    placeTile(el, col, row);
-
-    const no = String(vi + 1).padStart(2, "0");
-    el.innerHTML =
-      `<div class="tile__top">` +
-        `<span class="tile__name">${data.name}</span>` +
-        `<span class="tile__no">${no}</span>` +
-      `</div>` +
-      `<div class="tile__media">` +
-        `<canvas class="tile__pix"></canvas>` +
-        `<canvas class="tile__ascii"></canvas>` +
-        `<span class="tile__hatch"></span>` +
-      `</div>` +
-      `<div class="tile__bottom">` +
-        `<span class="tile__tags">${data.tags.map((t) => `<span class="tile__tag">${t}</span>`).join("")}</span>` +
-        `<span class="tile__year">2026</span>` +
-      `</div>`;
-
-    const media = el.querySelector(".tile__media");
-    const pix = el.querySelector(".tile__pix");
-    const asc = el.querySelector(".tile__ascii");
-
-    if (VIDEO_FX) el.style.setProperty("--grade", `url(#grade${vi})`);
-
-    const index = tiles.length;
-    el.addEventListener("click", () => {
-      if (locked) return;
-      if (focusIndex === index) select();
-      else setFocus(index);
-    });
-
-    planeEl.appendChild(el);
-    tiles.push({
-      el, media, data, vi,
-      video: videoPool[vi],
-      canvas: pix, ctx: pix.getContext("2d"),      // 휘어서 남는 바깥은 투명하게
-      ascii: asc, actx: asc.getContext("2d"),
-      bw: 0, bh: 0,                                 // 현재 캔버스 해상도
-      aw: 0, ah: 0,                                 // ASCII 격자 크기
-      px: PIXEL_BOOT,                               // 화면 알갱이 크기
-      noise: 1,                                     // 1 = 완전한 노이즈, 0 = 영상
-      blur: 0,                                      // 바깥으로 갈수록 커지는 모션 블러
-      bend: 0,                                      // 면이 )( 로 휘는 정도
-      asciiOn: 0,                                   // ASCII 레이어 진하기
-      holdScale: 1,
-      cx: COL_X0 + col * COL_PITCH + TILE_W / 2,    // 플레인 안에서의 중심
-      cy: ROW_Y0 + row * ROW_PITCH + TILE_H / 2,
-    });
-  }
-}
-
-/* 영상마다 작은 중간 캔버스를 하나씩 둔다.
-   1080p 비디오에서 직접 그리면 호출 한 번마다 텍스처 비용이 붙는데,
-   타일 32장이 띠 단위로 수백 번 그려대므로 그게 가장 무겁다.
-   프레임당 영상당 딱 한 번만 여기에 옮기고, 타일들은 여기서 가져다 쓴다. */
-const SRC_W = 288;
-const SRC_H = 216;
 const videoSrc = videoPool.map(() => {
   const c = document.createElement("canvas");
   c.width = SRC_W;
@@ -361,81 +309,69 @@ const videoSrc = videoPool.map(() => {
 });
 
 function updateVideoSources() {
-  const wanted = new Set();
-  tiles.forEach((t) => { if (t.visible !== false) wanted.add(t.vi); });
   videoPool.forEach((v, i) => {
     const s = videoSrc[i];
-    if (!wanted.has(i) || v.readyState < 2 || !v.videoWidth) { s.ready = false; return; }
+    if (!tiles[i] || !tiles[i].visible || v.readyState < 2 || !v.videoWidth) {
+      if (i !== focusIndex) { s.ready = s.ready && false; return; }
+    }
+    if (v.readyState < 2 || !v.videoWidth) { s.ready = false; return; }
 
-    // 원본은 세로 영상(9:16)이라 가로 프레임에 맞춰 가운데를 잘라 쓴다.
-    // (늘려서 채우면 형태가 뭉개진다)
-    const vw = v.videoWidth;
-    const vh = v.videoHeight;
-    const dstAspect = SRC_W / SRC_H;
+    // 세로 영상(9:16)이라 가로 프레임에 맞춰 가운데를 잘라 쓴다
+    const vw = v.videoWidth, vh = v.videoHeight;
+    const aspect = SRC_W / SRC_H;
     let sx = 0, sy = 0, sw = vw, sh = vh;
-    if (vw / vh > dstAspect) { sw = vh * dstAspect; sx = (vw - sw) / 2; }
-    else { sh = vw / dstAspect; sy = (vh - sh) / 2; }
-
+    if (vw / vh > aspect) { sw = vh * aspect; sx = (vw - sw) / 2; }
+    else { sh = vw / aspect; sy = (vh - sh) / 2; }
     s.ctx.drawImage(v, sx, sy, sw, sh, 0, 0, SRC_W, SRC_H);
     s.ready = true;
   });
 }
 
-/* ASCII 샘플링용 스크래치 캔버스 (전 타일 공용) */
+/* ASCII 샘플링용 스크래치 */
 const sampleCv = document.createElement("canvas");
 const sampleCtx = sampleCv.getContext("2d", { willReadFrequently: true });
 
-/* 해칭 무늬 — 영상 위에만 얹혀야 해서 CSS 가 아니라 캔버스에서 그린다 */
-const hatchTile = (() => {
-  const c = document.createElement("canvas");
-  c.width = 4;
-  c.height = 4;
-  const x = c.getContext("2d");
-  x.strokeStyle = "rgba(255,255,255,.55)";
-  x.lineWidth = 1;
-  x.beginPath();
-  x.moveTo(-1, 3); x.lineTo(3, -1);
-  x.stroke();
-  return c;
-})();
-const HATCH_ALPHA = 0.13;
+/* ── 목록 만들기 ─────────────────────────────────── */
+VIDEOS.forEach((data, i) => {
+  const el = document.createElement("div");
+  el.className = "strip__item";
+  el.innerHTML =
+    `<canvas class="strip__thumb"></canvas>` +
+    `<p class="strip__name">${data.name}</p>` +
+    `<p class="strip__slug">${data.en}</p>`;
 
-/* ============================================================
-   반응 속도 — 클수록 느긋하게 따라온다
-   ============================================================ */
-const FOLLOW = {
-  hand: 0.07,      // 손 좌표를 매 프레임 얼마나 반영할지 (작을수록 손떨림이 죽는다)
-  cursor: 0.9,     // 커서가 따라오는 시간(초)
-  pan: 3.4,        // 그리드가 밀려가는 시간(초)
-  aura: 4.2,       // 배경이 밀려가는 시간(초)
-  dwell: 320,      // 이만큼 머물러야 다른 영상으로 포커스가 넘어간다(ms)
-};
+  const cv = el.querySelector(".strip__thumb");
+  stripEl.appendChild(el);
 
-/* 꾹 눌러 고르기 */
-const HOLD = {
-  time: 2.4,       // 게이지가 다 차는 데 걸리는 시간(초) = 확대된 영상을 보는 시간
-  // 실측: 편 손 0.76 / 반쯤 오므린 손 0.28 / 실제로 꼬집으면 0.03
-  pinchOn: 0.22,   // 엄지-검지가 이보다 가까워야 '꼬집었다'
-  pinchOff: 0.40,  // 이보다 벌어지면 놓은 것
-  grace: 700,      // 손이 처음 잡히고 이 시간 동안은 꼬집어도 무시(ms)
-};
+  tiles.push({
+    el, data, vi: i,
+    canvas: cv, ctx: cv.getContext("2d", { alpha: false }),
+    bw: 0, bh: 0,
+    px: PIXEL_BOOT,
+    noise: 1,
+    visible: true,
+  });
+});
 
-/* 플레인 이동 — 커서를 따라 반대로 밀린다.
-   꾹 누를 때는 고른 타일을 화면 가운데로 데려와야 해서 목표값·속도를
-   그때그때 갈아끼운다. 그래서 tween 대신 직접 감쇠시킨다. */
-const pan = { x: 0, y: 0 };
-const panTarget = { x: 0, y: 0 };
-let panLock = false;                 // true 면 커서를 따라가지 않는다
-let panRate = 0.6;                   // 초당 목표에 다가가는 비율
+const allTiles = gsap.utils.toArray(".strip__item");
+
+let focusIndex = 0;        // 지금 큰 화면에 떠 있는 영상
+let locked = false;        // 화면 전환 중에는 목록을 건드리지 않는다
+
+/* ── 목록은 큰 화면 다음 순서대로 줄을 선다 ─────────── */
+/* 첫 칸은 언제나 "다음 영상". 마지막까지 가면 처음으로 돌아온다.
+   (N = 영상 개수, 위에서 이미 선언해 두었다) */
+
+/* pan.x 는 한 칸 미끄러지는 동안에만 0 이 아니다 */
+const pan = { x: 0 };
+const panTarget = { x: 0 };
+let panLock = false;               // 꾹 누르는 동안엔 목록을 세워둔다
 let panLastT = performance.now();
 
-/* 초 단위로 환산한 감쇠 — 주사율이 달라도 같은 속도로 따라온다 */
-function rateFor(seconds) {
-  return 1 - Math.pow(0.05, 1 / seconds);   // seconds 안에 95% 도달
-}
-const PAN_RATE_FOLLOW = rateFor(FOLLOW.pan);
-const PAN_RATE_SNAP = rateFor(0.8);
-panRate = PAN_RATE_FOLLOW;
+function rateFor(seconds) { return 1 - Math.pow(0.05, 1 / seconds); }
+const PAN_RATE_FOLLOW = rateFor(SLIDE_TIME);
+const PAN_RATE_SNAP = rateFor(0.3);
+let panRate = PAN_RATE_FOLLOW;
 
 function stepPan() {
   const now = performance.now();
@@ -443,274 +379,151 @@ function stepPan() {
   panLastT = now;
   const k = 1 - Math.pow(1 - panRate, dt);
   pan.x += (panTarget.x - pan.x) * k;
-  pan.y += (panTarget.y - pan.y) * k;
 }
 
-let focusIndex = GRID_COLS + 3;    // 가운데쯤 되는 칸에서 시작
-let focusCandidate = -1;           // 넘어가려고 대기 중인 칸
-let focusCandidateAt = 0;
-let locked = false;
-
-const allTiles = gsap.utils.toArray(".tile");     // 영상 + 빈 슬롯
-
-/* 핀쿠션 왜곡 — 중심에서 멀수록 바깥으로 밀려나며 늘어난다 */
-const PIN_R = 900;         // 기준 반경
-const PIN_K = 0.17;        // 바깥으로 미는 양
-const PIN_Z = 300;         // 뒤로 밀리는 깊이
-const BEND_MAX = 0.42;     // 타일 면이 )( 로 휘는 최대치
-const BLUR_MAX = 16;       // 가장자리 모션 블러 최대치(저해상 캔버스 기준 px)
-const SOFT_MAX = 5;        // 가장자리 흐림(CSS blur) 최대치 px
-
-function pincushion(vx, vy) {
-  const t = Math.min(2.4, Math.hypot(vx, vy) / PIN_R);
-  const f = 1 + PIN_K * t * t;                 // 1 보다 커진다 = 바깥으로
-  return {
-    dx: vx * (f - 1),
-    dy: vy * (f - 1),
-    z: -t * t * PIN_Z,
-    rotY: -vx * 0.020,
-    rotX: vy * 0.016,
-    t,
-  };
+/* 각 칸이 몇 번째 자리에 서는지 다시 계산한다.
+   자리는 left 로 준다 — GSAP 이 transform 을 쓰기 때문에 겹치면 안 된다. */
+function layoutStrip() {
+  tiles.forEach((t, i) => {
+    t.slot = (i - focusIndex - 1 + N) % N;
+    t.el.style.left = t.slot * STRIP_PITCH + "px";
+  });
 }
+layoutStrip();
 
-/* 타일 한 장 그리기
+/* 다음 영상으로 한 칸 넘긴다 */
+function advanceFocus() { setFocus((focusIndex + 1) % N, 1); }
 
-   가로 띠로 잘라서 한 줄씩 그린다.
-   · 띠마다 폭을 다르게 주면 좌우 면이 )( 로 휜다 (핀쿠션)
-   · 띠를 가로로 여러 번 겹쳐 그리면 방향성 모션 블러가 된다     */
-function drawTilePixels(tile) {
+/* ── 그리기 ──────────────────────────────────────── */
+
+/* 썸네일 — 낮은 해상도로 그려 알갱이를 남긴다 */
+function drawThumb(tile) {
   const px = Math.max(1, tile.px);
-  // 캔버스 크기를 바꾸면 컨텍스트가 통째로 다시 잡힌다.
-  // px 가 부드럽게 변하는 동안 매 프레임 갈아엎지 않도록 8칸 단위로 끊는다.
-  const bw = Math.max(8, Math.round(TILE_W / px / 8) * 8);
-  const bh = Math.max(8, Math.round(TILE_MEDIA_H / px / 8) * 8);
-
+  const bw = Math.max(8, Math.round(THUMB_W / px / 8) * 8);
+  const bh = Math.max(8, Math.round(THUMB_H / px / 8) * 8);
   if (bw !== tile.bw || bh !== tile.bh) {
     tile.canvas.width = bw;
     tile.canvas.height = bh;
-    tile.bw = bw;
-    tile.bh = bh;
+    tile.bw = bw; tile.bh = bh;
   }
-
   const g = tile.ctx;
   g.imageSmoothingEnabled = true;
-  g.clearRect(0, 0, bw, bh);
 
-  // 로딩 중에는 색 노이즈가 알갱이로 깔린다
   if (tile.noise > 0.01) {
     const img = g.createImageData(bw, bh);
     const d = img.data;
     for (let i = 0; i < d.length; i += 4) {
       const n = 18 + Math.random() * 90;
-      d[i] = n * 0.86;
-      d[i + 1] = n * 0.98;
-      d[i + 2] = n;
-      d[i + 3] = 255;
+      d[i] = n * 0.86; d[i + 1] = n * 0.98; d[i + 2] = n; d[i + 3] = 255;
     }
     g.putImageData(img, 0, 0);
   }
-
   const src = videoSrc[tile.vi];
   if (!src.ready) return;
-  const v = src.canvas;
-
-  const bend = tile.bend;
-  const spread = tile.blur;
-  // 많이 휜 타일일수록 잘게 쪼개야 곡선이 계단으로 보이지 않는다
-  // (그리는 횟수 = strips × samples 라 상한을 낮게 잡는다)
-  const strips = bend > 0.02
-    ? Math.min(22, Math.max(10, Math.round(bend * 44 + 10)))
-    : (spread > 0.4 ? 6 : 1);
-  const samples = spread > 3 ? 2 : 1;
-
-  const sw = SRC_W;
-  const sh = SRC_H;
-  const stripSrcH = sh / strips;
-  const stripDstH = bh / strips;
-
-  g.globalAlpha = (1 - tile.noise) / samples;
-
-  for (let s = 0; s < strips; s++) {
-    // 띠의 세로 위치를 -1 ~ 1 로. 가운데(0)에서 가장 잘록해진다
-    const p = strips === 1 ? 0 : ((s + 0.5) / strips) * 2 - 1;
-    const wScale = 1 - bend * (1 - p * p);
-    const dw = bw * wScale;
-    const dx = (bw - dw) / 2;
-    const dy = s * stripDstH;
-
-    for (let k = 0; k < samples; k++) {
-      const off = samples === 1 ? 0 : (k / (samples - 1) - 0.5) * 2 * spread;
-      g.drawImage(
-        v,
-        0, s * stripSrcH, sw, stripSrcH,
-        dx + off, dy, dw, stripDstH + 1
-      );
-    }
-  }
+  g.globalAlpha = 1 - tile.noise;
+  g.drawImage(src.canvas, 0, 0, bw, bh);
   g.globalAlpha = 1;
-
-  // 해칭은 그려진 픽셀 위에만 (source-atop) — 휘어서 빈 바깥은 건드리지 않는다
-  if (!tile.hatch) tile.hatch = g.createPattern(hatchTile, "repeat");
-  g.globalCompositeOperation = "source-atop";
-  g.globalAlpha = HATCH_ALPHA;
-  g.fillStyle = tile.hatch;
-  g.fillRect(0, 0, bw, bh);
-  g.globalAlpha = 1;
-  g.globalCompositeOperation = "source-over";
 }
 
-/* ASCII 레이어 — 지금 보고 있는 타일에만 얹는다 */
-function drawAscii(tile) {
-  const el = tile.ascii;
-  const cols = Math.floor(TILE_W / ASCII_CELL);
-  const rows = Math.floor(TILE_MEDIA_H / ASCII_CELL);
+/* 큰 화면 — 영상을 문자로 다시 그리고, 브라운관처럼 불룩하게 휘게 한다.
+   네 변의 가운데가 바깥으로 부풀고 모서리는 사각으로 남는다. */
+const FIT = 1 / (1 + BARREL);                // 부푼 변이 화면에 꽉 차도록
 
-  if (tile.aw !== cols || tile.ah !== rows) {
-    el.width = TILE_W;
-    el.height = TILE_MEDIA_H;
-    tile.aw = cols;
-    tile.ah = rows;
+function drawFeature() {
+  const src = videoSrc[focusIndex];
+  const cols = Math.floor(FEAT_W / ASCII_CELL);
+  const rows = Math.floor(FEAT_H / ASCII_CELL);
+
+  if (featAscii.width !== FEAT_W) {
+    featAscii.width = FEAT_W; featAscii.height = FEAT_H;
+    featPix.width = Math.round(FEAT_W / 6); featPix.height = Math.round(FEAT_H / 6);
   }
 
-  const g = tile.actx;
-  g.clearRect(0, 0, TILE_W, TILE_MEDIA_H);
-  if (tile.asciiOn < 0.02 || !videoSrc[tile.vi].ready) return;
+  // 뒤에 아주 흐린 바탕을 깔아 글자만 떠 있지 않게
+  const bg = featCtx;
+  bg.fillStyle = "#000";
+  bg.fillRect(0, 0, featPix.width, featPix.height);
+  if (src && src.ready) bg.drawImage(src.canvas, 0, 0, featPix.width, featPix.height);
 
-  // 격자 크기로 한 번 줄여서 칸마다의 색을 읽는다
+  const g = featAsciiCtx;
+  g.clearRect(0, 0, FEAT_W, FEAT_H);
+  if (!src || !src.ready) return;
+
   if (sampleCv.width !== cols || sampleCv.height !== rows) {
-    sampleCv.width = cols;
-    sampleCv.height = rows;
+    sampleCv.width = cols; sampleCv.height = rows;
   }
-  sampleCtx.drawImage(videoSrc[tile.vi].canvas, 0, 0, cols, rows);
+  sampleCtx.drawImage(src.canvas, 0, 0, cols, rows);
   const data = sampleCtx.getImageData(0, 0, cols, rows).data;
 
-  g.font = `500 ${ASCII_CELL + 2}px "Roboto Mono", monospace`;
+  g.font = `${ASCII_CELL + 1}px "Roboto Mono", monospace`;
   g.textBaseline = "top";
-  g.globalAlpha = tile.asciiOn * ASCII_ALPHA;
-
   const last = ASCII_RAMP.length - 1;
-  const bend = tile.bend;
 
   for (let y = 0; y < rows; y++) {
-    // 영상 레이어와 똑같이 휘도록 이 줄의 가로 배율을 맞춘다
-    const p = ((y + 0.5) / rows) * 2 - 1;
-    const wScale = 1 - bend * (1 - p * p);
-    const originX = (TILE_W * (1 - wScale)) / 2;
-
+    const ny = ((y + 0.5) / rows) * 2 - 1;
     for (let x = 0; x < cols; x++) {
       const i = (y * cols + x) * 4;
       const r = data[i], gg = data[i + 1], b = data[i + 2];
       const lum = (r * 0.299 + gg * 0.587 + b * 0.114) / 255;
-
-      // 밝은 부분에만 글자가 맺힌다
-      if (lum < ASCII_MIN_LUM) continue;
-      const k = (lum - ASCII_MIN_LUM) / (1 - ASCII_MIN_LUM);
-      const ch = ASCII_RAMP[Math.round(k * last)];
+      // 어두운 칸을 비워 두어야 밝은 쪽이 살아난다. 다 채우면 전체가 잿빛이 된다.
+      if (lum < ASCII_FLOOR) continue;
+      const ch = ASCII_RAMP[Math.round(Math.pow(lum, ASCII_GAMMA) * last)];
       if (ch === " ") continue;
 
-      // 원본보다 한 톤 밝고 옅게 — 레퍼런스의 파스텔 느낌
-      g.fillStyle = `rgb(${Math.min(255, r + 32)},${Math.min(255, gg + 32)},${Math.min(255, b + 32)})`;
-      g.fillText(ch, originX + x * ASCII_CELL * wScale, y * ASCII_CELL);
+      // 브라운관 — 변 가운데만 바깥으로 부푼다.
+      // 가로는 세로 위치로, 세로는 가로 위치로만 밀어서 네 모서리는 제자리에 둔다.
+      // (거리로 한꺼번에 밀면 모서리까지 말려들어 알약 모양이 된다)
+      const nx = ((x + 0.5) / cols) * 2 - 1;
+      const dx = (nx * (1 + BARREL * (1 - ny * ny)) * FIT * 0.5 + 0.5) * FEAT_W;
+      const dy = (ny * (1 + BARREL * (1 - nx * nx)) * FIT * 0.5 + 0.5) * FEAT_H;
+
+      // 회색끼를 걷어내고 색을 세운다.
+      // 밝기만 올리면(=전 채널에 같은 값을 더하면) 오히려 색이 바래므로,
+      // 밝기에서 벌어진 만큼을 키워 채도를 먼저 살린 뒤 밝기를 곱한다.
+      const L = lum * 255;
+      const cr = Math.min(255, Math.max(0, (L + (r - L) * ASCII_SAT) * ASCII_GAIN));
+      const cg = Math.min(255, Math.max(0, (L + (gg - L) * ASCII_SAT) * ASCII_GAIN));
+      const cb = Math.min(255, Math.max(0, (L + (b - L) * ASCII_SAT) * ASCII_GAIN));
+      g.fillStyle = `rgb(${cr | 0},${cg | 0},${cb | 0})`;
+      g.fillText(ch, dx, dy);
     }
   }
-  g.globalAlpha = 1;
 }
 
-/* 매 프레임 : 플레인을 밀고, 타일을 어안으로 휘고, 픽셀로 다시 그린다 */
+/* ── 매 프레임 ───────────────────────────────────── */
 function renderGrid() {
   if (locked || !ready || current !== "grid") return;
 
   stepPan();
-  planeEl.style.transform = `translate3d(${pan.x}px, ${pan.y}px, 0)`;
+  stripEl.style.transform = `translateX(${-pan.x}px)`;
 
-  const t = performance.now() / 1000;
-  let best = -1;
-  let bestDist = Infinity;
-
-  tiles.forEach((tile, i) => {
-    // 화면 중앙 기준으로 이 타일이 얼마나 벗어나 있는지
-    const vx = tile.cx - PLANE_W / 2 + pan.x;
-    const vy = tile.cy - PLANE_H / 2 + pan.y;
-    const w = pincushion(vx, vy);
-    const breathe = Math.sin(t * 0.7 + i * 1.6) * 4;
-
-    // preserve-3d 안에서는 z-index 가 아니라 z 좌표가 앞뒤를 정한다.
-    // 커지는 타일은 앞으로 끌어와야 다른 타일에 가리지 않는다.
-    const holdZ = (tile.holdScale - 1) * 130;
-
-    tile.el.style.transform =
-      `translate3d(${w.dx}px, ${w.dy + breathe}px, ${w.z + holdZ}px)` +
-      ` rotateY(${w.rotY}deg) rotateX(${w.rotX}deg) scale(${tile.holdScale})`;
-    tile.el.style.opacity = String(gsap.utils.clamp(0.08, 1, 1.2 - w.t * 0.72));
-    tile.el.style.zIndex = tile.holdScale > 1.02 ? "50" : "auto";
-
-    // 바깥으로 갈수록 : 면이 휘고, 옆으로 흐르고, 뿌옇게 번진다
-    tile.bend = gsap.utils.clamp(0, BEND_MAX, (w.t - 0.18) * 0.34);
-    tile.blur = Math.min(BLUR_MAX, Math.max(0, w.t - 0.25) * 11);
-    tile.el.style.setProperty(
-      "--sblur",
-      Math.min(SOFT_MAX, Math.max(0, w.t - 0.4) * 4.2).toFixed(2) + "px"
-    );
-
-    // 커서와의 거리로 포커스 판정 (왜곡된 실제 위치 기준)
-    const sx = STAGE_W / 2 + vx + w.dx;
-    const sy = STAGE_H / 2 + vy + w.dy;
-    const dist = Math.hypot(sx - cursorPos.x, sy - cursorPos.y);
-    // 지금 포커스된 타일에 가산점을 줘서 경계에서 이름이 떨리지 않게
-    const weighted = i === focusIndex ? dist * 0.82 : dist;
-    if (weighted < bestDist) { bestDist = weighted; best = i; }
-
-    tile.visible = w.t < 1.45;
+  // 앞쪽 몇 칸과 큰 화면에 뜬 영상만 재생한다
+  tiles.forEach((t, i) => {
+    t.visible = t.slot <= 2;
+    const want = t.visible || i === focusIndex;
+    const v = videoPool[i];
+    if (want && v.paused) v.play().catch(() => {});
+    else if (!want && !v.paused) v.pause();
   });
-
-  // 화면에 걸친 영상만 재생
-  const wanted = new Set();
-  tiles.forEach((tile) => { if (tile.visible) wanted.add(tile.vi); });
-  videoPool.forEach((v, vi) => {
-    if (wanted.has(vi)) { if (v.paused) v.play().catch(() => {}); }
-    else if (!v.paused) v.pause();
-  });
-
-  // 꾹 누르는 동안에는 고른 타일이 바뀌지 않는다.
-  // 스쳐 지나갈 때 이름이 딸려 바뀌지 않도록 잠깐 머물러야 넘어간다.
-  if (!holding && best >= 0 && best !== focusIndex) {
-    if (best !== focusCandidate) {
-      focusCandidate = best;
-      focusCandidateAt = performance.now();
-    } else if (performance.now() - focusCandidateAt > FOLLOW.dwell) {
-      setFocus(best);
-    }
-  } else if (best === focusIndex) {
-    focusCandidate = -1;
-  }
 }
 gsap.ticker.add(renderGrid);
 
 /* 그리기는 화면 전환·로딩과 상관없이 계속 돈다.
-   32장을 매 프레임 다시 그리면 무거워서, 지금 보고 있는 것 말고는
-   프레임을 걸러 그린다. 타일마다 다른 프레임에 걸리도록 흩어 놓는다. */
+   큰 화면은 글자 수천 개라 두 프레임에 한 번만 다시 그린다. */
 let drawFrame = 0;
 
 function drawTiles() {
   drawFrame++;
-  updateVideoSources();          // 영상 8개를 작은 캔버스로 한 번씩만 옮긴다
-  tiles.forEach((tile, i) => {
-    const loading = tile.noise > 0.01;
-    if (tile.visible === false && !loading) return;
-
-    const isFocus = i === focusIndex || tile.holdScale > 1.02;
-    // 거의 안 보이는 타일은 건너뛴다
-    if (!isFocus && !loading && parseFloat(tile.el.style.opacity || "1") < 0.07) return;
-
-    const every = isFocus || loading ? 1 : (tile.blur > 6 ? 3 : 2);
-    if (drawFrame % every === i % every) drawTilePixels(tile);
-
-    // ASCII 는 비싸서 지금 보고 있는 한 장에만
-    if (isFocus || tile.asciiOn > 0.02) drawAscii(tile);
+  updateVideoSources();
+  tiles.forEach((t, i) => {
+    if (t.visible || t.noise > 0.01) {
+      if (drawFrame % 2 === i % 2) drawThumb(t);
+    }
   });
+  if (drawFrame % 2 === 0) drawFeature();
 }
 gsap.ticker.add(drawTiles);
+
 
 /* ============================================================
    포커스
@@ -732,17 +545,70 @@ function applyMarbleTheme(i) {
   marbleStage.style.setProperty("--glow-soft", m.glow);
 }
 
-function setFocus(i) {
+/* 영상 이름 밑에 붙는 영문 — 한글 이름의 결을 옮긴 문장 (없으면 파일명에서 뽑는다) */
+const slugOf = (data) => data.en || data.file.replace(/^\d+-/, "").replace(/\.mp4$/, "");
+
+/* ── 브라운관이 켜지듯 ───────────────────────────────
+   가로 한 줄로 눌렸다가 위아래로 펴지면서 화면이 선다.
+   (featureEl 자체는 꾹 누를 때 쓰므로 안쪽 캔버스만 건드린다) */
+function crtOn(strong) {
+  gsap.killTweensOf([featPix, featAscii]);
+  const d = strong ? 0.8 : 0.5;
+  gsap.fromTo(featAscii,
+    { scaleY: strong ? 0.03 : 0.12, scaleX: strong ? 1.2 : 1.07, opacity: 0.25 },
+    { scaleY: 1, scaleX: 1, opacity: 1, duration: d, ease: "power4.out" });
+  gsap.fromTo(featPix,
+    { scaleY: strong ? 0.03 : 0.12, scaleX: strong ? 1.2 : 1.07, opacity: 0.2 },
+    { scaleY: 1, scaleX: 1, opacity: 0.7, duration: d, ease: "power4.out" });   // style.css 의 .feature__pix 와 같은 값
+}
+
+/* ── 글자가 잡음에서 자리를 잡는다 ────────────────────
+   앞 글자부터 차례로 굳고, 아직 안 굳은 자리는 계속 바뀐다. */
+const NOISE_KR = "가갸거겨고교구규그기나냐너녀노뇨누뉴느니다더도두드디라러로루르리마머모무므미바버보부브비사서소수스시아어오우으이자저조주즈지";
+const NOISE_EN = "abcdefghijklmnopqrstuvwxyz0123456789#@$%&*+=<>?/";
+const isKr = (ch) => ch >= "가" && ch <= "힣";
+
+function scramble(el, text, seconds) {
+  const chars = [...text];
+  const total = seconds * 1000;
+  const t0 = performance.now();
+  let frame = 0;
+
+  if (el._scrambleTick) gsap.ticker.remove(el._scrambleTick);
+
+  const tick = () => {
+    const p = Math.min(1, (performance.now() - t0) / total);
+    const settled = p * chars.length * 1.3;   // 끝 글자도 여유 있게 굳도록
+    // 매 프레임 바꾸면 너무 떨려서 두 프레임에 한 번만
+    if (frame++ % 2 === 0 || p >= 1) {
+      el.textContent = chars.map((ch, i) => {
+        if (ch === " " || i < settled) return ch;
+        const pool = isKr(ch) ? NOISE_KR : NOISE_EN;
+        return pool[(Math.random() * pool.length) | 0];
+      }).join("");
+    }
+    if (p >= 1) {
+      el.textContent = text;
+      gsap.ticker.remove(tick);
+      el._scrambleTick = null;
+    }
+  };
+  el._scrambleTick = tick;
+  gsap.ticker.add(tick);
+}
+
+function setFocus(i, dir) {
   if (i === focusIndex) return;
-  const prev = tiles[focusIndex];
-  if (prev) {
-    prev.el.classList.remove("is-focus");
-    gsap.to(prev, { asciiOn: 0, duration: 0.35, ease: "power2.in" });
-  }
+  // 어느 쪽으로 넘어가는지 — 한 칸 뒤면 앞으로, 아니면 뒤로
+  if (dir === undefined) dir = (i - focusIndex + N) % N === 1 ? 1 : -1;
+
   focusIndex = i;
   const tile = tiles[i];
-  tile.el.classList.add("is-focus");
-  gsap.to(tile, { asciiOn: 1, duration: 0.5, ease: "power2.out" });
+
+  // 자리가 한 칸씩 당겨졌으니 그만큼 되돌려놓고, 제자리로 미끄러지게 한다
+  layoutStrip();
+  pan.x = -dir * STRIP_PITCH;
+  panTarget.x = 0;
 
   const vi = tile.vi;
   setTint(VIDEOS[vi].tint);
@@ -751,14 +617,14 @@ function setFocus(i) {
   orbIndexEl.textContent = String(vi + 1).padStart(2, "0");
   orbCaptionName.textContent = tile.data.name;
 
-  // 가운데 오른쪽 레이블이 현재 영상 이름으로 갈아끼워진다
-  gsap.timeline()
-    .to(focusNameEl, { y: -12, opacity: 0, duration: 0.18, ease: "power2.in" })
-    .add(() => { focusNameEl.textContent = tile.data.name; })
-    .fromTo(focusNameEl, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.32, ease: "power3.out" });
+  // 화면이 한 번 꺼졌다 켜지고, 이름은 잡음에서 다시 잡힌다
+  crtOn(false);
+  gsap.set([featNameEl, featSlugEl], { y: 0, opacity: 1 });
+  scramble(featNameEl, tile.data.name, 0.5);
+  scramble(featSlugEl, slugOf(tile.data), 0.6);
 }
-tiles[focusIndex].el.classList.add("is-focus");
-tiles[focusIndex].asciiOn = 1;
+featNameEl.textContent = tiles[focusIndex].data.name;
+featSlugEl.textContent = slugOf(tiles[focusIndex].data);
 applyMarbleTheme(tiles[focusIndex].vi);
 hudIndexEl.textContent = indexLabel(tiles[focusIndex].vi);
 orbIndexEl.textContent = String(tiles[focusIndex].vi + 1).padStart(2, "0");
@@ -795,9 +661,9 @@ function setPill(name) {
   pillItems.forEach((b) => b.classList.toggle("is-active", b.dataset.screen === name));
 }
 
-/* 응축 연출의 재료 — 타일이 보이던 픽셀 그대로 잘라낸다 */
-function snapshot(tile) {
-  const src = tile.canvas;
+/* 응축 연출의 재료 — 큰 화면에 떠 있던 영상을 정사각으로 잘라낸다 */
+function snapshot(vi) {
+  const src = videoSrc[vi].canvas;
   const c = document.createElement("canvas");
   const side = Math.min(src.width, src.height);
   c.width = side;
@@ -815,7 +681,6 @@ function select() {
   if (locked || current !== "grid") return;
 
   const idx = focusIndex;
-  const chosen = tiles[idx];
 
   // 티커가 쓰던 값을 GSAP 이 이어받고, 티커는 멈춘다
   allTiles.forEach((el) => {
@@ -824,13 +689,14 @@ function select() {
   });
   locked = true;
 
-  const r = chosen.media.getBoundingClientRect();
+  // 응축은 큰 화면에서 시작한다
+  const r = featureEl.getBoundingClientRect();
   const p = toStage(r.left, r.top);
   const w = r.width / stageScale;
   const h = r.height / stageScale;
 
   morph.innerHTML = "";
-  morph.appendChild(snapshot(chosen));
+  morph.appendChild(snapshot(idx));
 
   setPill("orb");
 
@@ -838,14 +704,13 @@ function select() {
     onComplete: () => { locked = false; current = "orb"; },
   });
 
-  // 1. 고른 타일만 남고 나머지는 흩어진다
-  tl.to(chosen.el, { scale: 1.08, duration: 0.5, ease: "power2.out" }, 0);
-  allTiles.forEach((el) => {
-    if (el === chosen.el) return;
-    tl.to(el, {
+  // 1. 큰 화면만 남고 목록은 앞쪽부터 차례로 흩어진다
+  tl.to(featureEl, { scale: 1.08, duration: 0.5, ease: "power2.out" }, 0);
+  tiles.forEach((t) => {
+    tl.to(t.el, {
       opacity: 0, y: 60, scale: 0.9,
       duration: 0.5, ease: "power2.in",
-      delay: Math.abs(parseFloat(el.style.left) - chosen.cx) / 4000,
+      delay: Math.min(3, t.slot) * 0.07,
     }, 0);
   });
   tl.to(".grid-fade", { opacity: 0, duration: 0.4 }, 0);
@@ -853,7 +718,7 @@ function select() {
   // 2. 타일 → 구슬로 응축
   //    (tween 시작 직전 프레임에 초기값을 심어야 from 값이 제대로 잡힌다)
   tl.add(() => {
-    gsap.set(chosen.el, { visibility: "hidden" });
+    gsap.set([featureEl, featNameEl, featSlugEl], { autoAlpha: 0 });
     gsap.set(morph, {
       visibility: "visible", opacity: 1, filter: "none",
       x: p.x, y: p.y, width: w, height: h,
@@ -904,6 +769,8 @@ function select() {
 function resetArchive() {
   filmEl.pause();
   stopYt();
+  if (current === "garden") releaseGardenHand();   // 카메라 돌려받기
+  else startCamera();
   gsap.set([screenOrb, screenFilm, screenGarden], { autoAlpha: 0 });
   gsap.set(screenGrid, { autoAlpha: 1 });
   document.body.classList.remove("is-garden");
@@ -912,7 +779,17 @@ function resetArchive() {
 
   // 고른 타일은 선택할 때 숨겨뒀으므로 반드시 되살려야 한다
   allTiles.forEach((el) => gsap.set(el, { clearProps: "transform,opacity", visibility: "visible" }));
-  tiles.forEach((t) => { t.holdScale = 1; t.px = PIXEL_BASE; });
+  tiles.forEach((t) => { t.px = PIXEL_BASE; });
+  layoutStrip();
+  pan.x = 0;
+  panTarget.x = 0;
+  hoverSince = -1;
+  gsap.set(featureEl, { scale: 1, autoAlpha: 1 });
+  gsap.set([featNameEl, featSlugEl], { autoAlpha: 1, opacity: 1, y: 0 });
+  // 돌아올 때도 화면이 다시 켜진다
+  crtOn(true);
+  scramble(featNameEl, tiles[focusIndex].data.name, 0.7);
+  scramble(featSlugEl, slugOf(tiles[focusIndex].data), 0.8);
   gsap.set([".grid-fade", titlebar], { opacity: 1 });
   gsap.set(marbleEl, { scale: 1, opacity: 1 });
   gsap.set(focusNameEl, { opacity: 1, y: 0 });
@@ -1113,6 +990,7 @@ async function toFilm(segment) {
   if (locked) return;
   if (!hasFilm) return back();          // 본편이 없는 저장소면 아카이브로
   const from = current;
+  if (from === "garden") releaseGardenHand();   // 카메라 돌려받기
   await transition(async () => {
     gsap.set([screenGrid, screenOrb, screenGarden], { autoAlpha: 0 });
     gsap.set(screenFilm, { autoAlpha: 1 });
@@ -1162,6 +1040,8 @@ async function toGarden() {
     document.body.classList.add("is-garden");
     current = "garden";
     try { gardenFrame.contentWindow.focus(); } catch {}
+    prepareGarden();          // 커서 모양 맞추기 (이미 돼 있으면 건너뜀)
+    enableGardenHand();       // 손 조작 켜고 카메라 넘겨주기
   });
 }
 
@@ -1192,7 +1072,21 @@ function prepareGarden() {
 
   const st = doc.createElement("style");
   st.id = "yk-patch";
-  st.textContent = "#outro{display:none !important}";
+  st.textContent = `
+    #outro{display:none !important}
+    /* 손끝 커서를 인터랙션 1 과 같은 모양·색으로 */
+    .hand-cursor{width:86px !important;height:86px !important;margin:-43px 0 0 -43px !important}
+    .hand-cursor .ring{
+      background: conic-gradient(#1eff66 calc(var(--p,0) * 1turn), rgba(255,255,255,.28) 0) !important;
+      -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%) !important;
+              mask: radial-gradient(circle, transparent 64%, #000 66%) !important;
+      filter: drop-shadow(0 0 10px #1eff66);
+    }
+    .hand-cursor .dot{
+      inset:46% !important;
+      background:#fff !important;
+      box-shadow:0 0 12px #1eff66, 0 0 26px rgba(30,255,102,.35) !important;
+    }`;
   (doc.head || doc.documentElement).appendChild(st);
 
   // 버튼을 누르면 정원의 2.3초 지연을 기다리지 않고 바로 넘어간다
@@ -1200,6 +1094,28 @@ function prepareGarden() {
     const b = doc.getElementById(id);
     if (b) b.addEventListener("click", () => toFilmTail());
   });
+}
+
+/* 정원의 손 조작을 켠다.
+   정원은 자기 카메라를 따로 여므로, 그 전에 이쪽 카메라를 놓아준다. */
+function enableGardenHand() {
+  stopCamera();
+  let doc;
+  try { doc = gardenFrame.contentDocument; } catch { return; }
+  const b = doc && doc.getElementById("btn-hand");
+  if (!b) return;
+  if (b.getAttribute("aria-pressed") !== "true") {
+    setTimeout(() => b.click(), 300);      // 카메라가 완전히 놓인 뒤에
+  }
+}
+
+/* 정원을 나오면 손 조작을 끄고 카메라를 돌려받는다 */
+function releaseGardenHand() {
+  let doc;
+  try { doc = gardenFrame.contentDocument; } catch { doc = null; }
+  const b = doc && doc.getElementById("btn-hand");
+  if (b && b.getAttribute("aria-pressed") === "true") b.click();
+  setTimeout(() => startCamera(), 400);
 }
 gardenFrame.addEventListener("load", prepareGarden);
 
@@ -1230,10 +1146,8 @@ pillItems.forEach((b) => {
 
 window.addEventListener("keydown", (e) => {
   if (locked) return;
-  if (e.key === "ArrowRight") setFocus(Math.min(tiles.length - 1, focusIndex + 1));
-  if (e.key === "ArrowLeft") setFocus(Math.max(0, focusIndex - 1));
-  if (e.key === "ArrowDown") setFocus(Math.min(tiles.length - 1, focusIndex + GRID_COLS));
-  if (e.key === "ArrowUp") setFocus(Math.max(0, focusIndex - GRID_COLS));
+  if (e.key === "ArrowRight") setFocus((focusIndex + 1) % N, 1);
+  if (e.key === "ArrowLeft") setFocus((focusIndex - 1 + N) % N, -1);
   if (e.key === "Enter" || e.key === " ") advance();
   if (e.key === "Escape") back();
 });
@@ -1260,6 +1174,14 @@ const hold = { p: 0 };
 let holding = false;
 let holdTween = null;
 
+/* 목록 첫 칸의 판정 범위 — 썸네일과 그 밑 이름까지 */
+let hoverSince = -1;
+
+function overNextTile(sx, sy) {
+  return sx > STRIP_LEFT - HOVER_PAD && sx < STRIP_LEFT + THUMB_W + HOVER_PAD
+      && sy > STRIP_TOP - HOVER_PAD && sy < STRIP_TOP + THUMB_H + 76;
+}
+
 function moveCursor(sx, sy) {
   cursorPos.x = sx;
   cursorPos.y = sy;
@@ -1268,10 +1190,23 @@ function moveCursor(sx, sy) {
 
   const nx = sx / STAGE_W - 0.5;
   const ny = sy / STAGE_H - 0.5;
-  if (!panLock) {
-    panTarget.x = gsap.utils.clamp(-PAN_X, PAN_X, -nx * 2 * PAN_X);
-    panTarget.y = gsap.utils.clamp(-PAN_Y, PAN_Y, -ny * 2 * PAN_Y);
+
+  // 목록 첫 칸(= 다음 영상) 위에 손을 얹으면 그 영상으로 넘어간다.
+  // 그 자리에 계속 두면 HOVER_STEP 마다 한 칸씩 이어서 넘어간다.
+  if (current === "grid" && !panLock && !locked && ready) {
+    if (overNextTile(sx, sy)) {
+      const now = performance.now();
+      // 앞 칸이 아직 미끄러지는 중이면 기다린다 (연달아 튀는 걸 막는다)
+      const settled = Math.abs(pan.x) < 4;
+      if (settled && (hoverSince < 0 || now - hoverSince > HOVER_STEP * 1000)) {
+        hoverSince = now;
+        advanceFocus();
+      }
+    } else {
+      hoverSince = -1;
+    }
   }
+
   auraX(-nx * 70);
   auraY(-ny * 50);
 
@@ -1289,21 +1224,13 @@ function startHold() {
   gsap.to(cursorEl, { scale: 1.3, duration: 0.3, ease: "back.out(3)" });
   if (current === "orb") btnBack.classList.add("is-armed");
 
-  // 누르고 있는 동안 그 영상만 커지고 또렷해진다 — 뭘 고르는지 보이도록
+  // 누르고 있는 동안에는 목록이 더 넘어가지 않게 세워둔다
   if (current === "grid") {
-    const tile = tiles[focusIndex];
-    // 커지는 동작 자체도 천천히 — 게이지가 차는 동안 계속 부풀어 오른다
-    gsap.to(tile, { holdScale: 1.65, duration: HOLD.time * 0.7, ease: "power2.out" });
-
-    // 가장자리에서 커지면 화면 밖으로 잘린다 → 고른 타일을 가운데로 데려온다
     panLock = true;
     panRate = PAN_RATE_SNAP;
-    panTarget.x = PLANE_W / 2 - tile.cx;
-    panTarget.y = PLANE_H / 2 - tile.cy;
-    // 해상도는 한 번에 올린다 (부드럽게 보간하면 캔버스를 계속 다시 잡느라 끊긴다)
-    tile.px = PIXEL_HOLD;
-    // 커진 타일 위로 중앙 레이블이 지나가지 않게 잠깐 물러난다
-    gsap.to(titlebar, { opacity: 0.12, duration: 0.4, ease: "power2.out" });
+    panTarget.x = 0;
+    // 큰 화면이 천천히 다가온다
+    gsap.to(featureEl, { scale: 1.04, duration: HOLD.time * 0.8, ease: "power2.out" });
   }
   // 게이지는 언제나 빈 상태에서 시작한다.
   // (직전에 남은 진행률을 이어받으면 순식간에 다 찬 것처럼 보인다)
@@ -1326,13 +1253,12 @@ function endHold(done) {
   btnBack.classList.remove("is-armed");
   gsap.to(cursorEl, { scale: 1, duration: 0.4, ease: "power2.out" });
 
-  const tile = tiles[focusIndex];
   if (!done) {
-    gsap.to(tile, { holdScale: 1, duration: 0.35, ease: "power2.out" });
-    tile.px = PIXEL_BASE;
-    // 다시 커서를 따라가게
+    gsap.to(featureEl, { scale: 1, duration: 0.4, ease: "power2.out" });
+    // 다시 목록이 넘어갈 수 있게. 손을 놓자마자 튀지 않도록 한 박자 쉰다.
     panLock = false;
     panRate = PAN_RATE_FOLLOW;
+    hoverSince = performance.now();
     // 구슬 화면에서는 질문이 숨어 있어야 하므로 그리드일 때만 되돌린다
     if (current === "grid") gsap.to(titlebar, { opacity: 1, duration: 0.4, ease: "power2.out" });
   }
@@ -1403,14 +1329,23 @@ function reveal() {
   tl.set(baselineFill, { transformOrigin: "0% 50%" });
   tl.to(loaderEl, { autoAlpha: 0, duration: 0.6, ease: "power2.inOut" }, "-=0.35");
 
-  // 타일이 가운데부터 바깥으로 차례차례 솟아오른다
+  // 큰 화면이 브라운관처럼 켜지고, 이름은 잡음에서 잡힌다
+  tl.fromTo(featureEl,
+    { opacity: 0, y: 0 },
+    { opacity: 1, duration: 0.9, ease: "power3.out" }, "-=0.35");
+  tl.add(() => {
+    crtOn(true);
+    gsap.set([featNameEl, featSlugEl], { opacity: 1, y: 0 });
+    scramble(featNameEl, tiles[focusIndex].data.name, 0.9);
+    scramble(featSlugEl, slugOf(tiles[focusIndex].data), 1.05);
+  }, "<");
   tl.fromTo(allTiles,
-    { opacity: 0, y: 90 },
+    { opacity: 0, y: 70 },
     {
-      opacity: 1, y: 0, duration: 1.1, ease: "power3.out",
-      stagger: (i, el) => Math.abs(parseFloat(el.style.left) + TILE_W / 2 - PLANE_W / 2) / 2400,
+      opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
+      stagger: 0.06,
       clearProps: "opacity,transform",
-    }, "-=0.35");
+    }, "-=0.7");
 
   // 굵은 픽셀 노이즈가 잘게 부서지면서 영상이 드러난다
   tl.to(tiles, {
@@ -1475,6 +1410,34 @@ const camCanvas = document.getElementById("camCanvas");
 const camCtx = camCanvas.getContext("2d");
 const camStatus = document.getElementById("camStatus");
 
+/* 카메라는 정원(자체 손 조작)과 번갈아 쓴다. 한쪽이 잡고 있으면
+   다른 쪽이 못 여는 기기가 있어서, 넘길 때 확실히 놓아준다. */
+let camStream = null;
+
+async function startCamera() {
+  if (camStream) return true;
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: "user" },
+      audio: false,
+    });
+    camVideo.srcObject = camStream;
+    await camVideo.play();
+    return true;
+  } catch (e) {
+    camStream = null;
+    return false;
+  }
+}
+
+function stopCamera() {
+  if (!camStream) return;
+  camStream.getTracks().forEach((t) => t.stop());
+  camStream = null;
+  camVideo.srcObject = null;
+  handPos.x = null;
+}
+
 let handLandmarker = null;
 let handActive = false;
 let lastVideoTime = -1;
@@ -1495,7 +1458,7 @@ const TIPS = [4, 8, 12, 16, 20];
 
 async function initHands() {
   try {
-    camStatus.textContent = "loading model";
+    camStatus.textContent = "인식 준비 중";
 
     const vision = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
@@ -1512,20 +1475,15 @@ async function initHands() {
       minTrackingConfidence: 0.5,
     });
 
-    camStatus.textContent = "allow camera";
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 640, height: 480, facingMode: "user" },
-      audio: false,
-    });
-    camVideo.srcObject = stream;
-    await camVideo.play();
+    camStatus.textContent = "카메라를 허용해 주세요";
+    await startCamera();
 
     camStatus.classList.add("is-hidden");
     requestAnimationFrame(trackLoop);
   } catch (err) {
     console.warn("[hand] 초기화 실패:", err);
     camStatus.classList.remove("is-hidden");
-    camStatus.innerHTML = "camera unavailable<br />use mouse — hold to select";
+    camStatus.innerHTML = "카메라를 쓸 수 없습니다<br />마우스를 움직이고 길게 누르세요";
   }
 }
 
