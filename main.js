@@ -1181,6 +1181,7 @@ const auraY = gsap.quickTo("#aura", "y", { duration: FOLLOW.aura, ease: "power2"
 const hold = { p: 0 };
 let holding = false;
 let holdTween = null;
+let holdBy = null;              // "hand" 또는 "mouse" — 지금 누가 누르고 있는지
 
 /* 목록 첫 칸의 판정 범위 — 썸네일과 그 밑 이름까지 */
 let hoverSince = -1;
@@ -1231,6 +1232,7 @@ function drawHold() {
 function startHold(byMouse) {
   if (holding || locked || !ready) return;
   holding = true;
+  holdBy = byMouse ? "mouse" : "hand";
   const wait = byMouse ? HOLD.mouse : HOLD.time;
   gsap.to(cursorEl, { scale: 1.3, duration: 0.3, ease: "back.out(3)" });
   if (current === "orb") btnBack.classList.add("is-armed");
@@ -1261,6 +1263,7 @@ function startHold(byMouse) {
 function endHold(done) {
   if (!holding) return;
   holding = false;
+  holdBy = null;
   btnBack.classList.remove("is-armed");
   gsap.to(cursorEl, { scale: 1, duration: 0.4, ease: "power2.out" });
 
@@ -1288,7 +1291,21 @@ window.addEventListener("mousemove", (e) => {
   moveCursor(p.x, p.y);
 });
 window.addEventListener("mousedown", () => startHold(true));
-window.addEventListener("mouseup", () => endHold(false));
+window.addEventListener("mouseup", () => { if (holdBy === "mouse") endHold(false); });
+
+/* 큰 화면을 그냥 한 번 눌러도 골라진다.
+   손으로는 꾹 눌러야 하지만, 마우스로는 클릭이 자연스럽다. */
+featureEl.addEventListener("click", () => select());
+document.querySelector(".feature__label").addEventListener("click", () => select());
+
+/* 목록의 칸을 누르면 그 영상이 큰 화면으로 올라온다 */
+tiles.forEach((t, i) => {
+  t.el.addEventListener("click", () => {
+    if (locked || current !== "grid") return;
+    hoverSince = performance.now();       // 눌러서 옮긴 뒤 곧바로 또 넘어가지 않게
+    setFocus(i, 1);                       // 목록은 언제나 앞으로 흐른다
+  });
+});
 
 /* ============================================================
    로딩
@@ -1616,12 +1633,13 @@ function trackLoop() {
       const pinching = isPinching(lms);
       if (!pinching) pinchLatch = false;          // 한 번 놓아야 다음 선택이 가능
       if (settled && pinching && !pinchLatch) startHold();
-      else if (!pinching) endHold(false);
+      // 꼬집지 않았으면 놓은 것이다. 단, 마우스로 누르고 있는 건 건드리지 않는다.
+      else if (!pinching && holdBy === "hand") endHold(false);
     } else {
       if (handActive) gsap.to(cursorEl, { opacity: 0, duration: 0.4 });
       handActive = false;
       handPos.x = null;                   // 손이 사라지면 다음엔 그 자리에서 새로 시작
-      endHold(false);
+      if (holdBy === "hand") endHold(false);
     }
   }
   requestAnimationFrame(trackLoop);
