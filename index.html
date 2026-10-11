@@ -26,21 +26,26 @@
 
     <!-- ============ 영상 그리드 ============ -->
     <section class="screen screen--grid" id="screenGrid">
-      <!-- 지금 고른 영상 — 문자 매트릭스로 다시 그려 CRT 처럼 휘어 보인다 -->
-      <div class="feature" id="feature">
-        <canvas class="feature__pix" id="featPix"></canvas>
-        <canvas class="feature__ascii" id="featAscii"></canvas>
-      </div>
-      <div class="feature__label">
-        <p class="feature__name" id="featName">낯선 타인의 온기</p>
-        <p class="feature__slug" id="featSlug">warmth from a stranger</p>
+      <!-- 감각의 파편들이 감겨 도는 세 겹 고리. 파편(.card)은 main.js 가 채운다 -->
+      <div class="spiral" id="spiral">
+        <div class="spiral__rig" id="spiralRig"></div>
       </div>
 
-      <!-- 오른쪽으로 이어지는 목록 -->
-      <div class="strip-wrap">
-        <div class="strip" id="strip"></div>
+      <!-- 손이 좌우 끝에 가면 그쪽이 밝아진다 — 돌릴 수 있다는 표시 -->
+      <div class="spiral__edge spiral__edge--l" id="edgeL"></div>
+      <div class="spiral__edge spiral__edge--r" id="edgeR"></div>
+
+      <!-- 정면 파편 위에 얹히는 문자 매트릭스 화면. 정면이 바뀔 때마다 그 파편으로 옮겨 간다 -->
+      <div class="feature" id="feature">
+        <div class="feature__in" id="featIn">
+          <canvas class="feature__pix" id="featPix"></canvas>
+          <canvas class="feature__ascii" id="featAscii"></canvas>
+        </div>
       </div>
-      <div class="grid-fade"></div>
+      <div class="feature__label">
+        <p class="feature__name" id="featName">서늘한 새벽공기</p>
+        <p class="feature__slug" id="featSlug">the cool before dawn</p>
+      </div>
     </section>
 
     <!-- ============ 구슬 ============ -->
@@ -101,6 +106,10 @@
 
     <!-- 장면이 바뀔 때 덮는 검정 — 모든 전환은 이걸로 페이드 -->
     <div class="fade" id="fade"></div>
+    <!-- 인터랙션 1 → 영상 1 : 브라운관이 꺼지며 남는 빛의 선과 점 -->
+    <div class="crt-line" id="crtLine"></div>
+    <!-- 정원 → 영상 2 : 구슬에서 퍼지는 빛 -->
+    <div class="bloom" id="bloom"></div>
 
     <!-- ============ 항상 떠 있는 요소들 ============ -->
 
@@ -133,13 +142,10 @@
       </p>
     </div>
 
-    <!-- 하단 필 내비게이션 -->
-    <nav class="pillnav" id="pillnav">
-      <button class="pillnav__item is-active" data-screen="grid">자원 아카이브</button>
-      <button class="pillnav__item" data-screen="orb">구슬</button>
-    </nav>
-
     <!-- 손 인식 카메라 -->
+    <!-- 손 인식 상자 위의 설명 (구슬빛 정원과 같은 모양) — 아카이브에서만 보인다 -->
+    <p class="camera-hint" id="cameraHint">손을 화면 좌우 끝으로 가져가면 그쪽으로 돌고, 위아래로 움직이면 고리가 따라 오르내립니다. 가운데 파편이 마음에 들면 엄지와 검지를 모아 집은 채로 잠시 기다리세요.</p>
+
     <div class="camera-box" id="cameraBox">
       <video id="cam" playsinline muted></video>
       <canvas id="camCanvas" width="600" height="382"></canvas>
@@ -165,9 +171,21 @@
     </div>
 
     <!-- ============ 로딩 ============ -->
+    <!-- 검은 화면에 작은 글씨가 한 자씩 타이핑되고, 다 차면 테두리가 번지며 사이트가 밝아진다 -->
     <div class="loader" id="loader">
-      <p class="loader__label loader__label--l">자원 불러오는 중</p>
-      <p class="loader__label loader__label--r"><span id="loaderPct">000</span>%</p>
+      <i class="loader__corner loader__corner--tl"></i>
+      <i class="loader__corner loader__corner--tr"></i>
+      <i class="loader__corner loader__corner--bl"></i>
+      <i class="loader__corner loader__corner--br"></i>
+      <div class="loader__row">
+        <p class="loader__cell loader__cell--1" data-text="감각을 복원하는 중..."></p>
+        <p class="loader__cell loader__cell--pct" id="loaderPct"></p>
+        <p class="loader__cell loader__cell--2" data-text="archive://yagwang"></p>
+        <p class="loader__cell loader__cell--3" data-text="夜光"></p>
+        <p class="loader__cell loader__cell--4" data-text="2026"></p>
+      </div>
+      <p class="loader__cell loader__code" data-text="YK-2087"></p>
+      <div class="loader__frame" id="loaderFrame"></div>
     </div>
 
   </div>

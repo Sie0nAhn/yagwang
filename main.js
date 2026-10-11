@@ -79,21 +79,31 @@ gsap.ticker.lagSmoothing(1000, 33);
    반응 속도 — 클수록 느긋하게 따라온다
    ============================================================ */
 const FOLLOW = {
-  hand: 0.07,      // 손 좌표를 매 프레임 얼마나 반영할지 (작을수록 손떨림이 죽는다)
-  cursor: 0.9,     // 커서가 따라오는 시간(초)
+  cursor: 0.45,    // 커서가 따라오는 시간(초) — 손 떨림은 아래 HAND 필터가 먼저 걸러 준다
   pan: 3.4,        // 목록이 흘러가는 시간(초)
   aura: 4.2,       // 배경이 밀려가는 시간(초)
   dwell: 320,      // 이만큼 머물러야 다른 영상으로 넘어간다(ms)
 };
 
+/* 손 인식 — 잠깐 놓치거나 떨려도 끊기지 않게 */
+const HAND = {
+  lostGrace: 320,  // 이 시간(ms) 동안 손이 안 잡혀도 마지막 손을 그대로 둔다 (한두 프레임 놓침에 커서·게이지가 끊기지 않게)
+  pinchIn: 70,     // 이만큼(ms) 계속 꼬집어야 누르기 시작 — 스치듯 오인되는 것을 막는다
+  pinchOut: 170,   // 이만큼(ms) 계속 펴야 놓은 것으로 — 한 프레임 흔들림에 게이지가 끊기지 않게
+  detect: 0.4,     // 손 찾기 기준 (낮을수록 어두운 전시장에서도 잘 잡힌다)
+  // 커서 떨림 거르기 (One Euro 필터) — 가만히 있을 땐 단단하게, 빨리 움직일 땐 바로 따라온다
+  calm: 1.0,       // 멈춰 있을 때 걸러 내는 정도 (Hz, 낮을수록 단단)
+  agile: 3.0,      // 빨리 움직일수록 얼마나 바로 따라올지
+};
+
 /* 꾹 눌러 고르기 */
 const HOLD = {
-  time: 2.4,       // 게이지가 다 차는 데 걸리는 시간(초)
+  time: 1.6,       // 게이지가 다 차는 데 걸리는 시간(초) — 손으로 오래 버티기 힘들어 줄였다
   mouse: 1.1,      // 마우스로 누를 때는 잘못 눌릴 일이 없으니 짧게
   // 실측: 편 손 0.76 / 반쯤 오므린 손 0.28 / 실제로 꼬집으면 0.03
-  pinchOn: 0.22,   // 엄지-검지가 이보다 가까워야 '꼬집었다'
-  pinchOff: 0.40,  // 이보다 벌어지면 놓은 것
-  grace: 700,      // 손이 처음 잡히고 이 시간 동안은 꼬집어도 무시(ms)
+  pinchOn: 0.28,   // 엄지-검지가 이보다 가까워야 '꼬집었다' — 완전히 붙이지 않아도 되게
+  pinchOff: 0.45,  // 이보다 벌어지면 놓은 것
+  grace: 500,      // 손이 처음 잡히고 이 시간 동안은 꼬집어도 무시(ms)
 };
 
 /* ============================================================
@@ -246,37 +256,76 @@ function initAmbient() {
 initAmbient();
 
 /* ============================================================
-   자원 아카이브 — 왼쪽 큰 화면 + 오른쪽으로 이어지는 목록
-   ============================================================ */
-const FEAT_W = 580;          // 큰 화면 — 7:5. style.css 의 .feature 와 같아야 한다
-const FEAT_H = 414;
-const THUMB_W = 372;         // 목록 썸네일
-const THUMB_H = 209;
-const STRIP_PITCH = 420;     // 썸네일 + 간격
-const STRIP_LEFT = 760;      // 목록 첫 칸의 화면 위치 (style.css 의 .strip-wrap 과 같아야 한다)
-const STRIP_TOP = 238;
+   자원 아카이브 — 감각의 파편들이 세 겹 고리로 돈다 (k95.it 의 RINGS)
 
-const HOVER_PAD = 26;        // 첫 칸 판정에 주는 여유
-const HOVER_STEP = 1.1;      // 첫 칸에 계속 얹고 있을 때 다음 영상으로 넘어가는 간격(초)
-const SLIDE_TIME = 0.55;     // 목록이 한 칸 미끄러지는 시간
+   위·가운데·아래 세 고리가 축(구슬)을 감싸고 저절로 천천히 돈다.
+   가운데 고리의 정면에 온 파편이 문자 매트릭스 + 브라운관 화면으로 켜지고,
+   손(마우스)을 화면 좌우 끝으로 가져가면 그쪽으로 빨리 돈다.
+   ============================================================ */
+const FEAT_W = 580;          // 정면 파편의 문자 매트릭스 해상도 — 7:5
+const FEAT_H = 414;
+
+/* 파편 한 장 — 7:5. 정면에 왔을 때의 기준 크기이고, 뒤로 갈수록 BACK_SCALE 까지 줄어든다.
+   (style.css 의 .card 와 같아야 한다) */
+const CARD_W = 280;
+const CARD_H = 200;
+const BACK_SCALE = 0.42;
+const FRONT_BOOST = 1.45;    // 가운데 고리 정면에 오면 이만큼 더 커진다 (문자 화면이 작아 보이지 않게)
+
+/* 고리 — 레퍼런스(1440 화면)를 재서 맞춘 값 */
+const PER_RING = N;          // 한 고리에 아홉 장 (영상 아홉 개) → 40° 간격
+const RINGS = 3;             // 위 · 가운데 · 아래
+const CARDS = PER_RING * RINGS;
+const MID = PER_RING;        // 가운데 고리의 첫 파편 번호
+const STEP_DEG = 360 / PER_RING;
+const RADIUS = 675;          // 고리 반지름(px) — 옆으로 돌아간 파편이 화면 양 끝에 걸린다
+const RING_GAP = 400;        // 고리 사이 높이(px) — 위아래 고리는 뒤쪽 반만 아치로 보인다
+const RING_SHIFT = [0.5, 0, 0.5];   // 위·아래 고리는 반 칸 엇갈려 선다
+const VIEW_TILT = 0;         // 가운데 고리 높이에서 정면으로 본다
+
+const AUTO = 0.22;           // 저절로 도는 빠르기 (초당 장 수) — 한 바퀴 약 40초
+const LIFT = 170;            // 손·마우스를 위아래 끝까지 움직였을 때 고리가 따라 오르내리는 거리(px)
+                             // (손이 위로 가면 고리도 위로. 반대로 하고 싶으면 음수로)
+
+/* 가운데 구슬 — 레퍼런스의 가운데 조형물 자리. 축에 서서 정면 파편 뒤에 숨고,
+   아래쪽만 파편 밑으로 삐져나온다. (가운데 고리 기준 세로 위치, 아래로 +) */
+const CORE_Y = 118;
+
+/* 바탕 그리드 — 고리 뒤를 둘러싼 원통 벽 */
+const GRID_R = 1600;         // 원통 반지름(px)
+const GRID_PANELS = 9;       // 뒤쪽 반원을 이루는 판 수 (보이는 만큼만)
+const GRID_STEP = 15;        // 판 하나가 차지하는 각
+const GRID_CELL = 105.3;     // 칸 크기(px) — 판 폭의 1/4
+
+/* 손·마우스로 돌리기.
+   화면 가운데에서는 저절로 천천히 돌고, 좌우 끝으로 갈수록 그쪽으로 빨리 돈다.
+   (가운데를 넓게 비워야 파편을 마우스로 누르러 가도 고리가 도망가지 않는다) */
+const SPIN = {
+  dead: 0.40,      // 가운데에서 이만큼(화면 폭 비율)은 저절로 도는 구간
+  max: 1.8,        // 끝까지 갔을 때 초당 넘어가는 장 수
+  ramp: 0.35,      // 속도가 붙는 시간(초)
+  settle: 0.5,     // 꾹 누르거나 파편을 눌렀을 때 제자리에 맞춰 서는 시간(초)
+};
 
 const PIXEL_BASE = 2.4;      // 썸네일 알갱이 굵기
 const PIXEL_BOOT = 30;       // 로딩 중에는 아주 굵게
 
-/* 큰 화면을 이루는 문자 매트릭스 */
+/* 정면 파편을 이루는 문자 매트릭스 */
 const ASCII_CELL = 8;                        // 글자 한 칸(px) — 작을수록 촘촘
 const ASCII_RAMP = " .·:~=+*xX%#@@";         // 어두움 → 밝음
 const BARREL = 0.11;                         // 화면이 휘는 정도 (0 이면 평평)
 const ASCII_SAT = 2.1;                       // 글자 색의 채도 (1 이면 원본)
-const ASCII_GAIN = 1.5;                      // 글자 색의 밝기
+const ASCII_GAIN = 1.85;                     // 글자 색의 밝기
 const ASCII_GAMMA = 0.82;                    // 1 보다 작으면 밝은 쪽이 더 살아난다
-const ASCII_FLOOR = 0.07;                    // 이보다 어두운 칸은 아예 비워 검정을 남긴다
+const ASCII_FLOOR = 0.035;                   // 이보다 어두운 칸은 아예 비워 검정을 남긴다
 
 /* 영상 원본을 옮겨 담을 작은 캔버스 (프레임당 영상당 한 번만) */
 const SRC_W = 288;
 const SRC_H = 216;
 
-const stripEl = document.getElementById("strip");
+const rigEl = document.getElementById("spiralRig");
+const edgeL = document.getElementById("edgeL");
+const edgeR = document.getElementById("edgeR");
 const featPix = document.getElementById("featPix");
 const featAscii = document.getElementById("featAscii");
 const featCtx = featPix.getContext("2d", { alpha: false });
@@ -284,8 +333,9 @@ const featAsciiCtx = featAscii.getContext("2d");
 const featNameEl = document.getElementById("featName");
 const featSlugEl = document.getElementById("featSlug");
 const featureEl = document.getElementById("feature");
+const featInEl = document.getElementById("featIn");   // 문자 화면 본체 (휜 만큼 서서히 떠오른다)
 
-const tiles = [];
+const tiles = [];            // 고리 위 파편들 (CARDS 장)
 
 /* 실제 영상 요소는 영상 개수만큼만 */
 const videoPool = VIDEOS.map((data) => {
@@ -294,7 +344,7 @@ const videoPool = VIDEOS.map((data) => {
   v.muted = true;
   v.loop = true;
   v.playsInline = true;
-  v.preload = "metadata";
+  v.preload = "auto";          // 멈춰 있는 영상도 첫 프레임은 있어야 뒤쪽 파편이 비지 않는다
   v.setAttribute("muted", "");
   v.setAttribute("playsinline", "");
   v.className = "video-source";
@@ -309,12 +359,13 @@ const videoSrc = videoPool.map(() => {
   return { canvas: c, ctx: c.getContext("2d", { alpha: false }), ready: false };
 });
 
+/* 화면 앞쪽에 걸린 영상만 새 프레임을 뜬다. 뒤쪽은 마지막 프레임 그대로. */
+const liveVideo = new Array(N).fill(true);
+
 function updateVideoSources() {
   videoPool.forEach((v, i) => {
     const s = videoSrc[i];
-    if (!tiles[i] || !tiles[i].visible || v.readyState < 2 || !v.videoWidth) {
-      if (i !== focusIndex) { s.ready = s.ready && false; return; }
-    }
+    if (!liveVideo[i] && i !== focusIndex && s.ready) return;   // 첫 프레임은 한 번 떠 둔다
     if (v.readyState < 2 || !v.videoWidth) { s.ready = false; return; }
 
     // 세로 영상(9:16)이라 가로 프레임에 맞춰 가운데를 잘라 쓴다
@@ -328,80 +379,252 @@ function updateVideoSources() {
   });
 }
 
-/* ASCII 샘플링용 스크래치 */
+/* ASCII 샘플링용 스크래치 (워커를 못 쓰는 브라우저에서만) */
 const sampleCv = document.createElement("canvas");
 const sampleCtx = sampleCv.getContext("2d", { willReadFrequently: true });
 
-/* ── 목록 만들기 ─────────────────────────────────── */
-VIDEOS.forEach((data, i) => {
-  const el = document.createElement("div");
-  el.className = "strip__item";
-  el.innerHTML =
-    `<canvas class="strip__thumb"></canvas>` +
-    `<p class="strip__name">${data.name}</p>` +
-    `<p class="strip__slug">${data.en}</p>`;
+/* ── 문자 화면용 픽셀 읽기 — 별도 스레드(워커)에서 ───────────
+   영상 픽셀을 읽어 오는 순간(getImageData) 그래픽 처리가 끝나길 기다리느라
+   메인 스레드가 15~30ms 씩 멈췄다. 이게 렉의 대부분이었다.
+   읽기를 워커로 넘기면 메인은 멈추지 않고, 워커가 돌려준 가장 최근 픽셀로 글자를 찍는다.
+   (워커를 못 쓰는 브라우저면 예전처럼 메인에서 읽는다) */
+const asciiSample = { data: null, cols: 0, rows: 0, busy: false, since: 0, worker: null };
+try {
+  if (typeof OffscreenCanvas !== "undefined" && typeof createImageBitmap === "function") {
+    const code = `
+      let cv = null, g = null;
+      onmessage = (e) => {
+        const { bmp, cols, rows } = e.data;
+        if (!cv || cv.width !== cols || cv.height !== rows) {
+          cv = new OffscreenCanvas(cols, rows);
+          g = cv.getContext("2d", { willReadFrequently: true });
+        }
+        g.drawImage(bmp, 0, 0, cols, rows);
+        bmp.close();
+        const d = g.getImageData(0, 0, cols, rows).data;
+        postMessage({ buf: d.buffer, cols, rows }, [d.buffer]);
+      };`;
+    const w = new Worker(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
+    w.onmessage = (e) => {
+      asciiSample.data = new Uint8ClampedArray(e.data.buf);
+      asciiSample.cols = e.data.cols;
+      asciiSample.rows = e.data.rows;
+      asciiSample.busy = false;
+    };
+    w.onerror = () => { asciiSample.worker = null; asciiSample.busy = false; };
+    asciiSample.worker = w;
+  }
+} catch (e) { asciiSample.worker = null; }
 
-  const cv = el.querySelector(".strip__thumb");
-  stripEl.appendChild(el);
+/* 워커에 다음 그림을 보낸다. 한 번에 하나만 — 밀리면 건너뛴다. */
+function requestSample(srcCanvas, cols, rows) {
+  const now = performance.now();
+  if (asciiSample.busy && now - asciiSample.since < 500) return;   // 0.5초 넘게 안 오면 다시 보낸다
+  asciiSample.busy = true;
+  asciiSample.since = now;
+  createImageBitmap(srcCanvas, { resizeWidth: cols, resizeHeight: rows, resizeQuality: "low" })
+    .then((bmp) => {
+      if (asciiSample.worker) asciiSample.worker.postMessage({ bmp, cols, rows }, [bmp]);
+      else { bmp.close(); asciiSample.busy = false; }
+    })
+    .catch(() => { asciiSample.busy = false; });
+}
+
+/* ── 바탕 그리드 ─────────────────────────────────── */
+/* 뒤쪽 반원만 판을 세운다. 앞쪽은 카메라 뒤라 보이지 않는다.
+   판을 돌리는 대신 무늬를 옆으로 밀어서 원통이 도는 것처럼 보이게 한다. */
+const GRID_W = 2 * GRID_R * Math.tan((GRID_STEP / 2) * Math.PI / 180);
+const gridPanels = [];
+for (let i = 0; i < GRID_PANELS; i++) {
+  const a = (i - (GRID_PANELS - 1) / 2) * GRID_STEP;
+  const el = document.createElement("div");
+  el.className = "grid-panel";
+  el.style.width = (GRID_W + 2).toFixed(1) + "px";            // 이음매가 벌어지지 않게 1px 씩 겹친다
+  el.style.marginLeft = (-(GRID_W + 2) / 2).toFixed(1) + "px";
+  el.style.backgroundSize = `${GRID_CELL}px ${GRID_CELL}px`;
+  el.style.transform = `rotateY(${a}deg) translateZ(${-GRID_R}px)`;
+  rigEl.appendChild(el);
+  gridPanels.push(el);
+}
+
+/* ── 가운데 구슬 ─────────────────────────────────── */
+/* 고리의 축에 떠 있다. 파편들은 이 구슬을 감고 돌고, 고르면 이 구슬이 된다.
+   색은 앞에 나온 파편을 따라 바뀐다 (applyMarbleTheme). */
+const coreEl = document.createElement("div");
+coreEl.className = "core";
+coreEl.innerHTML =
+  `<div class="core__glow"></div>` +
+  `<div class="marble core__marble">` +
+  `<div class="marble__body"></div><div class="marble__swirl"></div>` +
+  `<div class="marble__swirl marble__swirl--slow"></div><div class="marble__shade"></div>` +
+  `<div class="marble__spec"></div><div class="marble__rim"></div></div>`;
+rigEl.appendChild(coreEl);
+const core = { bob: 0 };
+gsap.to(core, { bob: 1, duration: 2.6, ease: "sine.inOut", repeat: -1, yoyo: true });
+
+/* ── 파편 만들기 ─────────────────────────────────── */
+/* 가운데 고리는 영상 순서 그대로, 위·아래 고리는 네 칸씩 밀어서 위아래로 같은 영상이 겹치지 않게 */
+for (let k = 0; k < CARDS; k++) {
+  const ring = Math.floor(k / PER_RING);
+  const i = k % PER_RING;
+  const vi = (i + (ring - 1) * 4 + N * 2) % N;
+  const el = document.createElement("div");
+  el.className = "card";
+  el.innerHTML = `<canvas class="card__thumb"></canvas>`;
+  const cv = el.querySelector(".card__thumb");
+  rigEl.appendChild(el);
 
   tiles.push({
-    el, data, vi: i,
+    el, k, ring, i, vi, data: VIDEOS[vi],
     canvas: cv, ctx: cv.getContext("2d", { alpha: false }),
     bw: 0, bh: 0,
     px: PIXEL_BOOT,
     noise: 1,
-    visible: true,
-  });
-});
-
-const allTiles = gsap.utils.toArray(".strip__item");
-
-let focusIndex = 0;        // 지금 큰 화면에 떠 있는 영상
-let locked = false;        // 화면 전환 중에는 목록을 건드리지 않는다
-
-/* ── 목록은 큰 화면 다음 순서대로 줄을 선다 ─────────── */
-/* 첫 칸은 언제나 "다음 영상". 마지막까지 가면 처음으로 돌아온다.
-   (N = 영상 개수, 위에서 이미 선언해 두었다) */
-
-/* pan.x 는 한 칸 미끄러지는 동안에만 0 이 아니다 */
-const pan = { x: 0 };
-const panTarget = { x: 0 };
-let panLock = false;               // 꾹 누르는 동안엔 목록을 세워둔다
-let panLastT = performance.now();
-
-function rateFor(seconds) { return 1 - Math.pow(0.05, 1 / seconds); }
-const PAN_RATE_FOLLOW = rateFor(SLIDE_TIME);
-const PAN_RATE_SNAP = rateFor(0.3);
-let panRate = PAN_RATE_FOLLOW;
-
-function stepPan() {
-  const now = performance.now();
-  const dt = Math.min(0.1, (now - panLastT) / 1000);
-  panLastT = now;
-  const k = 1 - Math.pow(1 - panRate, dt);
-  pan.x += (panTarget.x - pan.x) * k;
-}
-
-/* 각 칸이 몇 번째 자리에 서는지 다시 계산한다.
-   자리는 left 로 준다 — GSAP 이 transform 을 쓰기 때문에 겹치면 안 된다. */
-function layoutStrip() {
-  tiles.forEach((t, i) => {
-    t.slot = (i - focusIndex - 1 + N) % N;
-    t.el.style.left = t.slot * STRIP_PITCH + "px";
+    rel: 0,          // 정면에서 몇 칸 돌아가 있는지 (+ 는 오른쪽, − 는 왼쪽)
+    bend: 0,         // 얼마나 휘었는지 (0 평평 ~ 1 브라운관) — 정면에 다가올수록 커진다
+    clipB: 0,        // 마지막으로 오려 둔 휨 (같으면 테두리를 다시 계산하지 않는다)
+    live: true,      // 화면에 걸려 있어 새로 그릴 파편인지
   });
 }
-layoutStrip();
 
-/* 다음 영상으로 한 칸 넘긴다 */
-function advanceFocus() { setFocus((focusIndex + 1) % N, 1); }
+const allTiles = tiles.map((t) => t.el);
+
+let focusIndex = 0;        // 정면에 뜬 영상 (0 ~ 8)
+let focusCard = MID;       // 정면에 뜬 파편 (가운데 고리 중 하나)
+let locked = false;        // 화면 전환 중에는 고리을 건드리지 않는다
+
+/* ── 고리 상태 ───────────────────────────────────── */
+const spin = { s: 0, v: 0, drive: 0 };   // s = 연속 위치(장 단위), v = 속도(장/초)
+let spinTarget = null;                    // 클릭·키보드로 정한 목적지
+let spinLock = false;                     // 꾹 누르는 동안엔 고리을 세워둔다
+let pointerIn = false;                    // 손·마우스가 화면 안에 있는지
+
+/* 연출용 — 처음 펼쳐질 때 / 고른 뒤 흩어질 때 */
+const rig = { intro: 0, swirl: 0, fade: 1, spread: 1, tilt: 0, lift: 0 };
+
+const mod = (a, n) => ((a % n) + n) % n;
+const decay = (dt, seconds) => 1 - Math.pow(0.001, dt / seconds);   // seconds 동안 99.9% 다가간다
+
+function stepSpiral(dt) {
+  // 손·마우스가 좌우 끝에 있을수록 그쪽으로 더 빨리 (왼쪽 끝이면 거꾸로)
+  let want = 0;
+  if (pointerIn && !spinLock && cursorPos.y > 110 && cursorPos.y < STAGE_H - 90) {
+    const nx = cursorPos.x / STAGE_W - 0.5;
+    const over = Math.abs(nx) - SPIN.dead;
+    if (over > 0) want = Math.sign(nx) * Math.min(1, over / (0.5 - SPIN.dead)) * SPIN.max;
+  }
+  spin.drive = want / SPIN.max;
+  if (want !== 0) spinTarget = null;
+
+  if (spinLock || spinTarget !== null) {
+    // 꾹 누르는 중이면 정면 파편을 한가운데 세우고, 파편을 눌렀으면 그 파편까지 돈다
+    const goal = spinLock ? Math.round(spin.s) : spinTarget;
+    spin.v = 0;
+    spin.s += (goal - spin.s) * decay(dt, SPIN.settle);
+    if (!spinLock && Math.abs(goal - spin.s) < 0.003) spinTarget = null;   // 도착하면 다시 저절로
+  } else {
+    // 평소엔 저절로 천천히 돈다
+    spin.v += (AUTO + want - spin.v) * decay(dt, SPIN.ramp);
+    spin.s += spin.v * dt;
+  }
+}
+
+const PERSP = 2500;                          // style.css .spiral 의 perspective
+const ORIGIN_Y = STAGE_H * 0.5;              // style.css .card 의 top / perspective-origin
+
+const rad = (d) => d * Math.PI / 180;
+const wrap180 = (d) => mod(d + 180, 360) - 180;
+
+/* 파편 하나가 화면 어디에 어떤 크기로 보이는지 — CSS 가 하는 계산을 그대로 따라 한다 */
+function projectCard(a, y, R, tilt, sc, lift) {
+  const tr = rad(tilt);
+  const x = R * Math.sin(rad(a)), z = R * Math.cos(rad(a));
+  const y1 = y * Math.cos(tr) - z * Math.sin(tr) + lift;
+  const z1 = y * Math.sin(tr) + z * Math.cos(tr);
+  const p = PERSP / Math.max(1, PERSP - z1);
+  const hw = CARD_W * sc * p * Math.abs(Math.cos(rad(a))) / 2 + 1;   // 옆으로 돌아간 만큼 좁다
+  const hh = CARD_H * sc * p / 2;
+  const cx = STAGE_W / 2 + x * p, cy = ORIGIN_Y + y1 * p;
+  return { x0: cx - hw, x1: cx + hw, y0: cy - hh, y1: cy + hh };
+}
+
+const onScreen = (r) => r.x1 > 0 && r.x0 < STAGE_W && r.y1 > 0 && r.y0 < STAGE_H;
+
+/* 한 장 한 장을 고리 위 제자리에 놓는다 */
+function layoutSpiral() {
+  const R = RADIUS * rig.intro * rig.spread;
+
+  // 손·마우스를 위아래로 움직이면 고리 전체가 따라 오르내리고 살짝 기운다.
+  // 꾹 누르는 중엔 제자리로 돌아와 고른 파편이 한가운데 선다.
+  const ny = pointerIn && !spinLock ? cursorPos.y / STAGE_H - 0.5 : 0;
+  rig.tilt += (ny * -5 - rig.tilt) * 0.04;
+  rig.lift += (ny * 2 * LIFT - rig.lift) * 0.05;
+  const tilt = VIEW_TILT + rig.tilt;
+  rigEl.style.transform = `translateY(${rig.lift.toFixed(1)}px) rotateX(${tilt.toFixed(2)}deg)`;
+
+  tiles.forEach((t) => {
+    // 정면(0°)에서 몇 도 돌아가 있는지. 펼쳐지는 동안은 덜 감긴 자리에서 출발한다.
+    const a = wrap180((t.i + RING_SHIFT[t.ring] - spin.s - rig.swirl) * STEP_DEG);
+    t.rel = a / STEP_DEG;
+    const y = (t.ring - 1) * RING_GAP;
+
+    // 뒤로 돌아갈수록 작아진다 (레퍼런스도 뒤쪽 파편이 원근보다 더 작다)
+    const front = (1 + Math.cos(rad(a))) / 2;
+    let sc = BACK_SCALE + (1 - BACK_SCALE) * Math.pow(front, 1.3);
+    // 가운데 고리에서 정면에 다가올수록 점점 커지고, 점점 휜다
+    let bend = 0;
+    if (t.ring === 1) {
+      const n = Math.max(0, 1 - Math.abs(t.rel));
+      bend = n * n * (3 - 2 * n);
+      sc *= 1 + (FRONT_BOOST - 1) * bend;
+    }
+    t.bend = bend;
+    if (Math.abs(bend - t.clipB) > 0.004) {
+      t.clipB = bend;
+      t.el.style.clipPath = bend < 0.004 ? "none" : crtPolygon(BARREL * bend);
+    }
+
+    const box = projectCard(a, y, R, tilt, sc, rig.lift);
+    const isFront = t.k === focusCard;
+    const op = rig.intro * (isFront ? 1 : rig.fade);
+
+    t.el.style.transform =
+      `translateY(${y}px) rotateY(${a.toFixed(2)}deg) translateZ(${R.toFixed(1)}px) scale(${sc.toFixed(3)})`;
+    t.el.style.opacity = op.toFixed(3);
+    const show = op > 0.01 && onScreen(box);
+    t.el.style.visibility = show ? "visible" : "hidden";
+    t.live = show;
+  });
+
+  // 문자 화면은 정면 파편이 반쯤 휘었을 때부터 서서히 떠오른다.
+  // (정면이 바뀌는 순간엔 투명해서, 썸네일 → 문자 화면이 툭 바뀌지 않는다)
+  const on = Math.min(1, Math.max(0, (tiles[focusCard].bend - 0.5) / 0.3));
+  featInEl.style.opacity = (on * on * (3 - 2 * on)).toFixed(3);
+
+  // 가운데 구슬 — 축에 서서 천천히 오르내린다. 기울기는 되돌려 늘 똑바로.
+  const cy = CORE_Y - 7 + core.bob * 14;
+  coreEl.style.transform =
+    `translate3d(0,${cy.toFixed(1)}px,0) rotateX(${(-tilt).toFixed(2)}deg) scale(${(0.6 + 0.4 * rig.intro).toFixed(3)})`;
+  coreEl.style.opacity = (rig.intro * rig.fade).toFixed(3);
+
+  // 바탕 그리드 — 고리와 같은 빠르기로 원통 벽 무늬가 흐른다
+  const arc = (spin.s - rig.swirl) * STEP_DEG * Math.PI / 180 * GRID_R;
+  const gx = (mod(arc, GRID_CELL)).toFixed(1) + "px 0";
+  const go = (rig.intro * rig.fade).toFixed(3);
+  gridPanels.forEach((el) => { el.style.backgroundPosition = gx; el.style.opacity = go; });
+
+  // 좌우 끝 표시 — 손이 그쪽에 가 있으면 밝아진다
+  edgeL.style.opacity = Math.max(0, -spin.drive).toFixed(2);
+  edgeR.style.opacity = Math.max(0, spin.drive).toFixed(2);
+}
 
 /* ── 그리기 ──────────────────────────────────────── */
 
 /* 썸네일 — 낮은 해상도로 그려 알갱이를 남긴다 */
 function drawThumb(tile) {
   const px = Math.max(1, tile.px);
-  const bw = Math.max(8, Math.round(THUMB_W / px / 8) * 8);
-  const bh = Math.max(8, Math.round(THUMB_H / px / 8) * 8);
+  const bw = Math.max(8, Math.round(CARD_W / px / 8) * 8);
+  const bh = Math.max(8, Math.round(CARD_H / px / 8) * 8);
   if (bw !== tile.bw || bh !== tile.bh) {
     tile.canvas.width = bw;
     tile.canvas.height = bh;
@@ -422,16 +645,67 @@ function drawThumb(tile) {
   const src = videoSrc[tile.vi];
   if (!src.ready) return;
   g.globalAlpha = 1 - tile.noise;
-  g.drawImage(src.canvas, 0, 0, bw, bh);
+  if (tile.bend > 0.01) {
+    // 정면에 다가오는 만큼 휜다. 휜 바깥은 카드 테두리(clip-path)가 오려 낸다.
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, bw, bh);
+    drawWarped(g, src.canvas, bw, bh, BARREL * tile.bend);
+  } else {
+    g.drawImage(src.canvas, 0, 0, bw, bh);
+  }
   g.globalAlpha = 1;
 }
 
-/* 큰 화면 — 영상을 문자로 다시 그리고, 브라운관처럼 불룩하게 휘게 한다.
-   네 변의 가운데가 바깥으로 부풀고 모서리는 사각으로 남는다. */
-const FIT = 1 / (1 + BARREL);                // 부푼 변이 화면에 꽉 차도록
+/* 브라운관 휨 — B 가 0 이면 평평, BARREL 이면 다 휜 것.
+   네 변의 가운데가 바깥으로 부풀고 모서리는 사각으로 남는다.
+   가로는 세로 위치로, 세로는 가로 위치로만 밀어서 네 모서리는 제자리에 둔다.
+   (거리로 한꺼번에 밀면 모서리까지 말려들어 알약 모양이 된다)
+   부푼 변이 칸 안에 들어오도록 1/(1+B) 로 줄인다. 결과는 -1 ~ 1. */
+function warp(nx, ny, B) {
+  const fit = 1 / (1 + B);
+  return [nx * (1 + B * (1 - ny * ny)) * fit, ny * (1 + B * (1 - nx * nx)) * fit];
+}
+
+/* 휜 화면 모양대로 파편을 오리는 테두리 — 글자·썸네일을 찍는 공식과 같은 공식이라 모양이 딱 맞는다.
+   % 로 주므로 카드 크기와 상관없다. 바깥 칸 경계에서 아주 조금만(약 2px) 넉넉하게. */
+function crtPolygon(B) {
+  const pts = [];
+  const pad = 1.006;
+  const edge = (nx, ny) => {
+    const [x, y] = warp(nx, ny, B);
+    pts.push(`${((x * pad * 0.5 + 0.5) * 100).toFixed(2)}% ${((y * pad * 0.5 + 0.5) * 100).toFixed(2)}%`);
+  };
+  const S = 16;
+  for (let i = 0; i <= S; i++) edge(-1 + 2 * i / S, -1);   // 위
+  for (let i = 1; i <= S; i++) edge(1, -1 + 2 * i / S);    // 오른쪽
+  for (let i = 1; i <= S; i++) edge(1 - 2 * i / S, 1);     // 아래
+  for (let i = 1; i < S; i++) edge(-1, 1 - 2 * i / S);     // 왼쪽
+  return `polygon(${pts.join(",")})`;
+}
+
+/* 썸네일을 휜 모양으로 그린다 — 작은 조각으로 잘라 조각마다 휜 자리에 옮겨 찍는다.
+   정면에 다가오는 파편만 쓰므로 (한두 장) 가볍다. */
+const WARP_GX = 16, WARP_GY = 12;
+function drawWarped(g, img, bw, bh, B) {
+  const sw = img.width / WARP_GX, sh = img.height / WARP_GY;
+  for (let gy = 0; gy < WARP_GY; gy++) {
+    const ny0 = (gy / WARP_GY) * 2 - 1, ny1 = ((gy + 1) / WARP_GY) * 2 - 1;
+    for (let gx = 0; gx < WARP_GX; gx++) {
+      const nx0 = (gx / WARP_GX) * 2 - 1, nx1 = ((gx + 1) / WARP_GX) * 2 - 1;
+      const p00 = warp(nx0, ny0, B), p10 = warp(nx1, ny0, B);
+      const p01 = warp(nx0, ny1, B), p11 = warp(nx1, ny1, B);
+      const x0 = Math.min(p00[0], p01[0]), x1 = Math.max(p10[0], p11[0]);
+      const y0 = Math.min(p00[1], p10[1]), y1 = Math.max(p01[1], p11[1]);
+      g.drawImage(img, gx * sw, gy * sh, sw, sh,
+        (x0 * 0.5 + 0.5) * bw, (y0 * 0.5 + 0.5) * bh,
+        (x1 - x0) * 0.5 * bw + 0.6, (y1 - y0) * 0.5 * bh + 0.6);   // 이음매가 벌어지지 않게 살짝 겹친다
+    }
+  }
+}
 
 function drawFeature() {
   const src = videoSrc[focusIndex];
+  const B = BARREL * (tiles[focusCard].bend || 0);
   const cols = Math.floor(FEAT_W / ASCII_CELL);
   const rows = Math.floor(FEAT_H / ASCII_CELL);
 
@@ -450,14 +724,24 @@ function drawFeature() {
   g.clearRect(0, 0, FEAT_W, FEAT_H);
   if (!src || !src.ready) return;
 
-  if (sampleCv.width !== cols || sampleCv.height !== rows) {
-    sampleCv.width = cols; sampleCv.height = rows;
+  let data;
+  if (asciiSample.worker) {
+    requestSample(src.canvas, cols, rows);                 // 다음 것을 부탁해 두고
+    if (!asciiSample.data || asciiSample.cols !== cols) return;
+    data = asciiSample.data;                               // 지금은 이미 받아 둔 것으로 그린다
+  } else {
+    if (sampleCv.width !== cols || sampleCv.height !== rows) {
+      sampleCv.width = cols; sampleCv.height = rows;
+    }
+    sampleCtx.drawImage(src.canvas, 0, 0, cols, rows);
+    data = sampleCtx.getImageData(0, 0, cols, rows).data;
   }
-  sampleCtx.drawImage(src.canvas, 0, 0, cols, rows);
-  const data = sampleCtx.getImageData(0, 0, cols, rows).data;
 
-  g.font = `${ASCII_CELL + 1}px "Roboto Mono", monospace`;
-  g.textBaseline = "top";
+  g.font = `500 ${ASCII_CELL + 2}px "Roboto Mono", monospace`;   // 칸을 꽉 채워 글자 사이 검정을 줄인다
+  // 글자를 칸 한가운데에 찍는다. 왼쪽 위 기준으로 찍으면 글자 판이 오른쪽 아래로 쏠려서
+  // 브라운관 테두리와 어긋난다 (한쪽 테두리만 두꺼워진다).
+  g.textAlign = "center";
+  g.textBaseline = "middle";
   const last = ASCII_RAMP.length - 1;
 
   for (let y = 0; y < rows; y++) {
@@ -471,12 +755,11 @@ function drawFeature() {
       const ch = ASCII_RAMP[Math.round(Math.pow(lum, ASCII_GAMMA) * last)];
       if (ch === " ") continue;
 
-      // 브라운관 — 변 가운데만 바깥으로 부푼다.
-      // 가로는 세로 위치로, 세로는 가로 위치로만 밀어서 네 모서리는 제자리에 둔다.
-      // (거리로 한꺼번에 밀면 모서리까지 말려들어 알약 모양이 된다)
+      // 정면 파편이 지금 휜 만큼 같이 휜다 (warp 참고)
       const nx = ((x + 0.5) / cols) * 2 - 1;
-      const dx = (nx * (1 + BARREL * (1 - ny * ny)) * FIT * 0.5 + 0.5) * FEAT_W;
-      const dy = (ny * (1 + BARREL * (1 - nx * nx)) * FIT * 0.5 + 0.5) * FEAT_H;
+      const w = warp(nx, ny, B);
+      const dx = (w[0] * 0.5 + 0.5) * FEAT_W;
+      const dy = (w[1] * 0.5 + 0.5) * FEAT_H;
 
       // 회색끼를 걷어내고 색을 세운다.
       // 밝기만 올리면(=전 채널에 같은 값을 더하면) 오히려 색이 바래므로,
@@ -492,17 +775,29 @@ function drawFeature() {
 }
 
 /* ── 매 프레임 ───────────────────────────────────── */
+let spinLastT = performance.now();
+
 function renderGrid() {
-  if (locked || !ready || current !== "grid") return;
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - spinLastT) / 1000);
+  spinLastT = now;
+  if (current !== "grid") return;
 
-  stepPan();
-  stripEl.style.transform = `translateX(${-pan.x}px)`;
+  if (ready && !locked) stepSpiral(dt);
+  layoutSpiral();
 
-  // 앞쪽 몇 칸과 큰 화면에 뜬 영상만 재생한다
-  tiles.forEach((t, i) => {
-    t.visible = t.slot <= 2;
-    const want = t.visible || i === focusIndex;
-    const v = videoPool[i];
+  // 정면에 가장 가까운 파편이 바뀌면 그 파편이 켜진다
+  if (ready && !locked) {
+    const k = MID + mod(Math.round(spin.s), PER_RING);
+    if (k !== focusCard) setFocus(k);
+  }
+
+  // 앞쪽에 걸린 파편의 영상만 재생한다
+  liveVideo.fill(false);
+  tiles.forEach((t) => { if (t.live) liveVideo[t.vi] = true; });
+  if (!ready) liveVideo.fill(true);          // 로딩 중엔 전부 (노이즈가 걷히는 연출)
+  videoPool.forEach((v, i) => {
+    const want = ready && (liveVideo[i] || i === focusIndex);
     if (want && v.paused) v.play().catch(() => {});
     else if (!want && !v.paused) v.pause();
   });
@@ -510,16 +805,15 @@ function renderGrid() {
 gsap.ticker.add(renderGrid);
 
 /* 그리기는 화면 전환·로딩과 상관없이 계속 돈다.
-   큰 화면은 글자 수천 개라 두 프레임에 한 번만 다시 그린다. */
+   정면 파편은 글자 수천 개라 두 프레임에 한 번만 다시 그린다. */
 let drawFrame = 0;
 
 function drawTiles() {
   drawFrame++;
   updateVideoSources();
   tiles.forEach((t, i) => {
-    if (t.visible || t.noise > 0.01) {
-      if (drawFrame % 2 === i % 2) drawThumb(t);
-    }
+    if ((t.live || t.noise > 0.01) && drawFrame % 2 === i % 2) drawThumb(t);
+    else if (!t.live && t.el.style.visibility !== "hidden" && drawFrame % 30 === i) drawThumb(t);   // 뒤쪽은 가끔만
   });
   if (drawFrame % 2 === 0) drawFeature();
 }
@@ -539,11 +833,14 @@ const orbIndexEl = document.getElementById("orbIndex");
 
 function applyMarbleTheme(i) {
   const m = VIDEOS[i].marble;
-  marbleStage.style.setProperty("--hue", m.hue + "deg");
-  marbleStage.style.setProperty("--sat", m.sat);
-  marbleStage.style.setProperty("--bri", m.bri);
-  marbleStage.style.setProperty("--glow", m.glow);
-  marbleStage.style.setProperty("--glow-soft", m.glow);
+  // 구슬 화면의 구슬과, 아카이브 가운데 구슬을 같은 색으로
+  [marbleStage, coreEl].forEach((el) => {
+    el.style.setProperty("--hue", m.hue + "deg");
+    el.style.setProperty("--sat", m.sat);
+    el.style.setProperty("--bri", m.bri);
+    el.style.setProperty("--glow", m.glow);
+    el.style.setProperty("--glow-soft", m.glow);
+  });
 }
 
 /* 영상 이름 밑에 붙는 영문 — 한글 이름의 결을 옮긴 문장 (없으면 파일명에서 뽑는다) */
@@ -560,7 +857,21 @@ function crtOn(strong) {
     { scaleY: 1, scaleX: 1, opacity: 1, duration: d, ease: "power4.out" });
   gsap.fromTo(featPix,
     { scaleY: strong ? 0.03 : 0.12, scaleX: strong ? 1.2 : 1.07, opacity: 0.2 },
-    { scaleY: 1, scaleX: 1, opacity: 0.7, duration: d, ease: "power4.out" });   // style.css 의 .feature__pix 와 같은 값
+    { scaleY: 1, scaleX: 1, opacity: 0.9, duration: d, ease: "power4.out" });   // style.css 의 .feature__pix 와 같은 값
+}
+
+/* 이름이 바뀔 때 — 새 이름이 아래로 겹겹이 쌓인 잔상에서 제자리로 모인다 */
+function echoIn(el, text) {
+  const host = el.parentElement;
+  for (let i = 1; i <= 6; i++) {
+    const c = document.createElement("p");
+    c.className = el.className + " echo";
+    c.textContent = text;
+    host.appendChild(c);
+    gsap.fromTo(c,
+      { y: i * 16, opacity: 0.5 - i * 0.07 },
+      { y: 0, opacity: 0, duration: 0.45 + i * 0.06, ease: "power3.out", onComplete: () => c.remove() });
+  }
 }
 
 /* ── 글자가 잡음에서 자리를 잡는다 ────────────────────
@@ -598,38 +909,50 @@ function scramble(el, text, seconds) {
   gsap.ticker.add(tick);
 }
 
-function setFocus(i, dir) {
-  if (i === focusIndex) return;
-  // 어느 쪽으로 넘어가는지 — 한 칸 뒤면 앞으로, 아니면 뒤로
-  if (dir === undefined) dir = (i - focusIndex + N) % N === 1 ? 1 : -1;
+/* 정면 파편이 바뀌었을 때. k 는 파편 번호(0 ~ 17).
+   문자 화면(featureEl)을 그 파편 위로 옮겨 얹고, 이름을 갈아 끼운다. */
+function setFocus(k) {
+  const prev = tiles[focusCard];
+  const t = tiles[k];
+  prev.el.classList.remove("is-front");
+  focusCard = k;
+  t.el.classList.add("is-front");
+  t.el.appendChild(featureEl);
 
-  focusIndex = i;
-  const tile = tiles[i];
+  const changed = t.vi !== focusIndex;
+  focusIndex = t.vi;
+  crtOn(false);                                   // 화면이 한 번 꺼졌다 켜진다
+  if (!changed) return;                           // 같은 영상의 다음 바퀴면 이름은 그대로
 
-  // 자리가 한 칸씩 당겨졌으니 그만큼 되돌려놓고, 제자리로 미끄러지게 한다
-  layoutStrip();
-  pan.x = -dir * STRIP_PITCH;
-  panTarget.x = 0;
-
-  const vi = tile.vi;
+  const vi = t.vi;
   setTint(VIDEOS[vi].tint);
   applyMarbleTheme(vi);
   if (current === "grid") hudIndexEl.textContent = indexLabel(vi);
   orbIndexEl.textContent = String(vi + 1).padStart(2, "0");
-  orbCaptionName.textContent = tile.data.name;
+  orbCaptionName.textContent = t.data.name;
 
-  // 화면이 한 번 꺼졌다 켜지고, 이름은 잡음에서 다시 잡힌다
-  crtOn(false);
+  // 이름은 잡음에서 다시 잡힌다
   gsap.set([featNameEl, featSlugEl], { y: 0, opacity: 1 });
-  scramble(featNameEl, tile.data.name, 0.5);
-  scramble(featSlugEl, slugOf(tile.data), 0.6);
+  echoIn(featNameEl, t.data.name);
+  scramble(featNameEl, t.data.name, 0.5);
+  scramble(featSlugEl, slugOf(t.data), 0.6);
 }
-featNameEl.textContent = tiles[focusIndex].data.name;
-featSlugEl.textContent = slugOf(tiles[focusIndex].data);
-applyMarbleTheme(tiles[focusIndex].vi);
-hudIndexEl.textContent = indexLabel(tiles[focusIndex].vi);
-orbIndexEl.textContent = String(tiles[focusIndex].vi + 1).padStart(2, "0");
-orbCaptionName.textContent = tiles[focusIndex].data.name;
+
+/* 고리을 n 장 돌린다 (키보드·휠). 손으로 돌리는 중이면 무시. */
+function nudge(n) {
+  if (locked || !ready || spinLock) return;
+  spinTarget = (spinTarget !== null ? spinTarget : Math.round(spin.s)) + n;
+}
+
+/* 처음 상태 — 효과 없이 첫 파편을 정면에 둔다 */
+tiles[MID].el.classList.add("is-front");
+tiles[MID].el.appendChild(featureEl);
+featNameEl.textContent = VIDEOS[0].name;
+featSlugEl.textContent = slugOf(VIDEOS[0]);
+applyMarbleTheme(0);
+hudIndexEl.textContent = indexLabel(0);
+orbIndexEl.textContent = "01";
+orbCaptionName.textContent = VIDEOS[0].name;
 
 /* 구슬 상시 애니메이션 */
 gsap.to(marbleEl, {
@@ -648,7 +971,6 @@ const screenGrid = document.getElementById("screenGrid");
 const screenOrb = document.getElementById("screenOrb");
 const morph = document.getElementById("morph");
 const btnBack = document.getElementById("btnBack");
-const pillItems = gsap.utils.toArray(".pillnav__item");
 
 gsap.set(screenGrid, { autoAlpha: 1 });
 gsap.set(screenOrb, { autoAlpha: 0 });
@@ -658,9 +980,6 @@ const MARBLE_CY = 379;
 
 let current = "grid";
 
-function setPill(name) {
-  pillItems.forEach((b) => b.classList.toggle("is-active", b.dataset.screen === name));
-}
 
 /* 응축 연출의 재료 — 큰 화면에 떠 있던 영상을 정사각으로 잘라낸다 */
 function snapshot(vi) {
@@ -683,14 +1002,9 @@ function select() {
 
   const idx = focusIndex;
 
-  // 티커가 쓰던 값을 GSAP 이 이어받고, 티커는 멈춘다
-  allTiles.forEach((el) => {
-    const cs = getComputedStyle(el);
-    gsap.set(el, { clearProps: "transform", opacity: cs.opacity });
-  });
-  locked = true;
+  locked = true;          // 고리은 멈추지만 자리 잡기(layoutSpiral)는 계속 돈다
 
-  // 응축은 큰 화면에서 시작한다
+  // 응축은 정면 파편에서 시작한다
   const r = featureEl.getBoundingClientRect();
   const p = toStage(r.left, r.top);
   const w = r.width / stageScale;
@@ -699,22 +1013,15 @@ function select() {
   morph.innerHTML = "";
   morph.appendChild(snapshot(idx));
 
-  setPill("orb");
 
   const tl = gsap.timeline({
     onComplete: () => { locked = false; current = "orb"; },
   });
 
-  // 1. 큰 화면만 남고 목록은 앞쪽부터 차례로 흩어진다
+  // 1. 정면 파편만 남고, 나머지는 바깥으로 퍼지며 사라진다
   tl.to(featureEl, { scale: 1.08, duration: 0.5, ease: "power2.out" }, 0);
-  tiles.forEach((t) => {
-    tl.to(t.el, {
-      opacity: 0, y: 60, scale: 0.9,
-      duration: 0.5, ease: "power2.in",
-      delay: Math.min(3, t.slot) * 0.07,
-    }, 0);
-  });
-  tl.to(".grid-fade", { opacity: 0, duration: 0.4 }, 0);
+  tl.to(rig, { fade: 0, spread: 1.35, duration: 0.6, ease: "power2.in" }, 0);
+  tl.to([edgeL, edgeR, "#cameraHint"], { autoAlpha: 0, duration: 0.3 }, 0);   // 고리 조작 설명은 아카이브에서만
 
   // 2. 타일 → 구슬로 응축
   //    (tween 시작 직전 프레임에 초기값을 심어야 from 값이 제대로 잡힌다)
@@ -754,6 +1061,9 @@ function select() {
   tl.fromTo([".orb-body", ".ghost-btn"],
     { y: 20, opacity: 0 },
     { y: 0, opacity: 1, duration: 0.55, stagger: 0.09, ease: "power3.out" }, 1.75);
+  // 버튼이 보이기 시작하면 바로 누를 수 있게 — 남은 글자 애니메이션이 끝날 때까지 기다리지 않는다
+  // (예전엔 버튼이 다 보이고도 0.5초 넘게 눌러도 무시돼서 '영상이 안 나온다'처럼 보였다)
+  tl.add(() => { locked = false; current = "orb"; }, 1.8);
   tl.fromTo("#orbCaption",
     { y: 16, opacity: 0 },
     { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 1.95);
@@ -776,28 +1086,29 @@ function resetArchive() {
   gsap.set(screenGrid, { autoAlpha: 1 });
   document.body.classList.remove("is-garden");
   hideChrome(false);
-  setPill("grid");
 
   // 고른 타일은 선택할 때 숨겨뒀으므로 반드시 되살려야 한다
-  allTiles.forEach((el) => gsap.set(el, { clearProps: "transform,opacity", visibility: "visible" }));
   tiles.forEach((t) => { t.px = PIXEL_BASE; });
-  layoutStrip();
-  pan.x = 0;
-  panTarget.x = 0;
-  hoverSince = -1;
+  gsap.set([edgeL, edgeR, "#cameraHint"], { autoAlpha: 1 });
+  spin.v = 0;
+  spinTarget = null;
+  // 고리가 축에서 다시 풀려 나온다 (검정 페이드가 걷히는 동안 보인다)
+  gsap.killTweensOf(rig);
+  rig.fade = 1;
+  gsap.fromTo(rig, { intro: 0.25, spread: 1, swirl: -2.5 },
+    { intro: 1, swirl: 0, duration: 1.6, ease: "power3.out" });
   gsap.set(featureEl, { scale: 1, autoAlpha: 1 });
   gsap.set([featNameEl, featSlugEl], { autoAlpha: 1, opacity: 1, y: 0 });
   // 돌아올 때도 화면이 다시 켜진다
   crtOn(true);
-  scramble(featNameEl, tiles[focusIndex].data.name, 0.7);
-  scramble(featSlugEl, slugOf(tiles[focusIndex].data), 0.8);
-  gsap.set([".grid-fade", titlebar], { opacity: 1 });
+  scramble(featNameEl, VIDEOS[focusIndex].name, 0.7);
+  scramble(featSlugEl, slugOf(VIDEOS[focusIndex]), 0.8);
+  gsap.set(titlebar, { opacity: 1 });
   gsap.set(marbleEl, { scale: 1, opacity: 1 });
   gsap.set(focusNameEl, { opacity: 1, y: 0 });
-  focusNameEl.textContent = tiles[focusIndex].data.name;
-  hudIndexEl.textContent = indexLabel(tiles[focusIndex].vi);
-  panLock = false;
-  panRate = PAN_RATE_FOLLOW;
+  focusNameEl.textContent = VIDEOS[focusIndex].name;
+  hudIndexEl.textContent = indexLabel(focusIndex);
+  spinLock = false;
   current = "grid";
 }
 
@@ -976,6 +1287,82 @@ function loadFilmFile(seg) {
 }
 
 /* 장면 교체 — 검정으로 덮인 사이에 바꿔치기한다 */
+/* ── 인터랙션 1 → 영상 1 : 브라운관 꺼짐 ───────────────────
+   화면 전체가 위아래로 눌려 밝은 가로선이 되고, 그 선이 가운데 점으로 줄어
+   잠깐 빛나다 꺼진다. 인터랙션 1 의 브라운관 화면이 꺼지며 영상으로 넘어가는 것. */
+const crtLine = document.getElementById("crtLine");
+
+async function crtOffTransition(prepare) {
+  locked = true;
+  endHold(true);
+  hideChrome(true);
+  gsap.to(cursorEl, { opacity: 0, duration: 0.2 });
+  // 보이는 화면들 — 모두 화면 크기라 같은 가운데를 기준으로 줄어든다
+  const layers = [screenGrid, screenOrb, "#aura", "#dust"];
+  gsap.set(layers, { transformOrigin: "50% 50%", filter: "brightness(1)" });
+  const tl = gsap.timeline();
+  // 1) 위아래로 눌리며 밝아진다
+  tl.to(layers, { scaleY: 0.004, scaleX: 1.03, filter: "brightness(3)", duration: 0.32, ease: "power3.in" });
+  tl.fromTo(crtLine, { autoAlpha: 0, scaleX: 1 }, { autoAlpha: 1, duration: 0.1 }, 0.22);
+  // 2) 가로선이 가운데 점으로 줄어든다
+  tl.to(layers, { scaleX: 0.002, duration: 0.2, ease: "power3.in" });
+  tl.to(crtLine, { scaleX: 0.004, duration: 0.2, ease: "power3.in" }, "<");
+  tl.set(layers, { autoAlpha: 0 });
+  // 3) 점이 잠깐 빛나다 꺼진다
+  tl.to(crtLine, { scaleY: 2.2, duration: 0.12, ease: "power2.out" });
+  tl.to(crtLine, { autoAlpha: 0, scaleY: 0.6, duration: 0.4, ease: "power2.in" });
+  await tl;
+  // 검정 막에 넘기고 화면들은 제 모양으로 돌려 둔다 (보이지 않는 채로)
+  gsap.set(fadeEl, { visibility: "visible", opacity: 1 });
+  gsap.set(layers, { clearProps: "transform,filter,transformOrigin" });
+  gsap.set(["#aura", "#dust"], { autoAlpha: 1 });
+  gsap.set(crtLine, { clearProps: "transform" });
+  await prepare();
+  await fadeIn();
+  locked = false;
+}
+
+/* ── 정원 → 영상 2 : 구슬 빛 번짐 ─────────────────────────
+   마지막으로 가리키거나 연 구슬에서 빛이 퍼져 화면이 흰빛·연보라로 차오르고,
+   그 빛이 걷히면서 영상이 드러난다. (검정을 거치지 않는다) */
+const bloomEl = document.getElementById("bloom");
+let gardenPoint = null;        // 정원에서 마지막으로 누른 구슬 자리 (0~1)
+
+/* 빛이 시작될 자리 — 손 커서가 가리키는 곳 > 열려 있는 구슬 > 마지막으로 누른 곳 > 가운데 */
+function gardenOrigin() {
+  let doc = null;
+  try { doc = gardenFrame.contentDocument; } catch (e) { doc = null; }
+  if (doc && doc.defaultView) {
+    const w = doc.defaultView.innerWidth, h = doc.defaultView.innerHeight;
+    const hc = doc.getElementById("hand-cursor");
+    if (hc && !hc.hidden && hc.style.left) return { x: parseFloat(hc.style.left) / w, y: parseFloat(hc.style.top) / h };
+    const panel = doc.getElementById("orb-panel");
+    if (panel && !panel.hidden) return { x: 0.27, y: 0.45 };   // 구슬을 열면 정원은 그 구슬을 화면 왼쪽에 세운다
+  }
+  return gardenPoint || { x: 0.5, y: 0.5 };
+}
+
+async function bloomTransition(prepare) {
+  locked = true;
+  endHold(true);
+  const o = gardenOrigin();
+  bloomEl.style.setProperty("--bx", (o.x * 100).toFixed(1) + "%");
+  bloomEl.style.setProperty("--by", (o.y * 100).toFixed(1) + "%");
+  const b = { r: 0 };
+  const paint = () => bloomEl.style.setProperty("--r", b.r.toFixed(4));
+  paint();
+  gsap.set(bloomEl, { autoAlpha: 1 });
+  // 1) 구슬에서 빛이 퍼져 화면을 채운다 — 정원도 같이 환해진다
+  gsap.fromTo(gardenFrame, { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 1.0, ease: "power2.in" });
+  await gsap.to(b, { r: 1, duration: 1.05, ease: "power2.in", onUpdate: paint });
+  // 2) 빛이 가득한 사이에 영상으로 바꾸고
+  await prepare();
+  gsap.set(gardenFrame, { clearProps: "filter" });
+  // 3) 빛이 걷히며 영상이 드러난다
+  await gsap.to(bloomEl, { autoAlpha: 0, duration: 1.2, ease: "power2.out" });
+  locked = false;
+}
+
 async function transition(prepare) {
   locked = true;
   endHold(true);
@@ -986,7 +1373,7 @@ async function transition(prepare) {
 }
 
 function hideChrome(hidden) {
-  gsap.to([".pillnav", ".camera-box", ".hud"], {
+  gsap.to([".camera-box", ".camera-hint", ".hud"], {
     autoAlpha: hidden ? 0 : 1, duration: 0.5, ease: "power2.out",
   });
   gsap.to(titlebar, { autoAlpha: hidden ? 0 : 1, duration: 0.5 });
@@ -1000,7 +1387,9 @@ async function toFilm(segment) {
   if (!hasFilm) return back();          // 본편이 없는 저장소면 아카이브로
   const from = current;
   if (from === "garden") releaseGardenHand();   // 카메라 돌려받기
-  await transition(async () => {
+  // 인터랙션 1 → 영상 1 은 브라운관 꺼짐, 정원 → 영상 2 는 구슬 빛 번짐
+  const run = from === "garden" ? bloomTransition : crtOffTransition;
+  await run(async () => {
     gsap.set([screenGrid, screenOrb, screenGarden], { autoAlpha: 0 });
     gsap.set(screenFilm, { autoAlpha: 1 });
     document.body.classList.remove("is-garden");
@@ -1023,7 +1412,6 @@ async function toFilm(segment) {
     }
     gsap.fromTo(filmHint, { opacity: 0 }, { opacity: 1, duration: 0.6, delay: 1.2 });
   });
-  if (from === "orb") setPill("orb");
 }
 
 /* 영상 앞부분 → 정원 */
@@ -1105,6 +1493,13 @@ function prepareGarden() {
     }`;
   (doc.head || doc.documentElement).appendChild(st);
 
+  // 구슬을 누른 자리를 기억해 둔다 — 영상 2 로 넘어갈 때 빛이 그 자리에서 퍼진다
+  doc.addEventListener("pointerdown", (e) => {
+    if (e.target && e.target.tagName === "CANVAS") {
+      gardenPoint = { x: e.clientX / doc.defaultView.innerWidth, y: e.clientY / doc.defaultView.innerHeight };
+    }
+  }, true);
+
   // 버튼을 누르면 정원의 2.3초 지연을 기다리지 않고 바로 넘어간다
   ["btn-next", "btn-go"].forEach((id) => {
     const b = doc.getElementById(id);
@@ -1151,25 +1546,27 @@ function advance() {
   else if (current === "garden") toFilmTail();
 }
 
-btnGo.addEventListener("click", () => toFilm(0));
+/* 화면이 넘어가는 중(잠김)에 눌린 버튼은 버리지 않고, 풀리자마자 실행한다 */
+function whenUnlocked(fn) {
+  const t0 = performance.now();
+  (function wait() {
+    if (!locked) return fn();
+    if (performance.now() - t0 < 4000) setTimeout(wait, 50);
+  })();
+}
+btnGo.addEventListener("click", () => whenUnlocked(() => { if (current === "orb") toFilm(0); }));
 btnBack.addEventListener("click", back);
-pillItems.forEach((b) => {
-  b.addEventListener("click", () => {
-    if (b.dataset.screen === "orb") select();
-    else back();
-  });
-});
 
 window.addEventListener("keydown", (e) => {
   if (locked) return;
-  if (e.key === "ArrowRight") setFocus((focusIndex + 1) % N, 1);
-  if (e.key === "ArrowLeft") setFocus((focusIndex - 1 + N) % N, -1);
+  if (e.key === "ArrowRight") nudge(1);
+  if (e.key === "ArrowLeft") nudge(-1);
   if (e.key === "Enter" || e.key === " ") advance();
   if (e.key === "Escape") back();
 });
 
 window.addEventListener("pointerdown", () => {
-  tiles.forEach((t) => { if (t.playing) t.video.play().catch(() => {}); });
+  videoPool.forEach((v, i) => { if (liveVideo[i]) v.play().catch(() => {}); });
 }, { once: true });
 
 /* ============================================================
@@ -1191,13 +1588,6 @@ let holding = false;
 let holdTween = null;
 let holdBy = null;              // "hand" 또는 "mouse" — 지금 누가 누르고 있는지
 
-/* 목록 첫 칸의 판정 범위 — 썸네일과 그 밑 이름까지 */
-let hoverSince = -1;
-
-function overNextTile(sx, sy) {
-  return sx > STRIP_LEFT - HOVER_PAD && sx < STRIP_LEFT + THUMB_W + HOVER_PAD
-      && sy > STRIP_TOP - HOVER_PAD && sy < STRIP_TOP + THUMB_H + 76;
-}
 
 function moveCursor(sx, sy) {
   cursorPos.x = sx;
@@ -1208,21 +1598,8 @@ function moveCursor(sx, sy) {
   const nx = sx / STAGE_W - 0.5;
   const ny = sy / STAGE_H - 0.5;
 
-  // 목록 첫 칸(= 다음 영상) 위에 손을 얹으면 그 영상으로 넘어간다.
-  // 그 자리에 계속 두면 HOVER_STEP 마다 한 칸씩 이어서 넘어간다.
-  if (current === "grid" && !panLock && !locked && ready) {
-    if (overNextTile(sx, sy)) {
-      const now = performance.now();
-      // 앞 칸이 아직 미끄러지는 중이면 기다린다 (연달아 튀는 걸 막는다)
-      const settled = Math.abs(pan.x) < 4;
-      if (settled && (hoverSince < 0 || now - hoverSince > HOVER_STEP * 1000)) {
-        hoverSince = now;
-        advanceFocus();
-      }
-    } else {
-      hoverSince = -1;
-    }
-  }
+  // 고리은 매 프레임 이 위치를 보고 돈다 (stepSpiral)
+  pointerIn = true;
 
   auraX(-nx * 70);
   auraY(-ny * 50);
@@ -1247,9 +1624,7 @@ function startHold(byMouse) {
 
   // 누르고 있는 동안에는 목록이 더 넘어가지 않게 세워둔다
   if (current === "grid") {
-    panLock = true;
-    panRate = PAN_RATE_SNAP;
-    panTarget.x = 0;
+    spinLock = true;                     // 정면 파편에 맞춰 선다
     // 큰 화면이 천천히 다가온다
     gsap.to(featureEl, { scale: 1.04, duration: wait * 0.8, ease: "power2.out" });
   }
@@ -1278,9 +1653,7 @@ function endHold(done) {
   if (!done) {
     gsap.to(featureEl, { scale: 1, duration: 0.4, ease: "power2.out" });
     // 다시 목록이 넘어갈 수 있게. 손을 놓자마자 튀지 않도록 한 박자 쉰다.
-    panLock = false;
-    panRate = PAN_RATE_FOLLOW;
-    hoverSince = performance.now();
+    spinLock = false;
     // 구슬 화면에서는 질문이 숨어 있어야 하므로 그리드일 때만 되돌린다
     if (current === "grid") gsap.to(titlebar, { opacity: 1, duration: 0.4, ease: "power2.out" });
   }
@@ -1303,17 +1676,29 @@ window.addEventListener("mouseup", () => { if (holdBy === "mouse") endHold(false
 
 /* 큰 화면을 그냥 한 번 눌러도 골라진다.
    손으로는 꾹 눌러야 하지만, 마우스로는 클릭이 자연스럽다. */
-featureEl.addEventListener("click", () => select());
 document.querySelector(".feature__label").addEventListener("click", () => select());
+coreEl.addEventListener("click", () => { if (ready && !locked && current === "grid") select(); });
 
-/* 목록의 칸을 누르면 그 영상이 큰 화면으로 올라온다 */
-tiles.forEach((t, i) => {
+/* 파편을 누르면 — 정면 파편이면 고르고, 옆 파편이면 그 파편을 정면으로 돌려 온다 */
+tiles.forEach((t) => {
   t.el.addEventListener("click", () => {
-    if (locked || current !== "grid") return;
-    hoverSince = performance.now();       // 눌러서 옮긴 뒤 곧바로 또 넘어가지 않게
-    setFocus(i, 1);                       // 목록은 언제나 앞으로 흐른다
+    if (locked || current !== "grid" || !ready) return;
+    if (t.k === focusCard) return select();
+    spinTarget = Math.round(spin.s + t.rel);
   });
 });
+
+/* 휠(트랙패드)로도 한 장씩 돌린다. 트랙패드는 이벤트가 잘게 쏟아지므로 모아서 넘긴다. */
+let wheelAcc = 0;
+window.addEventListener("wheel", (e) => {
+  if (current !== "grid") return;
+  wheelAcc += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  if (Math.abs(wheelAcc) > 70) { nudge(Math.sign(wheelAcc)); wheelAcc = 0; }
+}, { passive: true });
+
+/* 커서가 창 밖으로 나가면 고리을 돌리지 않는다 (가장자리에 걸린 채 계속 돌지 않게) */
+document.documentElement.addEventListener("mouseleave", () => { if (!handActive) pointerIn = false; });
+window.addEventListener("blur", () => { if (!handActive) pointerIn = false; });
 
 /* ============================================================
    로딩
@@ -1324,20 +1709,43 @@ const titlebar = document.getElementById("titlebar");
 const titleBoot = document.getElementById("titleBoot");
 const titleAsk = document.getElementById("titleAsk");
 
+// 로딩 화면은 타이핑 글씨가 맡는다 — 기관명 제목은 쓰지 않는다
+document.body.classList.add("is-booting");
+titleBoot.style.display = "none";
+const loaderFrame = document.getElementById("loaderFrame");
+
+/* 글자를 한 자씩 찍는다. 찍는 동안 끝에 ▋ 커서가 붙고, 다 찍으면 사라진다. */
+function typeIn(el, text, delay, cps = 24) {
+  const chars = [...text];
+  const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  let i = 0;
+  return new Promise((done) => {
+    setTimeout(function tick() {
+      el.innerHTML = esc(chars.slice(0, i).join("")) + (i < chars.length ? '<span class="type-cursor"></span>' : "");
+      if (i++ < chars.length) setTimeout(tick, (1000 / cps) * (0.5 + Math.random()));   // 손으로 치듯 들쭉날쭉
+      else done();
+    }, delay);
+  });
+}
+
+// 1) 네 귀퉁이 표시가 깜빡이며 들어오고
+gsap.fromTo(".loader__corner", { opacity: 0 },
+  { opacity: 1, duration: 0.06, repeat: 3, yoyo: true, repeatDelay: 0.08, stagger: 0.12, delay: 0.25,
+    onComplete() { gsap.set(this.targets(), { opacity: 1 }); } });
+// 2) 가운데 한 줄의 글씨들이 조금씩 어긋나게 타이핑된다
+document.querySelectorAll(".loader__cell[data-text]").forEach((el, i) => {
+  typeIn(el, el.dataset.text, 650 + i * 110 + Math.random() * 120).then(() => {
+    if (el.classList.contains("loader__cell--1")) loaderPct.textContent = Math.round(shownPct * 100) + "%";
+  });
+});
+let shownPct = 0;            // 화면에 보이는 퍼센트 (실제 로딩보다 너무 빨리 차지 않게 따라간다)
+
 let ready = false;
-const progress = { p: 0 };
 let loaded = 0;
 const TOTAL = N + 1;                 // 영상 8 + 구슬 이미지
 
 function bumpLoaded() {
   loaded = Math.min(TOTAL, loaded + 1);
-  gsap.to(progress, {
-    p: loaded / TOTAL, duration: 0.6, ease: "power2.out",
-    onUpdate: () => {
-      loaderPct.textContent = String(Math.round(progress.p * 100)).padStart(3, "0");
-      baselineFill.style.transform = `scaleX(${progress.p})`;
-    },
-  });
 }
 
 videoPool.forEach((v) => {
@@ -1356,35 +1764,37 @@ function reveal() {
   ready = true;
 
   const tl = gsap.timeline();
-  tl.to(progress, {
-    p: 1, duration: 0.4, ease: "power2.out",
-    onUpdate: () => {
-      loaderPct.textContent = String(Math.round(progress.p * 100)).padStart(3, "0");
-      baselineFill.style.transform = `scaleX(${progress.p})`;
-    },
-  });
-  tl.to(".loader__label", { opacity: 0, duration: 0.3, stagger: 0.05 });
-  tl.to(baselineFill, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.5, ease: "power2.inOut" }, "-=0.1");
+  loaderPct.textContent = "100%";
+  // 3) 다 차면 글씨가 깜빡이며 꺼지고, 가운데에서 얇은 사각 테두리가 번진다
+  tl.to(".loader__cell", { opacity: 0, duration: 0.05, repeat: 3, yoyo: true, stagger: 0.03 }, 0.25);
+  tl.set(".loader__cell", { opacity: 0 });
+  tl.fromTo(loaderFrame, { opacity: 1, scale: 0.12 }, { scale: 1, duration: 0.35, ease: "power3.out" }, "<");
+  tl.to(loaderFrame, { opacity: 0, duration: 0.06, repeat: 1, yoyo: true }, ">0.05");
+  tl.set(loaderFrame, { opacity: 0 });
+  // 4) 바닥에 얇은 선이 한 번 지나가고
+  tl.fromTo(baselineFill, { scaleX: 0, transformOrigin: "0% 50%" },
+    { scaleX: 1, duration: 0.32, ease: "power2.inOut" }, ">-0.05");
+  tl.to(baselineFill, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.28, ease: "power2.in" });
   tl.set(baselineFill, { transformOrigin: "0% 50%" });
-  tl.to(loaderEl, { autoAlpha: 0, duration: 0.6, ease: "power2.inOut" }, "-=0.35");
+  tl.to(".loader__corner", { opacity: 0, duration: 0.15 }, "<");
+  // 5) 사이트가 어둠에서 몇 단계로 밝아진다
+  tl.to(loaderEl, { autoAlpha: 0, duration: 0.75, ease: "steps(5)" }, "-=0.1");
 
-  // 큰 화면이 브라운관처럼 켜지고, 이름은 잡음에서 잡힌다
+  // 파편들이 축에서 풀려 나오며 고리로 감기고,
+  // 정면 파편이 브라운관처럼 켜지면서 이름이 잡음에서 잡힌다
+  tl.fromTo(rig,
+    { intro: 0, swirl: -4 },
+    { intro: 1, swirl: 0, duration: 2.0, ease: "power3.out" }, "-=0.45");
   tl.fromTo(featureEl,
     { opacity: 0, y: 0 },
-    { opacity: 1, duration: 0.9, ease: "power3.out" }, "-=0.35");
+    { opacity: 1, duration: 0.9, ease: "power3.out" }, "<0.5");
   tl.add(() => {
     crtOn(true);
+    echoIn(featNameEl, VIDEOS[focusIndex].name);
     gsap.set([featNameEl, featSlugEl], { opacity: 1, y: 0 });
-    scramble(featNameEl, tiles[focusIndex].data.name, 0.9);
-    scramble(featSlugEl, slugOf(tiles[focusIndex].data), 1.05);
+    scramble(featNameEl, VIDEOS[focusIndex].name, 0.9);
+    scramble(featSlugEl, slugOf(VIDEOS[focusIndex]), 1.05);
   }, "<");
-  tl.fromTo(allTiles,
-    { opacity: 0, y: 70 },
-    {
-      opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
-      stagger: 0.06,
-      clearProps: "opacity,transform",
-    }, "-=0.7");
 
   // 굵은 픽셀 노이즈가 잘게 부서지면서 영상이 드러난다
   tl.to(tiles, {
@@ -1404,6 +1814,7 @@ function reveal() {
   tl.to(titleBoot, { opacity: 0, y: -10, duration: 0.4, ease: "power2.in" }, "-=0.9");
   tl.add(() => {
     titleBoot.style.display = "none";
+    document.body.classList.remove("is-booting");   // 질문은 왼쪽 위 제자리로
     titleAsk.style.display = "block";
   }, ">");
   tl.fromTo(titleAsk,
@@ -1411,7 +1822,7 @@ function reveal() {
     { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", immediateRender: false },
     ">");
 
-  tl.fromTo([".meta--tl", ".meta--tr", ".pillnav", ".camera-box"],
+  tl.fromTo([".meta--tl", ".meta--tr", ".camera-box", ".camera-hint"],
     { opacity: 0, y: 12 },
     { opacity: 1, y: 0, duration: 0.7, stagger: 0.07, ease: "power3.out" }, "-=0.7");
 
@@ -1423,21 +1834,26 @@ function reveal() {
     if (!gardenLoaded) { gardenFrame.src = "gooseulbit-garden.html"; gardenLoaded = true; }
   });
 
-  tl.add(() => { focusNameEl.textContent = tiles[focusIndex].data.name; }, "-=0.5");
+  tl.add(() => { focusNameEl.textContent = VIDEOS[focusIndex].name; }, "-=0.5");
   tl.fromTo(focusNameEl, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.5");
 }
 
 // 중앙 레이블은 로딩 화면 위에 먼저 나타난다
-gsap.set([".meta--tl", ".meta--tr", ".pillnav", ".camera-box"], { opacity: 0 });
+gsap.set([".meta--tl", ".meta--tr", ".camera-box", ".camera-hint"], { opacity: 0 });
 gsap.from(titlebar, { opacity: 0, duration: 1, ease: "power2.out", delay: 0.15 });
 
-// 전부 로드되면 / 늦어도 7초 뒤에는 연다
+// 퍼센트는 실제 로딩을 따라가되 1초에 40% 넘게는 오르지 않는다 (캐시로 순식간에 끝나도 세는 게 보이게).
+// 100% 가 되면 연다. 늦어도 8초 뒤에는 연다.
 const startedAt = performance.now();
 const readyCheck = setInterval(() => {
   const waited = performance.now() - startedAt;
-  if ((loaded >= TOTAL && waited > 1600) || waited > 7000) {
+  const real = waited > 8000 ? 1 : loaded / TOTAL;
+  if (waited > 1200) shownPct = Math.min(real, shownPct + 0.048);
+  const typed = !document.querySelector(".loader__cell--1 .type-cursor") && document.querySelector(".loader__cell--1").textContent;
+  if (typed) loaderPct.textContent = Math.round(shownPct * 100) + "%";
+  if (shownPct >= 1) {
     clearInterval(readyCheck);
-    reveal();
+    setTimeout(reveal, 250);
   }
 }, 120);
 
@@ -1457,7 +1873,7 @@ async function startCamera() {
   if (camStream) return true;
   try {
     camStream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 640, height: 480, facingMode: "user" },
+      video: { width: 640, height: 480, facingMode: "user", frameRate: { ideal: 30 } },
       audio: false,
     });
     camVideo.srcObject = camStream;
@@ -1510,8 +1926,9 @@ async function initHands() {
       },
       runningMode: "VIDEO",
       numHands: 1,
-      minHandDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
+      minHandDetectionConfidence: HAND.detect,
+      minHandPresenceConfidence: HAND.detect,
+      minTrackingConfidence: HAND.detect,
     });
 
     camStatus.textContent = "카메라를 허용해 주세요";
@@ -1557,6 +1974,19 @@ function toCanvas(lm, box) {
 }
 
 function drawHand(lms, box) {
+  // 엄지-검지 — 모으면 초록으로 이어진다 (지금 '집었다'고 읽히는지 바로 보이게)
+  {
+    const a = toCanvas(lms[4], box), b = toCanvas(lms[8], box);
+    const on = pinchSince > 0;
+    camCtx.save();
+    camCtx.strokeStyle = on ? "#1eff66" : "rgba(255,255,255,0.35)";
+    camCtx.lineWidth = on ? 6 : 2;
+    if (!on) camCtx.setLineDash([6, 6]);
+    if (on) { camCtx.shadowColor = "#1eff66"; camCtx.shadowBlur = 18; }
+    camCtx.beginPath(); camCtx.moveTo(a.x, a.y); camCtx.lineTo(b.x, b.y); camCtx.stroke();
+    camCtx.restore();
+  }
+
   camCtx.strokeStyle = "rgba(255,255,255,0.5)";
   camCtx.lineWidth = 2;
   CONNECTIONS.forEach(([a, b]) => {
@@ -1602,53 +2032,93 @@ function drawHand(lms, box) {
    손을 편 상태의 ratio 는 0.8~1.2, 진짜로 꼬집으면 0.1~0.2 근처다.
    기준이 헐거우면 손을 들자마자 눌린 것으로 잡힌다. */
 function isPinching(lms) {
-  const d = Math.hypot(lms[4].x - lms[8].x, lms[4].y - lms[8].y);
-  const scale = Math.hypot(lms[0].x - lms[9].x, lms[0].y - lms[9].y) || 0.2;
+  // 깊이(z)까지 넣어 잰다 — 손을 카메라 쪽으로 기울여도 거리가 줄어 보이지 않게
+  const d = Math.hypot(lms[4].x - lms[8].x, lms[4].y - lms[8].y, (lms[4].z - lms[8].z) || 0);
+  const scale = Math.hypot(lms[0].x - lms[9].x, lms[0].y - lms[9].y, (lms[0].z - lms[9].z) || 0) || 0.2;
   const ratio = d / scale;
   return holding ? ratio < HOLD.pinchOff : ratio < HOLD.pinchOn;
 }
 
+/* 커서 떨림 거르기 — One Euro 필터.
+   가만히 있을 땐 미세한 떨림을 단단히 누르고, 빨리 움직일 땐 바로 따라온다.
+   (예전처럼 매 프레임 7% 씩만 따라가면 떨림은 줄지만 커서가 늘 굼뜨다) */
+function oneEuro(minCutoff, beta, dCutoff = 1) {
+  let x = null, dx = 0, t = 0;
+  const alpha = (cutoff, dt) => 1 / (1 + 1 / (2 * Math.PI * cutoff * dt));
+  return {
+    reset() { x = null; },
+    filter(v, now) {
+      if (x === null) { x = v; dx = 0; t = now; return v; }
+      const dt = Math.max(0.001, (now - t) / 1000);
+      t = now;
+      dx += alpha(dCutoff, dt) * ((v - x) / dt - dx);
+      x += alpha(minCutoff + beta * Math.abs(dx), dt) * (v - x);
+      return x;
+    },
+  };
+}
+const fx = oneEuro(HAND.calm, HAND.agile);
+const fy = oneEuro(HAND.calm, HAND.agile);
+
+let lastSeenAt = 0;        // 손이 마지막으로 잡힌 시각
+let pinchSince = 0;        // 꼬집기 시작한 시각 (0 이면 꼬집지 않는 중)
+let openSince = 0;         // 손가락을 편 시각 (0 이면 편 상태 아님)
+
+/* 손 하나를 처리한다. lms 가 없으면 이번 프레임엔 손을 못 찾은 것.
+   (카메라 없이도 시험할 수 있게 trackLoop 에서 떼어 냈다) */
+function processHand(lms, now, box) {
+  if (lms) {
+    lastSeenAt = now;
+    if (!handActive) { handSeenAt = now; fx.reset(); fy.reset(); }   // 손이 새로 들어온 순간
+    handActive = true;
+
+    // 엄지와 검지 사이(집는 자리) — 가장자리 여유를 두고 화면 전체에 펼친다.
+    // 검지 끝만 따라가면 손가락을 모으는 순간 검지가 엄지 쪽으로 움직여 커서가 튄다.
+    const grip = { x: (lms[4].x + lms[8].x) / 2, y: (lms[4].y + lms[8].y) / 2 };
+    const p = box ? toCanvas(grip, box) : { x: (1 - grip.x), y: grip.y };
+    const cw = box ? box.cw : 1, ch = box ? box.ch : 1;
+    const nx = gsap.utils.clamp(0, 1, (p.x / cw - 0.12) / 0.76);
+    const ny = gsap.utils.clamp(0, 1, (p.y / ch - 0.15) / 0.7);
+    handPos.x = fx.filter(nx, now);
+    handPos.y = fy.filter(ny, now);
+    moveCursor(handPos.x * STAGE_W, handPos.y * STAGE_H);
+
+    // 꼬집기 — 일정 시간 이어져야 인정한다 (한 프레임 흔들림으로 눌리거나 끊기지 않게)
+    if (isPinching(lms)) { openSince = 0; if (!pinchSince) pinchSince = now; }
+    else { pinchSince = 0; if (!openSince) openSince = now; }
+    const pinched = pinchSince && now - pinchSince >= HAND.pinchIn;
+    const released = openSince && now - openSince >= HAND.pinchOut;
+
+    // 손이 막 잡힌 직후에는 랜드마크가 흔들려 꼬집음으로 오인되기 쉽다
+    const settled = now - handSeenAt > HOLD.grace;
+    if (released) pinchLatch = false;            // 한 번 펴야 다음 선택이 가능
+    if (settled && pinched && !pinchLatch) startHold();
+    // 손가락을 폈으면 놓은 것이다. 단, 마우스로 누르고 있는 건 건드리지 않는다.
+    else if (released && holdBy === "hand") endHold(false);
+    return;
+  }
+
+  // 잠깐 놓친 것이면 아무것도 바꾸지 않는다 — 커서도 게이지도 그대로
+  if (handActive && now - lastSeenAt < HAND.lostGrace) return;
+
+  if (handActive) gsap.to(cursorEl, { opacity: 0, duration: 0.4 });
+  handActive = false;
+  pointerIn = false;                  // 손이 사라지면 빨리 돌리기도 멈춘다 (저절로 도는 건 계속)
+  handPos.x = null;                   // 손이 사라지면 다음엔 그 자리에서 새로 시작
+  pinchSince = 0; openSince = 0;
+  if (holdBy === "hand") endHold(false);
+}
+
 function trackLoop() {
-  if (camVideo.readyState >= 2) {
+  // 새 카메라 프레임이 왔을 때만 인식하고 다시 그린다 (화면은 60, 카메라는 30 이라 절반은 헛일이었다)
+  if (camVideo.readyState >= 2 && camVideo.currentTime !== lastVideoTime) {
+    lastVideoTime = camVideo.currentTime;
+    const now = performance.now();
     const box = drawCameraFrame();
-
-    if (camVideo.currentTime !== lastVideoTime) {
-      lastVideoTime = camVideo.currentTime;
-      lastHands = handLandmarker.detectForVideo(camVideo, performance.now());
-    }
-
-    if (lastHands && lastHands.landmarks && lastHands.landmarks.length > 0) {
-      const lms = lastHands.landmarks[0];
-      if (!handActive) handSeenAt = performance.now();   // 손이 새로 들어온 순간
-      handActive = true;
-      drawHand(lms, box);
-
-      const p = toCanvas(lms[8], box);
-      // 가장자리 15% 는 여유로 두고 화면 전체에 펼친다
-      const nx = gsap.utils.clamp(0, 1, (p.x / box.cw - 0.12) / 0.76);
-      const ny = gsap.utils.clamp(0, 1, (p.y / box.ch - 0.15) / 0.7);
-
-      // 손 좌표를 그대로 쓰면 미세한 떨림까지 따라간다 — 한 번 눌러서 넘긴다
-      if (handPos.x === null) { handPos.x = nx; handPos.y = ny; }
-      else {
-        handPos.x += (nx - handPos.x) * FOLLOW.hand;
-        handPos.y += (ny - handPos.y) * FOLLOW.hand;
-      }
-      moveCursor(handPos.x * STAGE_W, handPos.y * STAGE_H);
-
-      // 손이 막 잡힌 직후에는 랜드마크가 흔들려 꼬집음으로 오인되기 쉽다
-      const settled = performance.now() - handSeenAt > HOLD.grace;
-      const pinching = isPinching(lms);
-      if (!pinching) pinchLatch = false;          // 한 번 놓아야 다음 선택이 가능
-      if (settled && pinching && !pinchLatch) startHold();
-      // 꼬집지 않았으면 놓은 것이다. 단, 마우스로 누르고 있는 건 건드리지 않는다.
-      else if (!pinching && holdBy === "hand") endHold(false);
-    } else {
-      if (handActive) gsap.to(cursorEl, { opacity: 0, duration: 0.4 });
-      handActive = false;
-      handPos.x = null;                   // 손이 사라지면 다음엔 그 자리에서 새로 시작
-      if (holdBy === "hand") endHold(false);
-    }
+    lastHands = handLandmarker.detectForVideo(camVideo, now);
+    const lms = lastHands && lastHands.landmarks && lastHands.landmarks[0];
+    if (lms) drawHand(lms, box);
+    processHand(lms || null, now, box);
   }
   requestAnimationFrame(trackLoop);
 }
@@ -1656,4 +2126,4 @@ function trackLoop() {
 initHands();
 
 // 디버그용
-window.__yk = { tiles, select, back, setFocus, reveal, moveCursor, state: () => ({ focusIndex, current, locked, ready }) };
+window.__yk = { tiles, spin, rig, nudge, select, back, reveal, moveCursor, processHand, asciiSample, hold, handPos, state: () => ({ focusIndex, focusCard, current, locked, ready, handActive, holding, holdBy }) };
