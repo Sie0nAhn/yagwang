@@ -98,8 +98,12 @@ const HAND = {
 
 /* 꾹 눌러 고르기 */
 const HOLD = {
-  time: 1.6,       // 게이지가 다 차는 데 걸리는 시간(초) — 손으로 오래 버티기 힘들어 줄였다
+  time: 1.0,       // 게이지가 다 차는 데 걸리는 시간(초) — 손으로 오래 버티기 힘들어 줄였다
   mouse: 1.1,      // 마우스로 누를 때는 잘못 눌릴 일이 없으니 짧게
+  // 손을 올려 두기만 해도 눌린다 — 꼬집기가 잘 안 되는 사람도 고를 수 있게
+  dwell: 2.0,      // 아카이브 가운데 화면에 손을 올려 두면 이 시간 뒤에 골라진다(초)
+  button: 1.0,     // 구슬 화면 버튼에 손을 올려 두면 이 시간 뒤에 눌린다(초)
+  dwellDelay: 300, // 자리에 들어온 뒤 이만큼(ms) 머물러야 게이지가 차기 시작한다 (스쳐 지나갈 때 시작하지 않게)
   // 실측: 편 손 0.76 / 반쯤 오므린 손 0.28 / 실제로 꼬집으면 0.03
   pinchOn: 0.28,   // 엄지-검지가 이보다 가까워야 '꼬집었다' — 완전히 붙이지 않아도 되게
   pinchOff: 0.45,  // 이보다 벌어지면 놓은 것
@@ -516,9 +520,11 @@ function stepSpiral(dt) {
   spin.drive = want / SPIN.max;
   if (want !== 0) spinTarget = null;
 
-  if (spinLock || spinTarget !== null) {
+  // 손이 보이는 동안엔 저절로 돌지 않고 가장 가까운 파편에 멈춰 선다 — 고르려는 파편이 도망가지 않게
+  const handHold = handActive && want === 0;
+  if (spinLock || spinTarget !== null || handHold) {
     // 꾹 누르는 중이면 정면 파편을 한가운데 세우고, 파편을 눌렀으면 그 파편까지 돈다
-    const goal = spinLock ? Math.round(spin.s) : spinTarget;
+    const goal = spinLock || spinTarget === null ? Math.round(spin.s) : spinTarget;
     spin.v = 0;
     spin.s += (goal - spin.s) * decay(dt, SPIN.settle);
     if (!spinLock && Math.abs(goal - spin.s) < 0.003) spinTarget = null;   // 도착하면 다시 저절로
@@ -781,7 +787,11 @@ function renderGrid() {
   const now = performance.now();
   const dt = Math.min(0.1, (now - spinLastT) / 1000);
   spinLastT = now;
-  if (current !== "grid") return;
+  if (current !== "grid") {
+    // 영상·정원이 떠 있는 동안 아카이브 영상 9개가 뒤에서 계속 돌면 그만큼 무거워진다
+    if (current === "film" || current === "garden") videoPool.forEach((v) => { if (!v.paused) v.pause(); });
+    return;
+  }
 
   if (ready && !locked) stepSpiral(dt);
   layoutSpiral();
@@ -810,6 +820,7 @@ let drawFrame = 0;
 
 function drawTiles() {
   drawFrame++;
+  if (current === "film" || current === "garden") return;     // 아카이브가 안 보일 땐 그리지 않는다
   updateVideoSources();
   tiles.forEach((t, i) => {
     if ((t.live || t.noise > 0.01) && drawFrame % 2 === i % 2) drawThumb(t);
@@ -824,6 +835,13 @@ gsap.ticker.add(drawTiles);
    포커스
    ============================================================ */
 const focusNameEl = document.getElementById("focusName");
+const cameraHintEl = document.getElementById("cameraHint");
+/* 손 인식 상자 위 설명 — 화면마다 할 수 있는 게 달라서 바꿔 띄운다 */
+const HINT = {
+  grid: "손을 화면 좌우 끝으로 가져가면 그쪽으로 돌아갑니다. 가운데 파편에 손을 올려 두면 골라집니다. 엄지와 검지를 모아 집으면 더 빨리 골라집니다.",
+  orb: "'확인하러 가기'에 손을 올려 두면 영상이 시작됩니다. 손이 어디 있든 엄지와 검지를 모아 집어도 넘어갑니다.",
+};
+cameraHintEl.textContent = HINT.grid;
 const hudIndexEl = document.getElementById("hudIndex");
 const marbleStage = document.getElementById("marbleStage");
 const marbleEl = document.getElementById("marble");
@@ -1064,6 +1082,9 @@ function select() {
   // 버튼이 보이기 시작하면 바로 누를 수 있게 — 남은 글자 애니메이션이 끝날 때까지 기다리지 않는다
   // (예전엔 버튼이 다 보이고도 0.5초 넘게 눌러도 무시돼서 '영상이 안 나온다'처럼 보였다)
   tl.add(() => { locked = false; current = "orb"; }, 1.8);
+  // 손 설명도 구슬 화면에 맞게 바꿔 다시 띄운다
+  tl.add(() => { cameraHintEl.textContent = HINT.orb; }, 1.7);
+  tl.to("#cameraHint", { autoAlpha: 1, duration: 0.5 }, 1.8);
   tl.fromTo("#orbCaption",
     { y: 16, opacity: 0 },
     { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 1.95);
@@ -1090,6 +1111,7 @@ function resetArchive() {
   // 고른 타일은 선택할 때 숨겨뒀으므로 반드시 되살려야 한다
   tiles.forEach((t) => { t.px = PIXEL_BASE; });
   gsap.set([edgeL, edgeR, "#cameraHint"], { autoAlpha: 1 });
+  cameraHintEl.textContent = HINT.grid;
   spin.v = 0;
   spinTarget = null;
   // 고리가 축에서 다시 풀려 나온다 (검정 페이드가 걷히는 동안 보인다)
@@ -1501,7 +1523,7 @@ function prepareGarden() {
   }, true);
 
   // 버튼을 누르면 정원의 2.3초 지연을 기다리지 않고 바로 넘어간다
-  ["btn-next", "btn-go"].forEach((id) => {
+  ["btn-next", "btn-go", "panel-next"].forEach((id) => {
     const b = doc.getElementById(id);
     if (b) b.addEventListener("click", () => toFilmTail());
   });
@@ -1586,14 +1608,22 @@ const auraY = gsap.quickTo("#aura", "y", { duration: FOLLOW.aura, ease: "power2"
 const hold = { p: 0 };
 let holding = false;
 let holdTween = null;
-let holdBy = null;              // "hand" 또는 "mouse" — 지금 누가 누르고 있는지
+let holdBy = null;              // "hand" · "dwell" · "mouse" — 지금 누가 누르고 있는지
+let holdZone = null;            // 누르고 있는 자리 (handZone 참고)
+let dwellLatch = false;         // 올려 두기로 한 번 눌렀으면, 손을 뺄 때까지 다시 눌리지 않는다
+const dwellAt = { zone: null, since: 0 };
 
 
-function moveCursor(sx, sy) {
+/* 손 커서는 훨씬 빨리 따라온다 — 손 떨림은 One Euro 필터가 이미 걸러 줘서,
+   여기서 0.45초를 더 늦추면 손보다 커서가 한참 뒤처져 '렉'처럼 느껴진다 */
+const handCursorX = gsap.quickTo(cursorEl, "x", { duration: 0.12, ease: "power2" });
+const handCursorY = gsap.quickTo(cursorEl, "y", { duration: 0.12, ease: "power2" });
+
+function moveCursor(sx, sy, byHand) {
   cursorPos.x = sx;
   cursorPos.y = sy;
-  cursorX(sx);
-  cursorY(sy);
+  (byHand ? handCursorX : cursorX)(sx);
+  (byHand ? handCursorY : cursorY)(sy);
 
   const nx = sx / STAGE_W - 0.5;
   const ny = sy / STAGE_H - 0.5;
@@ -1612,15 +1642,35 @@ function drawHold() {
   baselineFill.style.transform = `scaleX(${hold.p})`;
 }
 
-/* byMouse : 마우스로 누른 것. 꼬집기는 잘못 잡힐 수 있어 오래 끌지만,
-   마우스 클릭은 틀릴 일이 없으니 절반만 기다린다. */
-function startHold(byMouse) {
+/* 손이 지금 '올려 두면 눌리는' 자리에 있는지.
+   아카이브에선 가운데 화면, 구슬 화면에선 두 버튼 (손으로 맞추기 쉽게 버튼보다 넉넉히 잡는다). */
+const BTN_PAD = 44;
+function handZone(sx, sy) {
+  if (current === "grid") {
+    return Math.abs(sx / STAGE_W - 0.5) < 0.22 && sy > STAGE_H * 0.18 && sy < STAGE_H * 0.86 ? "front" : null;
+  }
+  if (current === "orb") {
+    for (const [zone, el] of [["go", btnGo], ["back", btnBack]]) {
+      const r = el.getBoundingClientRect();
+      const a = toStage(r.left, r.top), b = toStage(r.right, r.bottom);
+      if (sx > a.x - BTN_PAD && sx < b.x + BTN_PAD && sy > a.y - BTN_PAD && sy < b.y + BTN_PAD) return zone;
+    }
+  }
+  return null;
+}
+
+/* by : "mouse"(마우스로 꾹) · "hand"(꼬집기) · "dwell"(손을 올려 두기)
+   zone : 누르는 자리 — 구슬 화면에서 "back" 이면 다시 고르기, 아니면 확인하러 가기 */
+function startHold(by = "hand", zone = null) {
   if (holding || locked || !ready) return;
   holding = true;
-  holdBy = byMouse ? "mouse" : "hand";
-  const wait = byMouse ? HOLD.mouse : HOLD.time;
+  holdBy = by;
+  holdZone = zone;
+  const wait = by === "mouse" ? HOLD.mouse
+    : by === "dwell" ? (current === "grid" ? HOLD.dwell : HOLD.button)
+    : HOLD.time;
   gsap.to(cursorEl, { scale: 1.3, duration: 0.3, ease: "back.out(3)" });
-  if (current === "orb") btnBack.classList.add("is-armed");
+  if (current === "orb") (zone === "back" ? btnBack : btnGo).classList.add("is-armed");
 
   // 누르고 있는 동안에는 목록이 더 넘어가지 않게 세워둔다
   if (current === "grid") {
@@ -1636,9 +1686,12 @@ function startHold(byMouse) {
   holdTween = gsap.to(hold, {
     p: 1, duration: wait, ease: "none", overwrite: true, onUpdate: drawHold,
     onComplete: () => {
+      const z = holdZone;
       endHold(true);
       pinchLatch = true;                  // 손을 펴기 전엔 다시 선택되지 않게
-      advance();
+      dwellLatch = true;                  // 손을 그 자리에서 뺐다가 다시 올려야 또 눌린다
+      if (current === "orb" && z === "back") back();
+      else advance();
     },
   });
 }
@@ -1647,6 +1700,8 @@ function endHold(done) {
   if (!holding) return;
   holding = false;
   holdBy = null;
+  holdZone = null;
+  btnGo.classList.remove("is-armed");
   btnBack.classList.remove("is-armed");
   gsap.to(cursorEl, { scale: 1, duration: 0.4, ease: "power2.out" });
 
@@ -1671,7 +1726,7 @@ window.addEventListener("mousemove", (e) => {
   const p = toStage(e.clientX, e.clientY);
   moveCursor(p.x, p.y);
 });
-window.addEventListener("mousedown", () => startHold(true));
+window.addEventListener("mousedown", () => startHold("mouse"));
 window.addEventListener("mouseup", () => { if (holdBy === "mouse") endHold(false); });
 
 /* 큰 화면을 그냥 한 번 눌러도 골라진다.
@@ -1935,7 +1990,7 @@ async function initHands() {
     await startCamera();
 
     camStatus.classList.add("is-hidden");
-    requestAnimationFrame(trackLoop);
+    gsap.ticker.add(trackTick);       // 그리기(drawTiles) 다음에 돈다 — 순서가 중요하다
   } catch (err) {
     console.warn("[hand] 초기화 실패:", err);
     camStatus.classList.remove("is-hidden");
@@ -2081,7 +2136,7 @@ function processHand(lms, now, box) {
     const ny = gsap.utils.clamp(0, 1, (p.y / ch - 0.15) / 0.7);
     handPos.x = fx.filter(nx, now);
     handPos.y = fy.filter(ny, now);
-    moveCursor(handPos.x * STAGE_W, handPos.y * STAGE_H);
+    moveCursor(handPos.x * STAGE_W, handPos.y * STAGE_H, true);
 
     // 꼬집기 — 일정 시간 이어져야 인정한다 (한 프레임 흔들림으로 눌리거나 끊기지 않게)
     if (isPinching(lms)) { openSince = 0; if (!pinchSince) pinchSince = now; }
@@ -2092,9 +2147,26 @@ function processHand(lms, now, box) {
     // 손이 막 잡힌 직후에는 랜드마크가 흔들려 꼬집음으로 오인되기 쉽다
     const settled = now - handSeenAt > HOLD.grace;
     if (released) pinchLatch = false;            // 한 번 펴야 다음 선택이 가능
-    if (settled && pinched && !pinchLatch) startHold();
+    const zone = handZone(handPos.x * STAGE_W, handPos.y * STAGE_H);
+
+    if (settled && pinched && !pinchLatch) {
+      // 올려 두기 게이지가 차는 중에 꼬집으면 두 배 빨리 찬다
+      if (holding && holdBy === "dwell" && holdTween) holdTween.timeScale(2);
+      else startHold("hand", zone);
+    }
     // 손가락을 폈으면 놓은 것이다. 단, 마우스로 누르고 있는 건 건드리지 않는다.
     else if (released && holdBy === "hand") endHold(false);
+
+    // 손을 올려 두기만 해도 눌린다 — 자리를 벗어나면 게이지가 풀린다
+    if (zone !== dwellAt.zone) {
+      dwellAt.zone = zone;
+      dwellAt.since = now;
+      if (!zone) dwellLatch = false;
+      if (holdBy === "dwell") endHold(false);
+    }
+    if (zone && settled && !holding && !dwellLatch && now - dwellAt.since > HOLD.dwellDelay) {
+      startHold("dwell", zone);
+    }
     return;
   }
 
@@ -2106,12 +2178,20 @@ function processHand(lms, now, box) {
   pointerIn = false;                  // 손이 사라지면 빨리 돌리기도 멈춘다 (저절로 도는 건 계속)
   handPos.x = null;                   // 손이 사라지면 다음엔 그 자리에서 새로 시작
   pinchSince = 0; openSince = 0;
-  if (holdBy === "hand") endHold(false);
+  dwellAt.zone = null; dwellLatch = false;
+  if (holdBy === "hand" || holdBy === "dwell") endHold(false);
 }
 
-function trackLoop() {
-  // 새 카메라 프레임이 왔을 때만 인식하고 다시 그린다 (화면은 60, 카메라는 30 이라 절반은 헛일이었다)
+/* 손 인식은 한 번에 10ms 남짓 화면을 멈춘다. 문자 화면(수천 글자)을 그리는 프레임과 겹치면
+   한 프레임이 통째로 밀려 고리가 툭툭 끊긴다. 그래서 문자 화면을 그리지 않는 프레임에만 인식한다.
+   (카메라는 초당 30장, 화면은 60번 이상이라 이렇게 해도 카메라 프레임을 놓치지 않는다)
+   손이 없을 때는 손이 들어오는지만 보면 되므로 절반만 본다. */
+let trackTurn = 0;
+function trackTick() {
+  if (!handLandmarker) return;
+  if (current === "grid" && drawFrame % 2 === 0) return;      // 이번 프레임은 문자 화면 차례
   if (camVideo.readyState >= 2 && camVideo.currentTime !== lastVideoTime) {
+    if (!handActive && (trackTurn++ & 1)) { lastVideoTime = camVideo.currentTime; return; }
     lastVideoTime = camVideo.currentTime;
     const now = performance.now();
     const box = drawCameraFrame();
@@ -2120,10 +2200,9 @@ function trackLoop() {
     if (lms) drawHand(lms, box);
     processHand(lms || null, now, box);
   }
-  requestAnimationFrame(trackLoop);
 }
 
 initHands();
 
 // 디버그용
-window.__yk = { tiles, spin, rig, nudge, select, back, reveal, moveCursor, processHand, asciiSample, hold, handPos, state: () => ({ focusIndex, focusCard, current, locked, ready, handActive, holding, holdBy }) };
+window.__yk = { tiles, spin, rig, nudge, select, back, reveal, moveCursor, processHand, asciiSample, hold, handPos, state: () => ({ focusIndex, focusCard, current, locked, ready, handActive, holding, holdBy, holdZone, dwellLatch }) };
