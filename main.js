@@ -1787,7 +1787,40 @@ function typeIn(el, text, delay, cps = 24) {
 gsap.fromTo(".loader__corner", { opacity: 0 },
   { opacity: 1, duration: 0.06, repeat: 3, yoyo: true, repeatDelay: 0.08, stagger: 0.12, delay: 0.25,
     onComplete() { gsap.set(this.targets(), { opacity: 1 }); } });
-// 2) 가운데 한 줄의 글씨들이 조금씩 어긋나게 타이핑된다
+// 2) 가운데 타이틀 로고가 브라운관처럼 깜빡이며 켜지고, 도장이 찍힌다
+const loaderLogo = document.getElementById("loaderLogo");
+gsap.set([".logo__line", ".logo__seal"], { opacity: 0 });
+gsap.timeline({ delay: 0.4 })
+  .to(".logo__line--1", { opacity: 1, duration: 0.05, repeat: 3, yoyo: true, repeatDelay: 0.06 })
+  .set(".logo__line--1", { opacity: 1 })
+  .to(".logo__line--2", { opacity: 1, duration: 0.05, repeat: 3, yoyo: true, repeatDelay: 0.06 }, "-=0.12")
+  .set(".logo__line--2", { opacity: 1 })
+  .add(stampSeal(), "+=0.15");
+
+/* 도장 찍기 — 위에서 크게 기울어진 채 내려와 '쿵' 눌리고, 살짝 튀어 제자리에 앉는다.
+   찍히는 순간 인주가 번지듯 빛이 확 퍼졌다 가라앉고, 로고 전체가 한 번 울린다.
+   (기준점을 도장 한가운데로 박아 둔다 — 안 그러면 로고 왼쪽 위를 기준으로 커져서 옆에서 날아오는 것처럼 보인다) */
+function stampSeal() {
+  const SEAL_ORIGIN = "461 107.2";            // 로고.svg 안의 도장 한가운데 (435.6 + 50.75/2, 61 + 92.44/2)
+  const GLOW = "drop-shadow(0 0 7px rgba(154,90,255,.75)) brightness(1)";
+  // 기준점은 아무것도 바꾸기 전에 먼저 박는다. 커진 뒤에 기준점을 옮기면 GSAP 이 위치를 보정하느라
+  // 도장이 제자리에서 10px 가량 밀려 앉는다.
+  gsap.set(".logo__seal", { svgOrigin: SEAL_ORIGIN });
+  return gsap.timeline()
+    // 공중에서 내려온다 — 커 보이고, 비스듬하고, 흐릿하다
+    .fromTo(".logo__seal",
+      { opacity: 0, scale: 2.1, rotation: -9, svgOrigin: SEAL_ORIGIN, filter: "drop-shadow(0 0 0 rgba(154,90,255,0)) brightness(1)" },
+      { opacity: 1, scale: 0.9, rotation: 0, duration: 0.26, ease: "power4.in" })
+    // 쿵 — 빛이 번지고, 로고가 한 번 울린다
+    .to(".logo__seal", { filter: "drop-shadow(0 0 22px rgba(154,90,255,1)) brightness(1.7)", duration: 0.05 })
+    .fromTo(".logo", { y: 0 }, { y: 3, duration: 0.05, repeat: 1, yoyo: true, ease: "power1.out" }, "<")
+    // 손을 떼면 살짝 튀어 올라 제자리에 앉고, 빛은 천천히 가라앉는다
+    .to(".logo__seal", { scale: 1, duration: 0.35, ease: "back.out(4)" }, "<0.03")
+    .to(".logo__seal", { filter: GLOW, duration: 0.7, ease: "power2.out" }, "<");
+}
+const loaderTag = document.getElementById("loaderTag");
+typeIn(loaderTag, loaderTag.dataset.text, 1250, 30);
+// 3) 아래 한 줄의 글씨들이 조금씩 어긋나게 타이핑된다
 document.querySelectorAll(".loader__cell[data-text]").forEach((el, i) => {
   typeIn(el, el.dataset.text, 650 + i * 110 + Math.random() * 120).then(() => {
     if (el.classList.contains("loader__cell--1")) loaderPct.textContent = Math.round(shownPct * 100) + "%";
@@ -1820,19 +1853,19 @@ function reveal() {
 
   const tl = gsap.timeline();
   loaderPct.textContent = "100%";
-  // 3) 다 차면 글씨가 깜빡이며 꺼지고, 가운데에서 얇은 사각 테두리가 번진다
-  tl.to(".loader__cell", { opacity: 0, duration: 0.05, repeat: 3, yoyo: true, stagger: 0.03 }, 0.25);
-  tl.set(".loader__cell", { opacity: 0 });
+  // 4) 다 차면 로고와 글씨가 깜빡이며 꺼지고, 가운데에서 얇은 사각 테두리가 번진다
+  tl.to([loaderLogo, ".loader__cell"], { opacity: 0, duration: 0.05, repeat: 3, yoyo: true, stagger: 0.03 }, 0.25);
+  tl.set([loaderLogo, ".loader__cell"], { opacity: 0 });
   tl.fromTo(loaderFrame, { opacity: 1, scale: 0.12 }, { scale: 1, duration: 0.35, ease: "power3.out" }, "<");
   tl.to(loaderFrame, { opacity: 0, duration: 0.06, repeat: 1, yoyo: true }, ">0.05");
   tl.set(loaderFrame, { opacity: 0 });
-  // 4) 바닥에 얇은 선이 한 번 지나가고
+  // 5) 바닥에 얇은 선이 한 번 지나가고
   tl.fromTo(baselineFill, { scaleX: 0, transformOrigin: "0% 50%" },
     { scaleX: 1, duration: 0.32, ease: "power2.inOut" }, ">-0.05");
   tl.to(baselineFill, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.28, ease: "power2.in" });
   tl.set(baselineFill, { transformOrigin: "0% 50%" });
   tl.to(".loader__corner", { opacity: 0, duration: 0.15 }, "<");
-  // 5) 사이트가 어둠에서 몇 단계로 밝아진다
+  // 6) 사이트가 어둠에서 몇 단계로 밝아진다
   tl.to(loaderEl, { autoAlpha: 0, duration: 0.75, ease: "steps(5)" }, "-=0.1");
 
   // 파편들이 축에서 풀려 나오며 고리로 감기고,

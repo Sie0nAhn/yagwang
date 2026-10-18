@@ -5,17 +5,27 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* 오르빗 (JAMO TYPEFACE · SIL OFL 1.1 — assets/fonts/Orbit-OFL.txt) — 굵기는 Regular 하나뿐이다 */
+@font-face {
+  font-family: "Orbit";
+  src: url("assets/fonts/Orbit-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --stage-w: 1440px;
   --stage-h: 805px;
   --scale: 1;
 
-  --font-kr: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
-  --font-grotesk: "Helvetica Neue", Helvetica, Arial, "Pretendard Variable", sans-serif;
-  --font-mono: "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-kr: "Orbit", "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+  --font-grotesk: "Orbit", "Helvetica Neue", Helvetica, Arial, "Pretendard Variable", sans-serif;
+  --font-mono: "tt-autonomous-mono", "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;   /* 영문 — Adobe Fonts (index.html) */
 
   /* UI 액센트 */
   --acc: #1eff66;
+  --boot: #9a5aff;           /* 로딩 화면 색 — 타이틀 도장(夜光)과 같은 보라 */
   /* 선택 중인 영상의 색 (JS 가 갱신) */
   --tint: #1eff66;
   --tint-soft: rgba(30,255,102,.35);
@@ -372,6 +382,7 @@ body.is-booting .titlebar {
 }
 /* 로딩 중엔 바닥 선 자리를 비워 둔다 — 끝날 때 한 번 지나가는 선만 보이게 */
 body.is-booting .baseline { background: transparent; }
+body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px rgba(154,90,255,.6); }
 .baseline__fill {
   display: block;
   width: 100%;
@@ -394,7 +405,7 @@ body.is-booting .baseline { background: transparent; }
 }
 /* 로딩 글씨 — 작은 모노 글씨가 화면 가운데 한 줄에 흩어져 놓인다 */
 .loader {
-  color: var(--acc);
+  color: var(--boot);
   font-family: var(--font-mono), var(--font-kr);
   font-size: 11px;
   letter-spacing: .02em;
@@ -414,7 +425,7 @@ body.is-booting .baseline { background: transparent; }
   position: absolute;
   left: 28px;
   right: 28px;
-  top: 50%;
+  top: 74%;                    /* 가운데는 타이틀 로고 자리 */
   height: 14px;
   margin-top: -7px;
 }
@@ -445,6 +456,31 @@ body.is-booting .baseline { background: transparent; }
   vertical-align: -2px;
   background: currentColor;
 }
+/* 타이틀 로고 — 야광 + 夜光 도장 / 당신이 모르는 사이 (assets 원본: 로고.svg) */
+.loader__logo {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 580px;                /* 로고 원본 700 × 324 */
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.logo { display: block; width: 100%; height: auto; overflow: visible; }
+.logo__line { fill: #fff; }
+.logo__seal { fill: var(--boot); filter: drop-shadow(0 0 7px rgba(154,90,255,.75)); }
+/* 아래 영문 한 줄 — 첫 줄(야광 + 도장)과 비슷한 폭 */
+.loader__tag {
+  height: 14px;
+  margin: 30px 0 0;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: .17em;
+  text-indent: .17em;          /* 마지막 글자 뒤 자간만큼 왼쪽도 띄워 가운데를 맞춘다 */
+  white-space: nowrap;
+  color: #9a9a9a;
+}
+.loader__tag .type-cursor { background: var(--boot); }
+
 /* 다 차면 가운데에서 번지는 얇은 사각 테두리 */
 .loader__frame {
   position: absolute;
