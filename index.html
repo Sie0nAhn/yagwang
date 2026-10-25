@@ -108,10 +108,11 @@
 
     <!-- 장면이 바뀔 때 덮는 검정 — 모든 전환은 이걸로 페이드 -->
     <div class="fade" id="fade"></div>
-    <!-- 인터랙션 1 → 영상 1 : 브라운관이 꺼지며 남는 빛의 선과 점 -->
-    <div class="crt-line" id="crtLine"></div>
-    <!-- 정원 → 영상 2 : 구슬에서 퍼지는 빛 -->
-    <div class="bloom" id="bloom"></div>
+    <!-- 인터랙션 1 → 영상 1 : 양옆에서 닫혔다가 자동문처럼 벌어지는 검은 패널 -->
+    <div class="door door--l" id="doorL"></div>
+    <div class="door door--r" id="doorR"></div>
+    <!-- 정원 → 영상 2 : 필름 띠 (정원 바로 아래에 그린다) -->
+    <canvas class="pixwipe" id="pixwipe" width="1440" height="805"></canvas>
 
     <!-- ============ 항상 떠 있는 요소들 ============ -->
 
@@ -210,6 +211,8 @@
         </g>
       </svg>
         <p class="loader__tag" id="loaderTag" data-text="Yagwang: Without Your Knowing"></p>
+        <!-- 다 받으면 뜬다 — 한 번 눌러야 소리가 난다 (브라우저 규칙) -->
+        <p class="loader__start" id="loaderStart">화면을 눌러 시작하세요</p>
       </div>
       <div class="loader__frame" id="loaderFrame"></div>
     </div>

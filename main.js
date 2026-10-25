@@ -10,6 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { unlockSound, setScene, chime } from "./sound.js";
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -1041,36 +1042,52 @@ function select() {
   tl.to(rig, { fade: 0, spread: 1.35, duration: 0.6, ease: "power2.in" }, 0);
   tl.to([edgeL, edgeR, "#cameraHint"], { autoAlpha: 0, duration: 0.3 }, 0);   // 고리 조작 설명은 아카이브에서만
 
-  // 2. 타일 → 구슬로 응축
-  //    (tween 시작 직전 프레임에 초기값을 심어야 from 값이 제대로 잡힌다)
+  // 2. 화면 → 구슬로 응축
+  //    네모 화면이 그 자리에서 둥글게 말리며 유리구슬처럼 빛을 머금고, 휘어진 길을 따라
+  //    구슬 자리로 날아가 구슬과 똑같은 크기로 커진 뒤 진짜 구슬로 녹아든다.
+  //    (예전엔 작은 원으로 400° 돌며 날아가 아주 작은 점에서 구슬이 튀어나와 끊겨 보였다)
+  //    tween 시작 직전 프레임에 초기값을 심어야 from 값이 제대로 잡힌다
+  const MARBLE_D = 470;                       // .marble-stage 크기 — 구슬과 똑같이 맞춘다
+  const MID_D = 300;                          // 날아가는 동안의 크기
+  const snap = morph.firstElementChild;
   tl.add(() => {
     gsap.set([featureEl, featNameEl, featSlugEl], { autoAlpha: 0 });
     gsap.set(morph, {
-      visibility: "visible", opacity: 1, filter: "none",
+      visibility: "visible", opacity: 1, filter: "brightness(1)",
       x: p.x, y: p.y, width: w, height: h,
-      borderRadius: 0, rotation: 0, scale: 1,
+      borderRadius: 6, rotation: 0, scale: 1, "--glass": 0,
     });
+    gsap.set(snap, { rotation: 0, scale: 1, transformOrigin: "50% 50%" });
   }, 0.48);
 
+  // 그 자리에서 둥글게 말린다 — 모서리가 둥글어지고 유리 하이라이트가 떠오른다
   tl.to(morph, {
-    x: MARBLE_CX - 110, y: MARBLE_CY - 110,
-    width: 220, height: 220, borderRadius: 110,
-    rotation: 400,
-    duration: 1.05, ease: "power3.inOut",
+    x: p.x + (w - h) / 2, width: h, borderRadius: h / 2, "--glass": 1,
+    duration: 0.4, ease: "power2.inOut",
   }, 0.5);
-  tl.to(morph, { filter: "blur(7px) brightness(1.7)", duration: 0.5, ease: "power2.in" }, 1.1);
+  tl.to(snap, { scale: 1.35, rotation: 35, duration: 1.4, ease: "power1.inOut" }, 0.5);
+  // 휘어진 길로 날아간다 — 가로와 세로의 가속을 달리 줘서 곡선을 그린다
+  tl.to(morph, { x: MARBLE_CX - MID_D / 2, duration: 0.8, ease: "power2.inOut" }, 0.82);
+  tl.to(morph, { y: MARBLE_CY - MID_D / 2, duration: 0.8, ease: "back.inOut(1.4)" }, 0.82);
+  tl.to(morph, { width: MID_D, height: MID_D, borderRadius: MID_D / 2, duration: 0.8, ease: "power2.inOut" }, 0.82);
 
   // 3. 구슬 탄생 — 아카이브는 디졸브로 물러난다
   tl.set(screenOrb, { autoAlpha: 1 }, 1.25);
   tl.to(screenGrid, { autoAlpha: 0, duration: 0.45, ease: "power2.inOut" }, 1.25);
 
+  // 구슬 크기로 부풀며 환해지고, 그 안에서 진짜 구슬이 떠올라 자리를 이어받는다
+  tl.to(morph, {
+    x: MARBLE_CX - MARBLE_D / 2, y: MARBLE_CY - MARBLE_D / 2,
+    width: MARBLE_D, height: MARBLE_D, borderRadius: MARBLE_D / 2,
+    filter: "brightness(1.35)", duration: 0.45, ease: "power2.out",
+  }, 1.62);
   tl.fromTo(marbleEl,
-    { scale: 0.05, opacity: 0 },
-    { scale: 1, opacity: 1, duration: 1.15, ease: "elastic.out(1, 0.55)" }, 1.4);
-  tl.to(morph, { opacity: 0, duration: 0.35, ease: "power2.out" }, 1.4);
+    { scale: 0.94, opacity: 0 },
+    { scale: 1, opacity: 1, duration: 0.7, ease: "power2.out" }, 1.7);
+  tl.to(morph, { opacity: 0, duration: 0.55, ease: "power1.in" }, 1.78);
   tl.fromTo(marbleRing,
-    { scale: 0.15, opacity: 0.9, borderWidth: 3 },
-    { scale: 1.5, opacity: 0, borderWidth: 1, duration: 1.1, ease: "power2.out" }, 1.45);
+    { scale: 0.9, opacity: 0.8, borderWidth: 3 },
+    { scale: 1.45, opacity: 0, borderWidth: 1, duration: 1.0, ease: "power2.out" }, 1.85);
 
   // 4. 글자들이 차례로 올라온다
   tl.fromTo("#orbHead span",
@@ -1081,7 +1098,7 @@ function select() {
     { y: 0, opacity: 1, duration: 0.55, stagger: 0.09, ease: "power3.out" }, 1.75);
   // 버튼이 보이기 시작하면 바로 누를 수 있게 — 남은 글자 애니메이션이 끝날 때까지 기다리지 않는다
   // (예전엔 버튼이 다 보이고도 0.5초 넘게 눌러도 무시돼서 '영상이 안 나온다'처럼 보였다)
-  tl.add(() => { locked = false; current = "orb"; }, 1.8);
+  tl.add(() => { locked = false; current = "orb"; setScene("orb"); }, 1.8);
   // 손 설명도 구슬 화면에 맞게 바꿔 다시 띄운다
   tl.add(() => { cameraHintEl.textContent = HINT.orb; }, 1.7);
   tl.to("#cameraHint", { autoAlpha: 1, duration: 0.5 }, 1.8);
@@ -1094,14 +1111,14 @@ function select() {
   tl.set(focusNameEl, { opacity: 0, y: -10 });
   tl.add(() => { hudIndexEl.textContent = "yk-2087"; }, 1.4);
 
-  tl.set(morph, { visibility: "hidden", filter: "none" });
+  tl.set(morph, { visibility: "hidden", filter: "none", "--glass": 0 });
 }
 
 /* 아카이브를 원래 상태로 되돌린다 (구슬에서 오든 영상 끝에서 오든 같다) */
 function resetArchive() {
   filmEl.pause();
   stopYt();
-  if (current === "garden") releaseGardenHand();   // 카메라 돌려받기
+  if (current === "garden") releaseGardenHand();
   else startCamera();
   gsap.set([screenOrb, screenFilm, screenGarden], { autoAlpha: 0 });
   gsap.set(screenGrid, { autoAlpha: 1 });
@@ -1132,6 +1149,7 @@ function resetArchive() {
   hudIndexEl.textContent = indexLabel(focusIndex);
   spinLock = false;
   current = "grid";
+  setScene("archive");
 }
 
 /* 구슬 → 아카이브. 다른 전환과 똑같이 검정 페이드로 */
@@ -1150,7 +1168,8 @@ async function back() {
    로컬 파일이 있으면 그걸 쓰고, 없으면 유튜브에서 해당 지점부터 튼다.
    (깃허브 웹 업로드는 파일당 25MB 까지라 큰 영상은 못 올린다) */
 const FILM = [
-  { file: "film1.mp4", yt: "-xtSbOMBKkA", start: 0,  end: 26 },   // 유튜브로 틀 땐 26초에서 멈춘다
+  // cut : 로컬 파일을 이 지점(초)에서 끊고 정원으로 — 문이 닫히고 어두워지는 순간. 끝 1초에 뜨는 것을 안 보이게
+  { file: "film1.mp4", yt: "-xtSbOMBKkA", start: 0,  end: 26, cut: 26.5 },   // 유튜브로 틀 땐 26초에서 멈춘다
   { file: "film2.mp4", yt: "-xtSbOMBKkA", start: 26, end: null }, // 26초부터 끝까지
 ];
 const USE_YOUTUBE = true;            // 로컬 파일이 없을 때 유튜브로 대신 틀지
@@ -1309,79 +1328,136 @@ function loadFilmFile(seg) {
 }
 
 /* 장면 교체 — 검정으로 덮인 사이에 바꿔치기한다 */
-/* ── 인터랙션 1 → 영상 1 : 브라운관 꺼짐 ───────────────────
-   화면 전체가 위아래로 눌려 밝은 가로선이 되고, 그 선이 가운데 점으로 줄어
-   잠깐 빛나다 꺼진다. 인터랙션 1 의 브라운관 화면이 꺼지며 영상으로 넘어가는 것. */
-const crtLine = document.getElementById("crtLine");
+/* ── 인터랙션 1 → 영상 1 : 자동문 ─────────────────────────
+   양옆에서 검은 패널이 닫혀 가운데서 만나고, 그 사이 영상이 시작되면
+   자동문처럼 양옆으로 벌어지며 영상이 드러난다. */
+const doorL = document.getElementById("doorL");
+const doorR = document.getElementById("doorR");
+const wipeEl = document.getElementById("pixwipe");
+const wipeCtx = wipeEl.getContext("2d");
 
-async function crtOffTransition(prepare) {
+async function doorTransition(layers, prepare) {
   locked = true;
   endHold(true);
   hideChrome(true);
   gsap.to(cursorEl, { opacity: 0, duration: 0.2 });
-  // 보이는 화면들 — 모두 화면 크기라 같은 가운데를 기준으로 줄어든다
-  const layers = [screenGrid, screenOrb, "#aura", "#dust"];
-  gsap.set(layers, { transformOrigin: "50% 50%", filter: "brightness(1)" });
-  const tl = gsap.timeline();
-  // 1) 위아래로 눌리며 밝아진다
-  tl.to(layers, { scaleY: 0.004, scaleX: 1.03, filter: "brightness(3)", duration: 0.32, ease: "power3.in" });
-  tl.fromTo(crtLine, { autoAlpha: 0, scaleX: 1 }, { autoAlpha: 1, duration: 0.1 }, 0.22);
-  // 2) 가로선이 가운데 점으로 줄어든다
-  tl.to(layers, { scaleX: 0.002, duration: 0.2, ease: "power3.in" });
-  tl.to(crtLine, { scaleX: 0.004, duration: 0.2, ease: "power3.in" }, "<");
-  tl.set(layers, { autoAlpha: 0 });
-  // 3) 점이 잠깐 빛나다 꺼진다
-  tl.to(crtLine, { scaleY: 2.2, duration: 0.12, ease: "power2.out" });
-  tl.to(crtLine, { autoAlpha: 0, scaleY: 0.6, duration: 0.4, ease: "power2.in" });
-  await tl;
-  // 검정 막에 넘기고 화면들은 제 모양으로 돌려 둔다 (보이지 않는 채로)
-  gsap.set(fadeEl, { visibility: "visible", opacity: 1 });
-  gsap.set(layers, { clearProps: "transform,filter,transformOrigin" });
+  gsap.set([doorL, doorR], { autoAlpha: 1 });
+  gsap.set(doorL, { xPercent: -100 });
+  gsap.set(doorR, { xPercent: 100 });
+
+  // 1) 닫힌다 — 뒤 화면은 살짝 물러난다
+  const close = gsap.timeline();
+  close.to(layers, { scale: 0.96, duration: 0.85, ease: "power2.inOut" }, 0);
+  close.to([doorL, doorR], { xPercent: 0, duration: 0.85, ease: "power3.inOut" }, 0);
+  await close;
+
+  // 2) 닫힌 사이에 영상으로 바꿔 끼운다
+  gsap.set([screenGrid, screenOrb, screenGarden], { autoAlpha: 0 });
+  gsap.set(layers, { clearProps: "transform" });
   gsap.set(["#aura", "#dust"], { autoAlpha: 1 });
-  gsap.set(crtLine, { clearProps: "transform" });
-  await prepare();
-  await fadeIn();
+  await Promise.all([prepare(), new Promise((r) => setTimeout(r, 300))]);
+
+  // 3) 자동문처럼 벌어진다 — 처음엔 천천히, 가운데서 빨라졌다가 끝에서 부드럽게 멈춘다
+  const open = gsap.timeline();
+  open.to(doorL, { xPercent: -100, duration: 1.5, ease: "power2.inOut" }, 0);
+  open.to(doorR, { xPercent: 100, duration: 1.5, ease: "power2.inOut" }, 0);
+  open.fromTo(filmEl, { scale: 1.06 }, { scale: 1, duration: 1.9, ease: "power2.out" }, 0);
+  await open;
+  gsap.set([doorL, doorR], { autoAlpha: 0 });
+  gsap.set(filmEl, { clearProps: "transform" });
   locked = false;
 }
 
-/* ── 정원 → 영상 2 : 구슬 빛 번짐 ─────────────────────────
-   마지막으로 가리키거나 연 구슬에서 빛이 퍼져 화면이 흰빛·연보라로 차오르고,
-   그 빛이 걷히면서 영상이 드러난다. (검정을 거치지 않는다) */
-const bloomEl = document.getElementById("bloom");
-let gardenPoint = null;        // 정원에서 마지막으로 누른 구슬 자리 (0~1)
+/* ── 정원 → 영상 2 : 필름 릴 ─────────────────────────────
+   1) 정원이 작아지며 필름 한 칸이 되고, 양옆에 구멍 뚫린 필름 띠가 나타난다
+   2) 필름이 한 칸 감기며 다음 칸에 영상 2 가 올라온다
+   3) 그 칸이 커지며 화면 가득 영상이 된다
+   필름 띠와 다음 칸의 영상은 캔버스(정원 바로 아래)에 그린다. */
+const REEL = {
+  k: 0.6,           // 칸 크기 (화면 대비)
+  gap: 46,          // 칸 사이
+  margin: 66,       // 칸 바깥 띠 폭 (구멍이 뚫리는 자리)
+  hole: 30,         // 구멍 간격
+};
+const REEL_FW = STAGE_W * REEL.k;
+const REEL_FH = STAGE_H * REEL.k;
+const REEL_STEP = REEL_FH + REEL.gap;
 
-/* 빛이 시작될 자리 — 손 커서가 가리키는 곳 > 열려 있는 구슬 > 마지막으로 누른 곳 > 가운데 */
-function gardenOrigin() {
-  let doc = null;
-  try { doc = gardenFrame.contentDocument; } catch (e) { doc = null; }
-  if (doc && doc.defaultView) {
-    const w = doc.defaultView.innerWidth, h = doc.defaultView.innerHeight;
-    const hc = doc.getElementById("hand-cursor");
-    if (hc && !hc.hidden && hc.style.left) return { x: parseFloat(hc.style.left) / w, y: parseFloat(hc.style.top) / h };
-    const panel = doc.getElementById("orb-panel");
-    if (panel && !panel.hidden) return { x: 0.27, y: 0.45 };   // 구슬을 열면 정원은 그 구슬을 화면 왼쪽에 세운다
+function drawReel(s, withFilm) {
+  const g = wipeCtx;
+  g.imageSmoothingEnabled = true;            // 픽셀 전환이 꺼 둔 걸 되돌린다
+  const cx = STAGE_W / 2, cy = STAGE_H / 2;
+  const fl = cx - REEL_FW / 2;
+  const sl = fl - REEL.margin, sw = REEL_FW + REEL.margin * 2;
+  g.fillStyle = "#000";
+  g.fillRect(0, 0, STAGE_W, STAGE_H);
+  g.fillStyle = "#151515";
+  g.fillRect(sl, 0, sw, STAGE_H);
+  // 구멍 — 띠와 같이 흐른다
+  g.fillStyle = "#000";
+  for (let y = -(s % REEL.hole) - REEL.hole; y < STAGE_H + REEL.hole; y += REEL.hole) {
+    g.fillRect(sl + 22, y, 20, 13);
+    g.fillRect(sl + sw - 42, y, 20, 13);
   }
-  return gardenPoint || { x: 0.5, y: 0.5 };
+  // 칸 — 0 은 정원(위에 정원 화면이 얹힌다), 1 은 영상 2
+  g.font = '500 12px "tt-autonomous-mono", "Roboto Mono", monospace';
+  for (let i = -2; i <= 3; i++) {
+    const fy = cy - REEL_FH / 2 + i * REEL_STEP - s;
+    if (fy > STAGE_H || fy + REEL_FH < 0) continue;
+    g.fillStyle = "#070707";
+    g.fillRect(fl, fy, REEL_FW, REEL_FH);
+    g.fillStyle = "#9a5aff";
+    g.fillText(`${String(i + 1).padStart(2, "0")}  YK-2087`, fl, fy - REEL.gap / 2 + 4);
+    g.fillText("夜光", fl + REEL_FW - 26, fy - REEL.gap / 2 + 4);
+    if (i === 1 && withFilm && filmEl.style.visibility !== "hidden" && filmEl.readyState >= 2 && filmEl.videoWidth) {
+      const vw = filmEl.videoWidth, vh = filmEl.videoHeight, k = Math.max(REEL_FW / vw, REEL_FH / vh);
+      g.save();
+      g.beginPath(); g.rect(fl, fy, REEL_FW, REEL_FH); g.clip();
+      g.drawImage(filmEl, cx - vw * k / 2, fy + REEL_FH / 2 - vh * k / 2, vw * k, vh * k);
+      g.restore();
+    }
+  }
 }
 
-async function bloomTransition(prepare) {
+async function reelTransition(prepare) {
   locked = true;
   endHold(true);
-  const o = gardenOrigin();
-  bloomEl.style.setProperty("--bx", (o.x * 100).toFixed(1) + "%");
-  bloomEl.style.setProperty("--by", (o.y * 100).toFixed(1) + "%");
-  const b = { r: 0 };
-  const paint = () => bloomEl.style.setProperty("--r", b.r.toFixed(4));
-  paint();
-  gsap.set(bloomEl, { autoAlpha: 1 });
-  // 1) 구슬에서 빛이 퍼져 화면을 채운다 — 정원도 같이 환해진다
-  gsap.fromTo(gardenFrame, { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 1.0, ease: "power2.in" });
-  await gsap.to(b, { r: 1, duration: 1.05, ease: "power2.in", onUpdate: paint });
-  // 2) 빛이 가득한 사이에 영상으로 바꾸고
-  await prepare();
-  gsap.set(gardenFrame, { clearProps: "filter" });
-  // 3) 빛이 걷히며 영상이 드러난다
-  await gsap.to(bloomEl, { autoAlpha: 0, duration: 1.2, ease: "power2.out" });
+  hideChrome(true);
+  gsap.to(cursorEl, { opacity: 0, duration: 0.2 });
+  const R = { s: 0 };
+  const paint = () => drawReel(R.s, true);
+  // 필름 띠는 정원 바로 아래에서 그린다
+  gsap.set(screenGarden, { zIndex: 7, transformOrigin: "50% 50%" });
+  gsap.set(wipeEl, { zIndex: 6 });
+  drawReel(0, false);
+
+  // 1) 정원이 필름 한 칸이 된다 — 그 사이 영상을 준비한다
+  const shrink = gsap.timeline();
+  shrink.to(screenGarden, { scale: REEL.k, duration: 0.85, ease: "power3.inOut" }, 0);
+  shrink.fromTo(wipeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: "power1.out" }, 0.25);
+  const ready = prepare();
+  gsap.set(screenFilm, { opacity: 0 });      // 칸이 커질 때까지 진짜 영상은 숨겨 둔다
+  await Promise.all([shrink, ready]);
+
+  // 2) 한 칸 감긴다
+  const roll = gsap.timeline({ onUpdate: paint });
+  roll.to(R, { s: REEL_STEP, duration: 0.9, ease: "power3.inOut" }, 0.1);
+  roll.to(screenGarden, { y: -REEL_STEP, duration: 0.9, ease: "power3.inOut" }, 0.1);
+  await roll;
+
+  // 3) 그 칸이 화면 가득 커진다 — 진짜 영상으로 바꿔 끼우고 띠는 걷어 낸다
+  gsap.set(screenGarden, { autoAlpha: 0 });
+  gsap.set(screenFilm, { scale: REEL.k, transformOrigin: "50% 50%", opacity: 1 });
+  const grow = gsap.timeline();
+  grow.to(screenFilm, { scale: 1, duration: 0.9, ease: "power3.inOut" }, 0);
+  grow.to(wipeEl, { autoAlpha: 0, duration: 0.35, ease: "power1.in" }, 0);
+  await grow;
+
+  gsap.set([screenGrid, screenOrb, screenGarden], { autoAlpha: 0 });
+  gsap.set(screenGarden, { clearProps: "transform,transformOrigin,zIndex" });
+  gsap.set(screenFilm, { clearProps: "transform,transformOrigin" });
+  gsap.set(wipeEl, { clearProps: "zIndex" });
+  wipeCtx.clearRect(0, 0, STAGE_W, STAGE_H);
   locked = false;
 }
 
@@ -1408,17 +1484,19 @@ async function toFilm(segment) {
   if (locked || current === "film") return;   // 기다리는 사이 이미 넘어갔을 수 있다
   if (!hasFilm) return back();          // 본편이 없는 저장소면 아카이브로
   const from = current;
-  if (from === "garden") releaseGardenHand();   // 카메라 돌려받기
-  // 인터랙션 1 → 영상 1 은 브라운관 꺼짐, 정원 → 영상 2 는 구슬 빛 번짐
-  const run = from === "garden" ? bloomTransition : crtOffTransition;
+  if (from === "garden") releaseGardenHand();
+  // 인터랙션 1 → 영상 1 은 자동문, 정원 → 영상 2 는 필름 릴
+  const run = from === "garden"
+    ? reelTransition
+    : (prep) => doorTransition([screenGrid, screenOrb, "#aura", "#dust"], prep);
   await run(async () => {
-    gsap.set([screenGrid, screenOrb, screenGarden], { autoAlpha: 0 });
     gsap.set(screenFilm, { autoAlpha: 1 });
     document.body.classList.remove("is-garden");
     hideChrome(true);
     gsap.to(cursorEl, { opacity: 0, duration: 0.3 });
     current = "film";
     filmSegment = segment;
+    setScene("film");
 
     const seg = FILM[segment];
     if (seg.local) {
@@ -1441,6 +1519,7 @@ async function toGarden() {
   if (locked) return;
   filmEl.pause();
   stopYt();
+  setScene("crossing");       // 소리가 위로 빨려 올라가고, 정원이 뜨면 '풍덩' 잠긴다
   await transition(async () => {
     // 정원은 아카이브가 뜰 때부터 미리 띄워 둔다. 그래서 들어갈 때쯤이면
     // 이미 한참 돌아가 있고, 앞사람이 열어 본 구슬도 그대로 남아 있다.
@@ -1465,9 +1544,10 @@ async function toGarden() {
     // 정원은 자체 마우스 조작이 있어서 실제 커서를 돌려준다
     document.body.classList.add("is-garden");
     current = "garden";
+    setScene("garden");
     try { gardenFrame.contentWindow.focus(); } catch {}
     prepareGarden();          // 커서 모양 맞추기 (이미 돼 있으면 건너뜀)
-    enableGardenHand();       // 손 조작 켜고 카메라 넘겨주기
+    enableGardenHand();       // 정원의 손 조작 켜기 (카메라는 같이 쓴다)
   });
 }
 
@@ -1480,13 +1560,27 @@ async function toFilmTail() {
 /* 뒷부분까지 끝나면 다시 아카이브로 — 전시가 계속 돌도록 */
 async function toArchive() {
   if (locked) return;
+  locked = true;
+  await fadeOut();
   filmEl.pause();
-  await transition(async () => resetArchive());
+  stopYt();
+  gsap.set([screenFilm, screenGarden, screenOrb], { autoAlpha: 0 });
+  hideChrome(true);
+  gsap.set(cursorEl, { opacity: 0 });
+  // 로딩 화면은 검정 바탕이라 검정 막을 바로 걷어도 티가 안 난다
+  resetLoader();
+  gsap.set(fadeEl, { opacity: 0, visibility: "hidden" });
+  await replayBoot();
+  locked = false;
 }
 
 /* 앞 영상이 끝나면 정원으로, 뒤 영상이 끝나면 아카이브로
    (파일이 이미 나뉘어 있어서 중간에 끊을 필요가 없다) */
 filmEl.addEventListener("ended", onFilmEnded);
+filmEl.addEventListener("timeupdate", () => {
+  const seg = FILM[filmSegment];
+  if (seg && seg.cut && filmEl.currentTime >= seg.cut) onFilmEnded();
+});
 
 /* 정원이 뜰 때마다 손봐 준다.
    정원은 넘어가기 직전에 '다음 이야기로' 화면을 2.3초 띄우고 신호를 보내는데,
@@ -1515,40 +1609,37 @@ function prepareGarden() {
     }`;
   (doc.head || doc.documentElement).appendChild(st);
 
-  // 구슬을 누른 자리를 기억해 둔다 — 영상 2 로 넘어갈 때 빛이 그 자리에서 퍼진다
-  doc.addEventListener("pointerdown", (e) => {
-    if (e.target && e.target.tagName === "CANVAS") {
-      gardenPoint = { x: e.clientX / doc.defaultView.innerWidth, y: e.clientY / doc.defaultView.innerHeight };
-    }
-  }, true);
-
   // 버튼을 누르면 정원의 2.3초 지연을 기다리지 않고 바로 넘어간다
-  ["btn-next", "btn-go", "panel-next"].forEach((id) => {
+  ["btn-next", "btn-go", "panel-next", "float-next"].forEach((id) => {
     const b = doc.getElementById(id);
     if (b) b.addEventListener("click", () => toFilmTail());
   });
-}
 
-/* 정원의 손 조작을 켠다.
-   정원은 자기 카메라를 따로 여므로, 그 전에 이쪽 카메라를 놓아준다. */
-function enableGardenHand() {
-  stopCamera();
-  let doc;
-  try { doc = gardenFrame.contentDocument; } catch { return; }
-  const b = doc && doc.getElementById("btn-hand");
-  if (!b) return;
-  if (b.getAttribute("aria-pressed") !== "true") {
-    setTimeout(() => b.click(), 300);      // 카메라가 완전히 놓인 뒤에
+  // 구슬을 열면 (기록 창이 뜨면) 맑은 구슬 소리
+  const panel = doc.getElementById("orb-panel");
+  if (panel) {
+    new MutationObserver(() => { if (!panel.hidden) chime(); })
+      .observe(panel, { attributes: true, attributeFilter: ["hidden"] });
   }
 }
 
-/* 정원을 나오면 손 조작을 끄고 카메라를 돌려받는다 */
+/* 정원의 손 조작을 켠다 — 카메라는 이쪽 것을 그대로 같이 쓴다 */
+function enableGardenHand() {
+  startCamera();
+  let doc;
+  try { doc = gardenFrame.contentDocument; } catch { return; }
+  const b = doc && doc.getElementById("btn-hand");
+  if (b && b.getAttribute("aria-pressed") !== "true") b.click();
+}
+
+/* 정원을 나오면 정원의 손 조작을 끈다 */
 function releaseGardenHand() {
   let doc;
   try { doc = gardenFrame.contentDocument; } catch { doc = null; }
   const b = doc && doc.getElementById("btn-hand");
   if (b && b.getAttribute("aria-pressed") === "true") b.click();
-  setTimeout(() => startCamera(), 400);
+  sharedHand.on = false;
+  startCamera();
 }
 gardenFrame.addEventListener("load", prepareGarden);
 
@@ -1650,11 +1741,17 @@ function handZone(sx, sy) {
     return Math.abs(sx / STAGE_W - 0.5) < 0.22 && sy > STAGE_H * 0.18 && sy < STAGE_H * 0.86 ? "front" : null;
   }
   if (current === "orb") {
+    // 두 버튼이 붙어 있어서 '먼저 검사한 버튼'이 이기면 다시 고르기 쪽 절반이 확인하러 가기로 잡혔다.
+    // 손에서 가장 가까운 버튼을 고른다.
+    let best = null, bestD = Infinity;
     for (const [zone, el] of [["go", btnGo], ["back", btnBack]]) {
       const r = el.getBoundingClientRect();
       const a = toStage(r.left, r.top), b = toStage(r.right, r.bottom);
-      if (sx > a.x - BTN_PAD && sx < b.x + BTN_PAD && sy > a.y - BTN_PAD && sy < b.y + BTN_PAD) return zone;
+      const dx = Math.max(a.x - sx, 0, sx - b.x), dy = Math.max(a.y - sy, 0, sy - b.y);
+      const d = Math.hypot(dx, dy);
+      if (d < bestD) { bestD = d; best = zone; }
     }
+    if (bestD <= BTN_PAD) return best;
   }
   return null;
 }
@@ -1726,7 +1823,9 @@ window.addEventListener("mousemove", (e) => {
   const p = toStage(e.clientX, e.clientY);
   moveCursor(p.x, p.y);
 });
-window.addEventListener("mousedown", () => startHold("mouse"));
+// 버튼 위에서 누른 건 그 버튼의 클릭으로 처리한다 — '다시 고르기'를 조금 오래 누르면
+// 꾹 누르기로 잡혀 영상으로 넘어가 버리던 것을 막는다
+window.addEventListener("mousedown", (e) => { if (!e.target.closest || !e.target.closest("button")) startHold("mouse"); });
 window.addEventListener("mouseup", () => { if (holdBy === "mouse") endHold(false); });
 
 /* 큰 화면을 그냥 한 번 눌러도 골라진다.
@@ -1783,19 +1882,43 @@ function typeIn(el, text, delay, cps = 24) {
   });
 }
 
-// 1) 네 귀퉁이 표시가 깜빡이며 들어오고
-gsap.fromTo(".loader__corner", { opacity: 0 },
-  { opacity: 1, duration: 0.06, repeat: 3, yoyo: true, repeatDelay: 0.08, stagger: 0.12, delay: 0.25,
-    onComplete() { gsap.set(this.targets(), { opacity: 1 }); } });
-// 2) 가운데 타이틀 로고가 브라운관처럼 깜빡이며 켜지고, 도장이 찍힌다
 const loaderLogo = document.getElementById("loaderLogo");
-gsap.set([".logo__line", ".logo__seal"], { opacity: 0 });
-gsap.timeline({ delay: 0.4 })
-  .to(".logo__line--1", { opacity: 1, duration: 0.05, repeat: 3, yoyo: true, repeatDelay: 0.06 })
-  .set(".logo__line--1", { opacity: 1 })
-  .to(".logo__line--2", { opacity: 1, duration: 0.05, repeat: 3, yoyo: true, repeatDelay: 0.06 }, "-=0.12")
-  .set(".logo__line--2", { opacity: 1 })
-  .add(stampSeal(), "+=0.15");
+const loaderTag = document.getElementById("loaderTag");
+const loaderStart = document.getElementById("loaderStart");
+
+/* 로딩 화면 연출 — 처음 켤 때, 그리고 영상 2 가 끝나 처음으로 돌아올 때마다 똑같이 튼다 */
+function bootIntro() {
+  // 1) 네 귀퉁이 표시가 깜빡이며 들어오고
+  gsap.fromTo(".loader__corner", { opacity: 0 },
+    { opacity: 1, duration: 0.06, repeat: 3, yoyo: true, repeatDelay: 0.08, stagger: 0.12, delay: 0.25,
+      onComplete() { gsap.set(this.targets(), { opacity: 1 }); } });
+  // 2) 가운데 타이틀 로고가 브라운관처럼 깜빡이며 켜지고, 도장이 찍힌다
+  gsap.set([".logo__line", ".logo__seal"], { opacity: 0 });
+  gsap.timeline({ delay: 0.4 })
+    .to(".logo__line--1", { opacity: 1, duration: 0.05, repeat: 3, yoyo: true, repeatDelay: 0.06 })
+    .set(".logo__line--1", { opacity: 1 })
+    .to(".logo__line--2", { opacity: 1, duration: 0.05, repeat: 3, yoyo: true, repeatDelay: 0.06 }, "-=0.12")
+    .set(".logo__line--2", { opacity: 1 })
+    .add(stampSeal(), "+=0.15");
+  typeIn(loaderTag, loaderTag.dataset.text, 1250, 30);
+  // 3) 아래 한 줄의 글씨들이 조금씩 어긋나게 타이핑된다
+  document.querySelectorAll(".loader__cell[data-text]").forEach((el, i) => {
+    typeIn(el, el.dataset.text, 650 + i * 110 + Math.random() * 120).then(() => {
+      if (el.classList.contains("loader__cell--1")) loaderPct.textContent = Math.round(shownPct * 100) + "%";
+    });
+  });
+}
+
+/* 한 번 끝난 로딩 화면을 처음 상태로 되돌린다 */
+function resetLoader() {
+  document.body.classList.add("is-booting");
+  gsap.set(loaderEl, { autoAlpha: 1 });
+  gsap.set([loaderLogo, ".loader__cell"], { opacity: 1 });
+  gsap.set([".loader__corner", loaderFrame, loaderStart], { opacity: 0 });
+  document.querySelectorAll(".loader__cell[data-text]").forEach((el) => { el.textContent = ""; });
+  loaderTag.textContent = "";
+  loaderPct.textContent = "";
+}
 
 /* 도장 찍기 — 위에서 크게 기울어진 채 내려와 '쿵' 눌리고, 살짝 튀어 제자리에 앉는다.
    찍히는 순간 인주가 번지듯 빛이 확 퍼졌다 가라앉고, 로고 전체가 한 번 울린다.
@@ -1818,15 +1941,8 @@ function stampSeal() {
     .to(".logo__seal", { scale: 1, duration: 0.35, ease: "back.out(4)" }, "<0.03")
     .to(".logo__seal", { filter: GLOW, duration: 0.7, ease: "power2.out" }, "<");
 }
-const loaderTag = document.getElementById("loaderTag");
-typeIn(loaderTag, loaderTag.dataset.text, 1250, 30);
-// 3) 아래 한 줄의 글씨들이 조금씩 어긋나게 타이핑된다
-document.querySelectorAll(".loader__cell[data-text]").forEach((el, i) => {
-  typeIn(el, el.dataset.text, 650 + i * 110 + Math.random() * 120).then(() => {
-    if (el.classList.contains("loader__cell--1")) loaderPct.textContent = Math.round(shownPct * 100) + "%";
-  });
-});
 let shownPct = 0;            // 화면에 보이는 퍼센트 (실제 로딩보다 너무 빨리 차지 않게 따라간다)
+bootIntro();
 
 let ready = false;
 let loaded = 0;
@@ -1852,21 +1968,8 @@ function reveal() {
   ready = true;
 
   const tl = gsap.timeline();
-  loaderPct.textContent = "100%";
-  // 4) 다 차면 로고와 글씨가 깜빡이며 꺼지고, 가운데에서 얇은 사각 테두리가 번진다
-  tl.to([loaderLogo, ".loader__cell"], { opacity: 0, duration: 0.05, repeat: 3, yoyo: true, stagger: 0.03 }, 0.25);
-  tl.set([loaderLogo, ".loader__cell"], { opacity: 0 });
-  tl.fromTo(loaderFrame, { opacity: 1, scale: 0.12 }, { scale: 1, duration: 0.35, ease: "power3.out" }, "<");
-  tl.to(loaderFrame, { opacity: 0, duration: 0.06, repeat: 1, yoyo: true }, ">0.05");
-  tl.set(loaderFrame, { opacity: 0 });
-  // 5) 바닥에 얇은 선이 한 번 지나가고
-  tl.fromTo(baselineFill, { scaleX: 0, transformOrigin: "0% 50%" },
-    { scaleX: 1, duration: 0.32, ease: "power2.inOut" }, ">-0.05");
-  tl.to(baselineFill, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.28, ease: "power2.in" });
-  tl.set(baselineFill, { transformOrigin: "0% 50%" });
-  tl.to(".loader__corner", { opacity: 0, duration: 0.15 }, "<");
-  // 6) 사이트가 어둠에서 몇 단계로 밝아진다
-  tl.to(loaderEl, { autoAlpha: 0, duration: 0.75, ease: "steps(5)" }, "-=0.1");
+  bootOutro(tl);
+  setScene("archive");
 
   // 파편들이 축에서 풀려 나오며 고리로 감기고,
   // 정면 파편이 브라운관처럼 켜지면서 이름이 잡음에서 잡힌다
@@ -1926,6 +2029,73 @@ function reveal() {
   tl.fromTo(focusNameEl, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.5");
 }
 
+/* 로딩 화면 걷기 — 로고와 글씨가 깜빡이며 꺼지고, 테두리가 번지고,
+   바닥 선이 한 번 지나간 뒤 사이트가 몇 단계로 밝아진다 */
+function bootOutro(tl) {
+  loaderPct.textContent = "100%";
+  gsap.to(loaderStart, { opacity: 0, duration: 0.2, overwrite: true });
+  tl.to([loaderLogo, ".loader__cell"], { opacity: 0, duration: 0.05, repeat: 3, yoyo: true, stagger: 0.03 }, 0.25);
+  tl.set([loaderLogo, ".loader__cell"], { opacity: 0 });
+  tl.fromTo(loaderFrame, { opacity: 1, scale: 0.12 }, { scale: 1, duration: 0.35, ease: "power3.out" }, "<");
+  tl.to(loaderFrame, { opacity: 0, duration: 0.06, repeat: 1, yoyo: true }, ">0.05");
+  tl.set(loaderFrame, { opacity: 0 });
+  tl.fromTo(baselineFill, { scaleX: 0, transformOrigin: "0% 50%" },
+    { scaleX: 1, duration: 0.32, ease: "power2.inOut" }, ">-0.05");
+  tl.to(baselineFill, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.28, ease: "power2.in" });
+  tl.set(baselineFill, { transformOrigin: "0% 50%" });
+  tl.to(".loader__corner", { opacity: 0, duration: 0.15 }, "<");
+  tl.to(loaderEl, { autoAlpha: 0, duration: 0.75, ease: "steps(5)" }, "-=0.1");
+  return tl;
+}
+
+/* 다 받으면 '화면을 눌러 시작하세요' — 브라우저는 사람이 한 번 누르기 전엔 소리를 막는다.
+   손으로만 고르면 '누름'이 없어서 영상 1 이 소리 없이 나왔다 (깃허브에서 특히).
+   전시를 열 때 한 번만 누르면 페이지를 닫기 전까지 계속 소리가 난다. */
+function askStart() {
+  gsap.fromTo(loaderStart, { opacity: 0 }, { opacity: 1, duration: 0.5 });
+  const go = (e) => {
+    if (e && e.type === "keydown" && e.repeat) return;
+    ["pointerdown", "touchstart", "keydown"].forEach((t) => window.removeEventListener(t, go, true));
+    unlockSound();
+    unlockFilm();
+    reveal();
+  };
+  ["pointerdown", "touchstart", "keydown"].forEach((t) => window.addEventListener(t, go, true));
+}
+
+/* 누르는 그 순간에 영상 요소도 한 번 '소리 켜고 재생'을 해 둔다 (아이패드 사파리는 요소마다 허락을 받는다) */
+function unlockFilm() {
+  try {
+    if (!filmEl.getAttribute("src")) filmEl.setAttribute("src", FILM[0].file);
+    filmEl.muted = false;
+    const p = filmEl.play();
+    filmEl.pause();
+    if (p && p.catch) p.catch(() => {});
+  } catch {}
+}
+
+/* 영상 2 가 끝나면 — 처음 켤 때처럼 로고부터 다시 보여 주고 아카이브를 연다.
+   (페이지를 새로 고치지 않는다. 그래야 시작할 때 한 번 누른 '소리 허락'이 그대로 남는다) */
+const REPLAY_HOLD = 3.6;       // 로고를 보여 주는 시간(초)
+async function replayBoot() {
+  resetLoader();
+  setScene("silent");
+  bootIntro();
+  const p = { v: 0 };
+  gsap.to(p, { v: 1, duration: 2.3, delay: 0.9, ease: "power1.inOut",
+    onUpdate() { loaderPct.textContent = Math.round(p.v * 100) + "%"; } });
+  await new Promise((r) => setTimeout(r, REPLAY_HOLD * 1000));
+  const tl = gsap.timeline();
+  bootOutro(tl);
+  // 로딩 화면이 걷히는 동안 그 뒤에서 아카이브가 다시 펼쳐진다
+  tl.add(() => {
+    document.body.classList.remove("is-booting");
+    resetArchive();
+    setScene("archive");
+  }, "-=0.85");
+  await tl;
+}
+
 // 중앙 레이블은 로딩 화면 위에 먼저 나타난다
 gsap.set([".meta--tl", ".meta--tr", ".camera-box", ".camera-hint"], { opacity: 0 });
 gsap.from(titlebar, { opacity: 0, duration: 1, ease: "power2.out", delay: 0.15 });
@@ -1941,7 +2111,7 @@ const readyCheck = setInterval(() => {
   if (typed) loaderPct.textContent = Math.round(shownPct * 100) + "%";
   if (shownPct >= 1) {
     clearInterval(readyCheck);
-    setTimeout(reveal, 250);
+    setTimeout(askStart, 250);
   }
 }, 120);
 
@@ -1953,9 +2123,12 @@ const camCanvas = document.getElementById("camCanvas");
 const camCtx = camCanvas.getContext("2d");
 const camStatus = document.getElementById("camStatus");
 
-/* 카메라는 정원(자체 손 조작)과 번갈아 쓴다. 한쪽이 잡고 있으면
-   다른 쪽이 못 여는 기기가 있어서, 넘길 때 확실히 놓아준다. */
+/* 카메라와 손 모델은 정원(iframe)과 같이 쓴다.
+   정원이 카메라를 따로 열면 허용 창이 한 번 더 뜨고, 손 모델도 두 벌 올라가 무거워진다.
+   정원이 on 을 켜면, 이쪽에서 손을 찾아 정원에 넣어 준다 (feedGarden). */
 let camStream = null;
+const sharedHand = { video: camVideo, on: false };
+window.__ykHand = sharedHand;
 
 async function startCamera() {
   if (camStream) return true;
@@ -1971,14 +2144,6 @@ async function startCamera() {
     camStream = null;
     return false;
   }
-}
-
-function stopCamera() {
-  if (!camStream) return;
-  camStream.getTracks().forEach((t) => t.stop());
-  camStream = null;
-  camVideo.srcObject = null;
-  handPos.x = null;
 }
 
 let handLandmarker = null;
@@ -2224,6 +2389,11 @@ function trackTick() {
   if (!handLandmarker) return;
   if (current === "grid" && drawFrame % 2 === 0) return;      // 이번 프레임은 문자 화면 차례
   if (camVideo.readyState >= 2 && camVideo.currentTime !== lastVideoTime) {
+    if (current === "garden") {
+      lastVideoTime = camVideo.currentTime;
+      if (sharedHand.on) feedGarden();
+      return;
+    }
     if (!handActive && (trackTurn++ & 1)) { lastVideoTime = camVideo.currentTime; return; }
     lastVideoTime = camVideo.currentTime;
     const now = performance.now();
@@ -2233,6 +2403,16 @@ function trackTick() {
     if (lms) drawHand(lms, box);
     processHand(lms || null, now, box);
   }
+}
+
+/* 정원에 손을 넣어 준다. 시각은 정원 쪽 시계로 (창마다 performance.now() 의 기준이 다르다) */
+function feedGarden() {
+  let gw;
+  try { gw = gardenFrame.contentWindow; } catch { return; }
+  const g = gw && gw.__gardenHand;
+  if (!g) return;
+  const res = handLandmarker.detectForVideo(camVideo, performance.now());
+  g.ingest((res && res.landmarks && res.landmarks[0]) || null, gw.performance.now());
 }
 
 initHands();

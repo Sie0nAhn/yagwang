@@ -242,6 +242,144 @@
   }
   .panel-next.hand-hot { box-shadow: 0 0 0 4px rgba(255, 226, 189, 0.55), 0 10px 26px rgba(12, 6, 20, 0.3); }
 
+  /* ── 전시용 (인터랙션 페이지 안에 들어갔을 때) ──
+     위쪽 토글 버튼·읽은 기억·아래 단축키 줄·'기억을 보셨습니다' 창은 감춘다.
+     넘어가는 버튼은 기록 창 안의 하나, 창을 닫았을 때 아래 가운데 하나뿐. */
+  body.yk-embed .tools,
+  body.yk-embed .progress,
+  body.yk-embed .keys,
+  body.yk-embed #invite { display: none !important; }
+  body.yk-embed .panel { top: 28px; max-height: calc(100dvh - 56px); }
+
+  .intro {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(540px, calc(100vw - 40px));
+    padding: 30px 32px 24px;
+    border-radius: 28px;
+    background: var(--glass), rgba(28, 16, 42, 0.62);
+    border: 1px solid var(--edge);
+    backdrop-filter: blur(30px) saturate(170%);
+    -webkit-backdrop-filter: blur(30px) saturate(170%);
+    box-shadow: 0 30px 80px rgba(10, 4, 18, 0.5), var(--sheen);
+    z-index: 9;
+    pointer-events: none;
+    animation: introIn 0.9s cubic-bezier(0.16, 0.9, 0.3, 1);
+  }
+  .intro[hidden] { display: none; }
+  .intro.leaving { opacity: 0; transform: translate(-50%, -46%); transition: opacity 0.7s ease, transform 0.7s ease; }
+  @keyframes introIn { from { opacity: 0; transform: translate(-50%, -44%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+  .intro__kicker { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.3em; color: #ffe2bd; }
+  .intro h2 { margin: 0 0 10px; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; color: #fdfaff; }
+  .intro__body { margin: 0 0 20px; font-size: 14px; line-height: 1.75; color: var(--ink-dim); }
+  .intro__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .intro__steps li {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 14px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .intro__steps i { grid-row: 1 / 3; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 226, 189, 0.16); color: #ffe2bd; }
+  .intro__steps b { font-size: 15px; font-weight: 700; color: #fdfaff; }
+  .intro__steps span { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+  .intro__mouse { margin: 16px 0 0; font-size: 11.5px; text-align: center; color: rgba(255, 252, 255, 0.45); }
+  .intro svg, .guide svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* 손짓 안내 (손 인식 화면 위) — 지금 하는 손짓의 줄이 밝아진다 */
+  .guide {
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+    display: grid;
+    gap: 4px;
+    border-radius: 12px;
+    background: rgba(10, 12, 15, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .guide li {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.55);
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+  .guide li i { display: grid; place-items: center; color: rgba(255, 226, 189, 0.6); }
+  .guide li svg { width: 20px; height: 20px; }
+  .guide li b { color: rgba(255, 255, 255, 0.85); font-weight: 600; }
+  .guide li.on { background: rgba(255, 226, 189, 0.16); color: #fff; }
+  .guide li.on i { color: #ffe2bd; }
+
+  /* 둘러보기 조이스틱 — 손바닥을 펴면 아래 가운데에 뜬다 */
+  .look-pad {
+    position: fixed;
+    left: 50%;
+    bottom: 120px;
+    width: 116px;
+    height: 116px;
+    margin-left: -58px;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(255, 226, 189, 0.55);
+    background: radial-gradient(circle, rgba(28, 16, 42, 0.25), rgba(28, 16, 42, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 6;
+  }
+  .look-pad.on { opacity: 1; }
+  .look-pad .knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border-radius: 50%;
+    background: #ffe2bd;
+    box-shadow: 0 0 18px rgba(255, 226, 189, 0.8);
+  }
+  /* 둘러보기 중의 손 커서 — 점선 고리 */
+  .hand-cursor.look .ring {
+    background: none !important;
+    -webkit-mask: none !important;
+            mask: none !important;
+    border: 2px dashed rgba(255, 226, 189, 0.85);
+    border-radius: 50%;
+  }
+
+  /* 하나뿐인 '다음 영상으로' — 기록 창이 닫혀 있을 때 */
+  .float-next {
+    position: fixed;
+    left: 50%;
+    bottom: 44px;
+    transform: translateX(-50%);
+    padding: 16px 34px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: #3a2412;
+    background: linear-gradient(165deg, rgba(255, 238, 214, 0.97), rgba(255, 213, 166, 0.9));
+    border-color: rgba(255, 255, 255, 0.7);
+    z-index: 7;
+    animation: inviteIn 0.7s cubic-bezier(0.16, 0.9, 0.3, 1);
+  }
+  .float-next[hidden] { display: none; }
+  .float-next:hover { transform: translateX(-50%) translateY(-1px); }
+  .float-next.hand-hot { box-shadow: 0 0 0 4px rgba(255, 226, 189, 0.55), 0 10px 26px rgba(12, 6, 20, 0.3); }
+
   /* 손 조작 — 미리보기와 커서 */
   .hand-hud {
     /* 설명 상자 + 손 인식 화면을 위아래로 쌓는다. 바깥 상자는 없다. */
@@ -500,7 +638,7 @@
 <div class="veil">정원을 여는 중</div>
 
 <div class="overlay">
-  <p class="cue" id="cue">구슬을 눌러보세요</p>
+  <p class="cue" id="cue">구슬 하나를 골라 그 속에 담긴 기억을 읽어 보세요</p>
 
   <div class="progress" id="progress">
     <span>읽은 기억</span>
@@ -531,7 +669,12 @@
 </div>
 
 <div class="hand-hud" id="hand-hud" hidden>
-  <p class="hand-hint">구슬에 손을 잠시 올려 두면 열립니다. 엄지와 검지를 모아 집으면 바로 열립니다. 하나만 읽어도 '다음 영상으로'에 손을 올려 두면 넘어갑니다. 손바닥을 화면 끝으로 가져가면 그쪽으로 걸어갑니다.</p>
+  <!-- 손짓 안내 — 지금 하고 있는 손짓의 줄이 밝아진다 -->
+  <ol class="guide" id="guide">
+    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5"/><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><span><b>손바닥을 펴고</b> 움직이면 둘러보기</span></li>
+    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5"/><path d="M11 11.5v-2a1.5 1.5 0 1 1 3 0v2.5"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><span><b>검지로 구슬을</b> 가리키고 잠시 멈추면 열기</span></li>
+    <li><i><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></svg></i><span><b>'다음 영상으로'</b>를 가리키면 넘어가기</span></li>
+  </ol>
   <div class="hand-cam">
     <canvas id="hand-preview" width="600" height="382"></canvas>
     <span class="hand-tag">손 인식</span>
@@ -551,6 +694,25 @@
     <button id="btn-stay" type="button">조금 더 머무르기</button>
   </div>
 </section>
+
+<!-- 처음 들어오면 — 여기서 무엇을 하는지, 손짓은 어떻게 하는지 -->
+<section class="intro" id="intro" hidden>
+  <p class="intro__kicker">구슬빛 정원</p>
+  <h2>구슬 속 기억을 읽어 보세요</h2>
+  <p class="intro__body">이 정원에 떠 있는 구슬마다 누군가 흘리고 간 기억이 담겨 있습니다.<br />마음이 가는 구슬 하나를 골라 그 속을 들여다보세요.</p>
+  <ol class="intro__steps">
+    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5"/><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><b>손바닥을 펴고 움직이기</b><span>편 자리에서 좌우로 밀면 방향, 위아래로 밀면 앞뒤로 움직여요</span></li>
+    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5"/><path d="M11 11.5v-2a1.5 1.5 0 1 1 3 0v2.5"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><b>검지로 구슬 가리키기</b><span>잠시 멈추면 기억이 열립니다 · 엄지와 검지를 집으면 바로</span></li>
+    <li><i><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></svg></i><b>'다음 영상으로' 가리키기</b><span>하나만 읽어도 다음 이야기로 넘어갈 수 있어요</span></li>
+  </ol>
+  <p class="intro__mouse">마우스로는 끌어서 둘러보고, 구슬을 눌러 엽니다</p>
+</section>
+
+<!-- 둘러보기 중일 때 — 손바닥이 가운데에서 얼마나 벗어났는지 (조이스틱) -->
+<div class="look-pad" id="look-pad"><span class="knob"></span></div>
+
+<!-- 기억을 하나라도 읽으면, 기록 창을 닫았을 때 아래 가운데에 하나만 뜬다 -->
+<button class="float-next" id="float-next" type="button" hidden>다음 영상으로 →</button>
 
 <div class="outro" id="outro"><span>다음 이야기로</span></div>
 
@@ -4638,8 +4800,15 @@ const H={
   calm:1.0,agile:3.0 /* 떨림 거르기 (One Euro) — 멈추면 단단하게, 빨리 움직이면 바로 따라온다 */
 };
 const video=document.createElement("video");video.muted=!0;video.playsInline=!0;video.autoplay=!0;
+/* 전시 화면 안에 들어가 있으면 — 바깥(인터랙션 1)의 카메라와 손 모델을 같이 쓴다.
+   따로 열면 카메라 허용 창이 한 번 더 뜨고, 손 모델도 두 벌 올라가 무거워진다.
+   on 을 켜 두면 바깥이 손을 찾아 ingest 로 넣어 준다. */
+const SH=(()=>{try{return parent!==window&&parent.__ykHand||null}catch(e){return null}})();
 let stream=null,model=null,loading=null,lastT=-1,lastSeen=0,pinchSince=0,openSince=0,lastEdge=0,lms=null,edge=!1;
-const x={running:!1,tracked:!1,palm:{x:.5,y:.5},tip:{x:.5,y:.5},tips:[],fingers:0,pinch:!1,area:0,openness:1,motion:0};
+const x={running:!1,tracked:!1,palm:{x:.5,y:.5},tip:{x:.5,y:.5},tips:[],fingers:0,pinch:!1,area:0,openness:1,motion:0,gesture:"other"};
+/* 손 모양 — 네 손가락을 다 펴면 '손바닥'(둘러보기), 그 밖에는 가리키기(구슬 고르기).
+   바뀐 모양이 이만큼(ms) 이어져야 인정한다 — 손가락이 한 프레임 흔들려 모드가 깜빡이지 않게 */
+let gestRaw="other",gestSince=0;const GEST_HOLD=180;
 /* 꼬집은 순간은 한 번만 읽히게 — 읽으면 바로 꺼진다 (같은 꼬집기로 구슬이 두 번 열리지 않게) */
 Object.defineProperty(x,"pinchEdge",{get(){const v=edge;edge=!1;return v},set(v){edge=!!v},enumerable:!0});
 function euro(){let v=null,dv=0,t=0;const a=(c,dt)=>1/(1+1/(2*Math.PI*c*dt));
@@ -4657,13 +4826,14 @@ async function load(){
   return model}
 async function _(){
   if(x.running)return!0;
+  if(SH){SH.on=!0;x.running=!0;return!0}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("이 브라우저에서는 카메라를 쓸 수 없습니다");
   const res=await Promise.all([Promise.race([navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:"user",frameRate:{ideal:30}},audio:!1}),
     new Promise((X,D)=>setTimeout(()=>D(new Error("카메라 응답 없음")),8e3))]),load()]);
   stream=res[0];video.srcObject=stream;
   await new Promise(X=>{if(video.readyState>=2)return X();video.addEventListener("loadeddata",()=>X(),{once:!0});setTimeout(X,2500)});
   video.play().catch(()=>{});x.running=!0;lastT=-1;return!0}
-function S(){x.running=!1;x.tracked=!1;x.pinch=!1;x.tips=[];lms=null;stream&&stream.getTracks().forEach(X=>X.stop());stream=null;video.srcObject=null}
+function S(){SH&&(SH.on=!1);x.running=!1;x.tracked=!1;x.pinch=!1;x.tips=[];lms=null;stream&&stream.getTracks().forEach(X=>X.stop());stream=null;video.srcObject=null}
 function ratio(l){const d=Math.hypot(l[4].x-l[8].x,l[4].y-l[8].y,(l[4].z-l[8].z)||0),s=Math.hypot(l[0].x-l[9].x,l[0].y-l[9].y,(l[0].z-l[9].z)||0)||.2;return d/s}
 /* 손 하나를 반영한다 (l 이 없으면 이번 프레임엔 못 찾은 것) */
 function ingest(l,now){
@@ -4674,12 +4844,19 @@ function ingest(l,now){
     /* 조준 — 엄지와 검지 사이(집는 자리). 가장자리 여유를 두고 화면 전체에 펼친다 (거울).
        손가락을 모으기 시작하면 그 자리에 고정해서, 집는 순간 조준이 구슬에서 빗나가지 않게 한다. */
     const r=ratio(l);
-    if(fresh||r>H.aimLock){const gx=(l[4].x+l[8].x)/2,gy=(l[4].y+l[8].y)/2;
+    /* 조준은 검지 끝 — 가리키는 손가락이 곧 커서다 */
+    if(fresh||r>H.aimLock){const gx=l[8].x,gy=l[8].y;
       x.tip.x=ftx.f(c01((1-gx-.12)/.76),now);x.tip.y=fty.f(c01((gy-.15)/.7),now)}
     /* 손바닥 가운데 — 걷기·방향 */
     const px=(l[0].x+l[5].x+l[9].x+l[13].x+l[17].x)/5,py=(l[0].y+l[5].y+l[9].y+l[13].y+l[17].y)/5;
     x.palm.x=fpx.f(1-px,now);x.palm.y=fpy.f(py,now);
-    x.tips=[4,8,12,16,20].map(i=>({x:1-l[i].x,y:l[i].y}));x.fingers=5;
+    x.tips=[4,8,12,16,20].map(i=>({x:1-l[i].x,y:l[i].y}));
+    /* 손가락이 펴졌는지 — 손끝이 둘째 마디보다 손목에서 충분히 멀면 편 것 */
+    {const W=l[0],dw=k=>Math.hypot(l[k].x-W.x,l[k].y-W.y);
+     const ext=[[8,6],[12,10],[16,14],[20,18]].map(([t,m])=>dw(t)>dw(m)*1.15);x.fingers=ext.filter(Boolean).length;
+     const g=x.fingers>=4&&r>.5?"palm":"other";
+     if(g!==gestRaw){gestRaw=g;gestSince=now}
+     if(fresh)x.gesture=g;else if(now-gestSince>=GEST_HOLD)x.gesture=gestRaw}
     /* 꼬집기 — 일정 시간 이어져야 인정한다 */
     const raw=x.pinch?r<H.pinchOff:r<H.pinchOn;x.openness=Math.min(1,r);
     if(raw){openSince=0;pinchSince||(pinchSince=now)}else{pinchSince=0;openSince||(openSince=now)}
@@ -4690,6 +4867,7 @@ function ingest(l,now){
   if(x.tracked&&now-lastSeen<H.lostGrace)return x;
   x.tracked=!1;x.pinch=!1;x.tips=[];lms=null;pinchSince=0;openSince=0;return x}
 function B(){
+  if(SH)return x;  /* 바깥이 넣어 준다 */
   if(!x.running||!model||video.readyState<2)return x;
   if(video.currentTime===lastT)return x;  /* 새 카메라 프레임에만 */
   lastT=video.currentTime;const now=performance.now();let res=null;
@@ -4699,10 +4877,10 @@ function B(){
 const CONN=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 function V(cv,fake){
   const g=cv.getContext("2d"),W=cv.width,Hh=cv.height;g.clearRect(0,0,W,Hh);
-  const hand=fake||lms;let dx=0,dy=0,dw=W,dh=Hh;
-  if(x.running&&video.readyState>=2){const vw=video.videoWidth,vh=video.videoHeight,s=Math.max(W/vw,Hh/vh);
+  const hand=fake||lms,cam=SH?SH.video:video;let dx=0,dy=0,dw=W,dh=Hh;
+  if(x.running&&cam.readyState>=2){const vw=cam.videoWidth,vh=cam.videoHeight,s=Math.max(W/vw,Hh/vh);
     dw=vw*s;dh=vh*s;dx=(W-dw)/2;dy=(Hh-dh)/2;
-    g.save();g.translate(W,0);g.scale(-1,1);g.drawImage(video,dx,dy,dw,dh);g.restore()}
+    g.save();g.translate(W,0);g.scale(-1,1);g.drawImage(cam,dx,dy,dw,dh);g.restore()}
   else if(!fake)return;
   g.fillStyle="rgba(0,0,0,0.4)";g.fillRect(0,0,W,Hh);
   if(!hand||(!x.tracked&&!fake))return;
@@ -4858,16 +5036,44 @@ void main() {
       float rim = pow( 1.0 - abs( dot( normalize( vNrm ), vView ) ), 2.0 );
       vec3 col = uColor * ( 0.26 + wisp * 1.9 + core * 0.85 + rim * 0.45 );
       gl_FragColor = vec4( col, 0.5 + wisp * 0.42 );
-    }`}),zn=new ue(new Ei(1,28,20),Xc);zn.visible=!1;zn.frustumCulled=!1;zn.renderOrder=12;Ue.add(zn);function Oc(i,t,e){let n=i.ampCur!==void 0?i.ampCur:i.amp;return e.set(i.base.x+Math.sin(t*i.speed*.6+i.phase)*n*.8,i.base.y+Math.sin(t*i.speed+i.phase)*n,i.base.z+Math.cos(t*i.speed*.5+i.phase*1.3)*n*.8)}var qc=document.getElementById("orb-panel"),fr=null,en=null,Ox=new P(0,1,0),vd=new P,yd=new P,Ic=new P,nn={active:!1,orb:null,pos:new P};function Bx(i,t){let e=Ni[i].items[t],n=vd.copy(e.base),s=Math.max(1.4,e.r*9.4),r=yd.copy(ws).sub(n);r.y*=.3,r.lengthSq()<1e-4&&r.set(0,0,1),r.normalize();let o=n.clone().addScaledVector(r,s),a=Math.hypot(o.x,o.z);if(a>ae-3){let l=(ae-3)/a;o.x*=l,o.z*=l}o.y=Math.max(1.2,o.y),nn.active=!0,nn.orb=e,nn.pos.copy(o),Tt.auto&&ai(!1),Tt.idle=0}function Rs(){nn.active=!1,nn.orb=null}function Md(i,t){let e=Ni[i],n=e.items[t],s=Math.max(1,Math.round(n.base.y/Qt)+1),r=td(i,t,e.name,e.hex,s),o=document.getElementById("orb-swatch");o.style.background=r.hex,o.style.color=r.hex,document.getElementById("orb-code").textContent=r.code,document.getElementById("orb-title").textContent=r.title,document.getElementById("orb-owner").textContent=r.owner+" \uC758 \uAE30\uC5B5";let a=document.getElementById("orb-traits");a.textContent="";for(let c of r.traits){let h=document.createElement("span");h.textContent=c,a.appendChild(h)}document.getElementById("orb-memory").textContent=r.memory;let l=document.getElementById("orb-meta");l.textContent="";for(let[c,h]of r.meta){let d=document.createElement("dt");d.textContent=c;let u=document.createElement("dd");u.textContent=h,l.append(d,u)}qc.hidden=!1,fr={gi:i,id:t},Nx(i,t),Xc.uniforms.uColor.value.set(e.hex),Bx(i,t)}function mr(){Rs(),zn.visible=!1,qc.hidden=!0,fr=null}document.getElementById("panel-close").addEventListener("click",mr);addEventListener("keydown",i=>{i.code==="Escape"&&mr()});var Ci=new P;function Yc(i,t,e,n){let s=Hc.elapsedTime,r=innerHeight/(2*Math.tan(wc.degToRad(We.fov)/2)),o=e||(Vc?88:72),a=null,l=1/0;for(let c=0;c<Ni.length;c++){let h=Ni[c].items;for(let d=0;d<h.length;d++){let u=h[d];Oc(u,s,Ci);let f=We.position.distanceTo(Ci);if(f>44||f<.25||(Ci.project(We),Ci.z<-1||Ci.z>1))continue;let g=(Ci.x*.5+.5)*innerWidth,x=(-Ci.y*.5+.5)*innerHeight,p=Math.hypot(g-i,x-t),m=u.r/f*r,w=n&&n.gi===c&&n.id===d,v=Math.max(o,m*2)*(w?1.7:1);if(p>v)continue;let M=p*(w?.5:1)+f*1.8;M<l&&(l=M,a={gi:c,id:d,sx:g,sy:x,screenR:m})}}return a}function zx(i,t){let e=Yc(i,t,92,en);return e?(Md(e.gi,e.id),!0):!1}var ia=600,Ko=new Float32Array(ia*3),Bc=new Float32Array(ia);for(let i=0;i<ia;i++){let t=ud()*Es,e=tn(0,ae-2);Ko[i*3]=Math.sin(t)*e,Ko[i*3+1]=tn(0,na*Qt*.6),Ko[i*3+2]=Math.cos(t)*e,Bc[i]=tn(0,100)}var Sd=new me;Sd.setAttribute("position",new Me(Ko,3));var Zc=new yo(Sd,new Ys({color:16773334,size:.075,sizeAttenuation:!0,transparent:!0,opacity:.4,depthWrite:!1,blending:Mi}));Zc.frustumCulled=!1;Ue.add(Zc);var gr=new ko(kn);gr.addPass(new Ho(Ue,We));var bd=new Ms(new st(innerWidth,innerHeight),.7,.65,.9);gr.addPass(bd);gr.addPass(new Vo);var Le=!Vc;function sa(){Ui.glass.transmission=Le?.88:0,Ui.glass.transparent=!Le,Ui.glass.opacity=Le?1:.62,Ui.glass.needsUpdate=!0,xn.visible=Le&&_n<2,En.visible=!Le&&_n<2,kn.setPixelRatio(Math.min(devicePixelRatio,Le?1.6:1.1)),document.getElementById("btn-quality").textContent=Le?"\uD654\uC9C8 \xB7 \uACE0":"\uD654\uC9C8 \xB7 \uC800",Ed()}var ta=new P(0,2.35,13.2),Tt={pos:ta.clone(),yaw:0,auto:!1,idle:0},Ve={x:0,y:0,tx:0,ty:0},ea={x:innerWidth/2,y:innerHeight/2},Lc=0,Ge=new Set,Zo=new P(0,2.4,0),ws=Tt.pos.clone(),Ts=!1,zc=0,kc=0,_n=0,kx=4*Qt,Hx=3*Qt,ri=0;function _r(){Tt.idle=0,Tt.auto&&ai(!1)}addEventListener("pointermove",i=>{Ve.tx=i.clientX/innerWidth*2-1,Ve.ty=i.clientY/innerHeight*2-1,ea.x=i.clientX,ea.y=i.clientY,Ts&&(Rs(),Tt.yaw-=(i.clientX-zc)*.004,Tt.pos.y+=(i.clientY-kc)*.012,zc=i.clientX,kc=i.clientY,_r())});var Qo={x:0,y:0,t:0};jo.addEventListener("pointerdown",i=>{Ts=!0,zc=i.clientX,kc=i.clientY,Qo={x:i.clientX,y:i.clientY,t:performance.now()},jo.setPointerCapture(i.pointerId),_r()});addEventListener("pointerup",i=>{Ts=!1,Math.hypot(i.clientX-Qo.x,i.clientY-Qo.y)<16&&performance.now()-Qo.t<900&&zx(i.clientX,i.clientY)});addEventListener("wheel",i=>{let t=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw));Tt.pos.addScaledVector(t,-i.deltaY*.012),Rs(),_r()},{passive:!0});addEventListener("keydown",i=>{if(i.code==="Space"){i.preventDefault(),ai(!Tt.auto);return}Ge.add(i.code),/^(Key[WASDQE]|Arrow)/.test(i.code)&&Rs(),_r()});addEventListener("keyup",i=>Ge.delete(i.code));function ai(i){Tt.auto=i;let t=document.getElementById("btn-auto");t.textContent=i?"\uC790\uB3D9 \uC0B0\uCC45 \xB7 \uCF1C\uC9D0":"\uC790\uB3D9 \uC0B0\uCC45 \xB7 \uAEBC\uC9D0",t.setAttribute("aria-pressed",String(i)),i&&(ri=Math.atan2(Tt.pos.x,Tt.pos.z),ri<0&&(ri+=Es))}document.getElementById("btn-auto").addEventListener("click",()=>ai(!Tt.auto));document.getElementById("btn-quality").addEventListener("click",()=>{Le=!Le,sa()});document.getElementById("btn-home").addEventListener("click",()=>{for(Rs(),mr(),Tt.pos.copy(ta),Tt.yaw=0,ws.copy(ta);_n>0;)_n--,xn.position.y+=Qt,En.position.y+=Qt;sa(),_r()});var pr=ed(),rd=document.getElementById("hand-hud"),Vx=document.getElementById("hand-preview"),Fe=document.getElementById("hand-cursor"),si=document.getElementById("btn-hand"),Di=!1,$o=0,Uc=null,ii=null;async function wd(i){if(Di&&i!==!0){pr.stop(),Di=!1,rd.hidden=!0,Fe.hidden=!0,si.textContent="\uC190 \uC870\uC791 \xB7 \uAEBC\uC9D0",si.setAttribute("aria-pressed","false");return}if(!Di){si.textContent="\uCE74\uBA54\uB77C \uC5EC\uB294 \uC911";try{await pr.start(),Di=!0,rd.hidden=!1,si.textContent="\uC190 \uC870\uC791 \xB7 \uCF1C\uC9D0";let t=document.getElementById("cue");t&&!t.classList.contains("gone")&&(t.textContent="\uAD6C\uC2AC\uC744 \uAC00\uB9AC\uD0A4\uACE0 \uC190\uC744 \uC624\uBBC0\uB824\uBCF4\uC138\uC694"),si.setAttribute("aria-pressed","true"),Tt.auto&&ai(!1)}catch{si.textContent="\uCE74\uBA54\uB77C \uC0AC\uC6A9 \uBD88\uAC00",setTimeout(()=>si.textContent="\uC190 \uC870\uC791 \xB7 \uAEBC\uC9D0",3e3)}}}si.addEventListener("click",()=>wd());function od(i,t){let e=Math.abs(i)-t;return e<=0?0:Math.sign(i)*e*e*4.5}/* 손을 올려 두면 눌리는 버튼 — 손 조작을 끄는 버튼처럼 잘못 눌리면 곤란한 것은 뺀다 */
-var DW=["panel-next","btn-next","btn-go","btn-stay","panel-close"],Dw={key:null,t:0,done:!1};
+    }`}),zn=new ue(new Ei(1,28,20),Xc);zn.visible=!1;zn.frustumCulled=!1;zn.renderOrder=12;Ue.add(zn);function Oc(i,t,e){let n=i.ampCur!==void 0?i.ampCur:i.amp;return e.set(i.base.x+Math.sin(t*i.speed*.6+i.phase)*n*.8,i.base.y+Math.sin(t*i.speed+i.phase)*n,i.base.z+Math.cos(t*i.speed*.5+i.phase*1.3)*n*.8)}var qc=document.getElementById("orb-panel"),fr=null,en=null,Ox=new P(0,1,0),vd=new P,yd=new P,Ic=new P,nn={active:!1,orb:null,pos:new P};function Bx(i,t){let e=Ni[i].items[t],n=vd.copy(e.base),s=Math.max(1.4,e.r*9.4),r=yd.copy(ws).sub(n);r.y*=.3,r.lengthSq()<1e-4&&r.set(0,0,1),r.normalize();let o=n.clone().addScaledVector(r,s),a=Math.hypot(o.x,o.z);if(a>ae-3){let l=(ae-3)/a;o.x*=l,o.z*=l}o.y=Math.max(1.2,o.y),nn.active=!0,nn.orb=e,nn.pos.copy(o),Tt.auto&&ai(!1),Tt.idle=0}function Rs(){nn.active=!1,nn.orb=null}function Md(i,t){let e=Ni[i],n=e.items[t],s=Math.max(1,Math.round(n.base.y/Qt)+1),r=td(i,t,e.name,e.hex,s),o=document.getElementById("orb-swatch");o.style.background=r.hex,o.style.color=r.hex,document.getElementById("orb-code").textContent=r.code,document.getElementById("orb-title").textContent=r.title,document.getElementById("orb-owner").textContent=r.owner+" \uC758 \uAE30\uC5B5";let a=document.getElementById("orb-traits");a.textContent="";for(let c of r.traits){let h=document.createElement("span");h.textContent=c,a.appendChild(h)}document.getElementById("orb-memory").textContent=r.memory;let l=document.getElementById("orb-meta");l.textContent="";for(let[c,h]of r.meta){let d=document.createElement("dt");d.textContent=c;let u=document.createElement("dd");u.textContent=h,l.append(d,u)}qc.hidden=!1,fr={gi:i,id:t},Nx(i,t),Xc.uniforms.uColor.value.set(e.hex),Bx(i,t)}function mr(){Rs(),zn.visible=!1,qc.hidden=!0,fr=null}document.getElementById("panel-close").addEventListener("click",mr);addEventListener("keydown",i=>{i.code==="Escape"&&mr()});var Ci=new P;function Yc(i,t,e,n){let s=Hc.elapsedTime,r=innerHeight/(2*Math.tan(wc.degToRad(We.fov)/2)),o=e||(Vc?88:72),a=null,l=1/0;for(let c=0;c<Ni.length;c++){let h=Ni[c].items;for(let d=0;d<h.length;d++){let u=h[d];Oc(u,s,Ci);let f=We.position.distanceTo(Ci);if(f>44||f<.25||(Ci.project(We),Ci.z<-1||Ci.z>1))continue;let g=(Ci.x*.5+.5)*innerWidth,x=(-Ci.y*.5+.5)*innerHeight,p=Math.hypot(g-i,x-t),m=u.r/f*r,w=n&&n.gi===c&&n.id===d,v=Math.max(o,m*2)*(w?1.7:1);if(p>v)continue;let M=p*(w?.5:1)+f*1.8;M<l&&(l=M,a={gi:c,id:d,sx:g,sy:x,screenR:m})}}return a}function zx(i,t){let e=Yc(i,t,92,en);return e?(Md(e.gi,e.id),!0):!1}var ia=600,Ko=new Float32Array(ia*3),Bc=new Float32Array(ia);for(let i=0;i<ia;i++){let t=ud()*Es,e=tn(0,ae-2);Ko[i*3]=Math.sin(t)*e,Ko[i*3+1]=tn(0,na*Qt*.6),Ko[i*3+2]=Math.cos(t)*e,Bc[i]=tn(0,100)}var Sd=new me;Sd.setAttribute("position",new Me(Ko,3));var Zc=new yo(Sd,new Ys({color:16773334,size:.075,sizeAttenuation:!0,transparent:!0,opacity:.4,depthWrite:!1,blending:Mi}));Zc.frustumCulled=!1;Ue.add(Zc);var gr=new ko(kn);gr.addPass(new Ho(Ue,We));var bd=new Ms(new st(innerWidth,innerHeight),.7,.65,.9);gr.addPass(bd);gr.addPass(new Vo);var Le=!Vc;function sa(){Ui.glass.transmission=Le?.88:0,Ui.glass.transparent=!Le,Ui.glass.opacity=Le?1:.62,Ui.glass.needsUpdate=!0,xn.visible=Le&&_n<2,En.visible=!Le&&_n<2,kn.setPixelRatio(Math.min(devicePixelRatio,(Le?1.6:1.1)*(parent!==window?.85:1)))/* 전시 화면 안에서는 조금 가볍게 */,document.getElementById("btn-quality").textContent=Le?"\uD654\uC9C8 \xB7 \uACE0":"\uD654\uC9C8 \xB7 \uC800",Ed()}var ta=new P(0,2.35,13.2),Tt={pos:ta.clone(),yaw:0,auto:!1,idle:0},Ve={x:0,y:0,tx:0,ty:0},ea={x:innerWidth/2,y:innerHeight/2},Lc=0,Ge=new Set,Zo=new P(0,2.4,0),ws=Tt.pos.clone(),Ts=!1,zc=0,kc=0,_n=0,kx=4*Qt,Hx=3*Qt,ri=0;function _r(){Tt.idle=0,Tt.auto&&ai(!1)}addEventListener("pointermove",i=>{Ve.tx=i.clientX/innerWidth*2-1,Ve.ty=i.clientY/innerHeight*2-1,ea.x=i.clientX,ea.y=i.clientY,Ts&&(Rs(),Tt.yaw-=(i.clientX-zc)*.004,Tt.pos.y+=(i.clientY-kc)*.012,zc=i.clientX,kc=i.clientY,_r())});var Qo={x:0,y:0,t:0};jo.addEventListener("pointerdown",i=>{Ts=!0,zc=i.clientX,kc=i.clientY,Qo={x:i.clientX,y:i.clientY,t:performance.now()},jo.setPointerCapture(i.pointerId),_r()});addEventListener("pointerup",i=>{Ts=!1,Math.hypot(i.clientX-Qo.x,i.clientY-Qo.y)<16&&performance.now()-Qo.t<900&&zx(i.clientX,i.clientY)});addEventListener("wheel",i=>{let t=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw));Tt.pos.addScaledVector(t,-i.deltaY*.012),Rs(),_r()},{passive:!0});addEventListener("keydown",i=>{if(i.code==="Space"){i.preventDefault(),ai(!Tt.auto);return}Ge.add(i.code),/^(Key[WASDQE]|Arrow)/.test(i.code)&&Rs(),_r()});addEventListener("keyup",i=>Ge.delete(i.code));function ai(i){Tt.auto=i;let t=document.getElementById("btn-auto");t.textContent=i?"\uC790\uB3D9 \uC0B0\uCC45 \xB7 \uCF1C\uC9D0":"\uC790\uB3D9 \uC0B0\uCC45 \xB7 \uAEBC\uC9D0",t.setAttribute("aria-pressed",String(i)),i&&(ri=Math.atan2(Tt.pos.x,Tt.pos.z),ri<0&&(ri+=Es))}document.getElementById("btn-auto").addEventListener("click",()=>ai(!Tt.auto));document.getElementById("btn-quality").addEventListener("click",()=>{Le=!Le,sa()});document.getElementById("btn-home").addEventListener("click",()=>{for(Rs(),mr(),Tt.pos.copy(ta),Tt.yaw=0,ws.copy(ta);_n>0;)_n--,xn.position.y+=Qt,En.position.y+=Qt;sa(),_r()});var pr=ed(),rd=document.getElementById("hand-hud"),Vx=document.getElementById("hand-preview"),Fe=document.getElementById("hand-cursor"),si=document.getElementById("btn-hand"),Di=!1,$o=0,Uc=null,ii=null;async function wd(i){if(Di&&i!==!0){pr.stop(),Di=!1,rd.hidden=!0,Fe.hidden=!0,si.textContent="\uC190 \uC870\uC791 \xB7 \uAEBC\uC9D0",si.setAttribute("aria-pressed","false");return}if(!Di){si.textContent="\uCE74\uBA54\uB77C \uC5EC\uB294 \uC911";try{await pr.start(),Di=!0,rd.hidden=!1,si.textContent="\uC190 \uC870\uC791 \xB7 \uCF1C\uC9D0";let t=document.getElementById("cue");t&&!t.classList.contains("gone")&&(t.textContent="검지로 구슬을 가리켜 그 속의 기억을 읽어 보세요"),si.setAttribute("aria-pressed","true"),Tt.auto&&ai(!1)}catch{si.textContent="\uCE74\uBA54\uB77C \uC0AC\uC6A9 \uBD88\uAC00",setTimeout(()=>si.textContent="\uC190 \uC870\uC791 \xB7 \uAEBC\uC9D0",3e3)}}}si.addEventListener("click",()=>wd());function od(i,t){let e=Math.abs(i)-t;return e<=0?0:Math.sign(i)*e*e*4.5}/* 손을 올려 두면 눌리는 버튼 — 손 조작을 끄는 버튼처럼 잘못 눌리면 곤란한 것은 뺀다 */
+var DW=["panel-next","float-next","panel-close"],Dw={key:null,t:0,done:!1};
 /* 손끝이 버튼 근처에만 와도 그 버튼으로 본다 — 손으로 작은 버튼을 정확히 맞추기는 어렵다 */
 function Hb(s,r){for(let id of DW){let b=document.getElementById(id);if(!b)continue;let c=b.getBoundingClientRect();if(!c.width)continue;let p=id==="panel-close"?16:34;if(s>c.left-p&&s<c.right+p&&r>c.top-p&&r<c.bottom+p)return b}return null}
-function Gx(i){$o+=i,$o>1/30&&(pr.update($o),pr.drawPreview(Vx),$o=0);let t=pr.state;if(!t.tracked){Fe.hidden=!0,Uc=null,en=null,Dw.key=null,Dw.t=0;return}
-/* 걷기 — 손바닥을 화면 끝 쪽으로 가져갔을 때만. 구슬을 가리키는 중에는 멈춰 서서 구슬이 도망가지 않게 */
-let e=Uc?0:od(t.palm.x-.5,.24),n=Uc?0:od(t.palm.y-.5,.26);if(e!==0&&(Tt.yaw-=e*2.4*i),n!==0){let c=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw));Tt.pos.addScaledVector(c,-n*10*i)}(e!==0||n!==0)&&(Tt.idle=0,Tt.auto&&ai(!1),Rs());let s=t.tip.x*innerWidth,r=t.tip.y*innerHeight,a=Hb(s,r);if(!a){let o=document.elementFromPoint(s,r);a=o&&o.closest?o.closest("button"):null}a!==ii&&(ii&&ii.classList.remove("hand-hot"),ii=a,ii&&ii.classList.add("hand-hot"));let l=a?null:Yc(s,r,230,Uc);Uc=l?{gi:l.gi,id:l.id}:null,en=l;
+/* 둘러보기 — 손바닥을 편 그 자리가 조이스틱의 가운데. 거기서 벗어난 만큼 돌고 걷는다 (dead 안쪽은 멈춤).
+   화면 가운데를 기준으로 하면 손을 조금 낮게 든 사람은 펴자마자 뒤로 걸어가 버린다 */
+var YK_LOOK={dead:.05,range:.18,yaw:1.6,walk:5},YkOrigin=null,YkPad=document.getElementById("look-pad"),YkKnob=YkPad&&YkPad.querySelector(".knob"),YkRows=Array.from(document.querySelectorAll("#guide li"));
+function ykGuide(n){YkRows.forEach((li,j)=>li.classList.toggle("on",j===n))}
+function Gx(i){$o+=i,$o>1/30&&(pr.update($o),pr.drawPreview(Vx),$o=0);let t=pr.state;
+if(!t.tracked){Fe.hidden=!0,Uc=null,en=null,Dw.key=null,Dw.t=0,YkOrigin=null,YkPad&&YkPad.classList.remove("on"),Fe.classList.remove("look"),ykGuide(-1);return}
+Tt.idle=0;
+/* 손바닥을 펴면 — 둘러보기. 구슬은 고르지 않는다 */
+if(t.gesture==="palm"){
+  ii&&(ii.classList.remove("hand-hot"),ii=null);Uc=null;en=null;Dw.key=null;Dw.t=0;t.pinchEdge;
+  YkOrigin||(YkOrigin={x:t.palm.x,y:t.palm.y});
+  let dx=t.palm.x-YkOrigin.x,dy=t.palm.y-YkOrigin.y,amt=v=>{let e=Math.abs(v)-YK_LOOK.dead;return e<=0?0:Math.sign(v)*Math.min(1,e/YK_LOOK.range)},ax=amt(dx),ay=amt(dy);
+  if(ax||ay){Tt.auto&&ai(!1);Rs()}
+  ax&&(Tt.yaw-=ax*YK_LOOK.yaw*i);
+  if(ay){let c=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw));Tt.pos.addScaledVector(c,-ay*YK_LOOK.walk*i)}
+  let k=YK_LOOK.dead+YK_LOOK.range,cl=v=>Math.max(-1,Math.min(1,v/k))*40;
+  YkPad&&(YkPad.classList.add("on"),YkKnob.style.transform="translate("+cl(dx).toFixed(1)+"px,"+cl(dy).toFixed(1)+"px)");
+  Fe.hidden=!1;Fe.classList.add("look");Fe.classList.remove("over","pinch");Fe.style.left=t.palm.x*innerWidth+"px";Fe.style.top=t.palm.y*innerHeight+"px";Fe.style.setProperty("--p",0);
+  ykGuide(0);return}
+/* 그 밖의 손 모양 — 가리키기. 걷지 않고 서서 구슬이나 버튼을 고른다 */
+YkOrigin=null;YkPad&&YkPad.classList.remove("on");Fe.classList.remove("look");
+let s=t.tip.x*innerWidth,r=t.tip.y*innerHeight,a=Hb(s,r);if(!a){let o=document.elementFromPoint(s,r);a=o&&o.closest?o.closest("button"):null}a!==ii&&(ii&&ii.classList.remove("hand-hot"),ii=a,ii&&ii.classList.add("hand-hot"));let l=a?null:Yc(s,r,230,Uc);Uc=l?{gi:l.gi,id:l.id}:null,en=l;
 /* 올려 두기 — 구슬이나 버튼 위에 손을 잠시 두면 게이지(커서 고리)가 차고 열린다. 꼬집지 않아도 된다 */
 let k=a?(DW.includes(a.id)?"b:"+a.id:null):l&&!(fr&&fr.gi===l.gi&&fr.id===l.id)?l.gi+":"+l.id:null;k!==Dw.key?(Dw.key=k,Dw.t=0,Dw.done=!1):Dw.t+=i;let q=k&&!Dw.done?Math.min(1,Math.max(0,Dw.t-.2)/(a?.8:1)):0;if(q>=1){Dw.done=!0;a?a.click():Md(l.gi,l.id)}
-Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.classList.toggle("over",!!(l||k)),Fe.classList.toggle("pinch",t.pinch),Fe.style.setProperty("--p",k?Math.max(.08,q):l?1:.22),t.pinchEdge&&(Dw.done=!0,ii?ii.click():l?Md(l.gi,l.id):mr())}function Ed(){We.aspect=innerWidth/innerHeight,We.updateProjectionMatrix(),kn.setSize(innerWidth,innerHeight),gr.setSize(innerWidth,innerHeight),bd.setSize(innerWidth,innerHeight)}addEventListener("resize",Ed);var Hc=new vs,Pi={pending:!0,frames:0,time:0},ad=!1;function Td(){requestAnimationFrame(Td);let i=Math.min(Hc.getDelta(),.05),t=Hc.elapsedTime,e=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw)),n=new P(Math.cos(Tt.yaw),0,-Math.sin(Tt.yaw));if(Di&&Gx(i),Tt.auto){ri+=i*.15;let u=Bn+.3;Tt.pos.x=Math.sin(ri)*u,Tt.pos.z=Math.cos(ri)*u,Tt.pos.y+=i*.15*(Qt/Es);let g=(Math.atan2(-Math.cos(ri),Math.sin(ri))-Tt.yaw+Math.PI)%Es-Math.PI;g<-Math.PI&&(g+=Es),Tt.yaw+=g*(1-Math.pow(.02,i))}else{let u=Ge.has("ShiftLeft")||Ge.has("ShiftRight")?2.2:1,f=7*i*u;(Ge.has("KeyW")||Ge.has("ArrowUp"))&&Tt.pos.addScaledVector(e,f),(Ge.has("KeyS")||Ge.has("ArrowDown"))&&Tt.pos.addScaledVector(e,-f),(Ge.has("KeyA")||Ge.has("ArrowLeft"))&&Tt.pos.addScaledVector(n,-f),(Ge.has("KeyD")||Ge.has("ArrowRight"))&&Tt.pos.addScaledVector(n,f),Ge.has("KeyQ")&&(Tt.pos.y+=f*.7),Ge.has("KeyE")&&(Tt.pos.y-=f*.7)}nn.active&&Tt.pos.lerp(nn.pos,1-Math.pow(.004,i)),Fi&&(Tt.pos.y+=i*.6,Tt.yaw+=i*.06),Tt.idle+=i,!Tt.auto&&!nn.active&&Tt.idle>25&&!Ts&&!Fi&&ai(!0);let s=Math.hypot(Tt.pos.x,Tt.pos.z);if(s>ae-2.2){let u=(ae-2.2)/s;Tt.pos.x*=u,Tt.pos.z*=u}Tt.pos.y=Math.max(Tt.pos.y,1),nn.active||(Tt.pos.y>kx?(Tt.pos.y-=Qt,ws.y-=Qt,Zo.y-=Qt,_n++,xn.position.y-=Qt,En.position.y-=Qt,xn.visible=Le&&_n<2,En.visible=!Le&&_n<2):_n>0&&Tt.pos.y<Hx&&(Tt.pos.y+=Qt,ws.y+=Qt,Zo.y+=Qt,_n--,xn.position.y+=Qt,En.position.y+=Qt,xn.visible=Le&&_n<2,En.visible=!Le&&_n<2)),Di||(en=Ts?null:Yc(ea.x,ea.y,92,en),jo.style.cursor=en?"pointer":"grab",en?(Fe.hidden=!1,Fe.classList.add("over"),Fe.classList.remove("pinch"),Fe.style.left=en.sx+"px",Fe.style.top=en.sy+"px",Fe.style.setProperty("--p","1")):Di||(Fe.hidden=!0)),Lc+=((en&&!Ts?1:0)-Lc)*(1-Math.pow(.01,i));let r=1-Math.pow(6e-4,i);Ve.x+=(Ve.tx-Ve.x)*r,Ve.y+=(Ve.ty-Ve.y)*r;let o=(Mx?.35:1)*(nn.active?.22:1)*(1-Lc*.6),a=Tt.pos.clone().addScaledVector(n,Ve.x*4.2*o).add(new P(0,-Ve.y*2.8*o,0));ws.lerp(a,1-Math.pow(.002,i)),We.position.copy(ws);let l,c=1-Math.pow(.004,i);if(nn.active&&nn.orb){Oc(nn.orb,t,Ic);let u=vd.copy(Ic).sub(We.position),f=u.length()||1;u.normalize();let g=yd.copy(u).cross(Ox).normalize(),x=Math.tan(wc.degToRad(We.fov)/2),p=innerWidth<560;l=Ic.clone().addScaledVector(g,p?0:f*x*We.aspect*.42).add(new P(0,(p?-f*x*.3:0)-Ve.y*1.2*o,0)),Tt.yaw=Math.atan2(-u.x,-u.z),c=1-Math.pow(.0015,i)}else l=Tt.pos.clone().addScaledVector(e,16).addScaledVector(n,-Ve.x*9*o).add(new P(0,-Ve.y*5.5*o+.8,0));Zo.lerp(l,c),We.lookAt(Zo),We.rotateZ(-Ve.x*.04*o),zn.visible=!1;for(let u=0;u<Ni.length;u++){let{mesh:f,items:g}=Ni[u];for(let x=0;x<g.length;x++){let p=g[x],m=fr&&fr.gi===u&&fr.id===x;Oc(p,t,bs.position),bs.rotation.set(0,t*p.spin+p.phase,0);let w=en&&en.gi===u&&en.id===x,v=w||m?p.amp*.08:p.amp;p.ampCur+=(v-p.ampCur)*(1-Math.pow(.015,i));let M=m?p.r*(1.16+Math.sin(t*2.2)*.05):w?p.r*1.22:p.r;bs.scale.setScalar(M),bs.updateMatrix(),f.setMatrixAt(x,bs.matrix),m&&(zn.position.copy(bs.position),zn.scale.setScalar(M*1.04),zn.visible=!0)}f.instanceMatrix.needsUpdate=!0}Xc.uniforms.uTime.value=t;let h=Zc.geometry.attributes.position,d=na*Qt*.6;for(let u=0;u<ia;u++){let f=h.array[u*3+1]+i*(.12+Bc[u]%10*.02);f>d&&(f=.2),h.array[u*3+1]=f,h.array[u*3]+=Math.sin(t*.3+Bc[u])*i*.12}h.needsUpdate=!0,fd.opacity=.68+Math.sin(t*.8)*.08,xn.visible&&(xn.material.uniforms.uTime.value=t),Le?gr.render():kn.render(Ue,We),Pi.pending&&!Sx&&t>3&&(Pi.frames++,Pi.time+=i,Pi.time>2.5&&(Pi.pending=!1,Le&&Pi.time/Pi.frames>.045&&(Le=!1,sa()))),ad||(ad=!0,document.body.classList.add("ready"))}We.position.copy(ta);sa();setTimeout(()=>wd(!0),900);ai(Vc);Td();})();
+ykGuide(a&&(a.id==="panel-next"||a.id==="float-next")?2:1);
+Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.classList.toggle("over",!!(l||k)),Fe.classList.toggle("pinch",t.pinch),Fe.style.setProperty("--p",k?Math.max(.08,q):l?1:.22),t.pinchEdge&&(Dw.done=!0,ii?ii.click():l?Md(l.gi,l.id):mr())}
+/* 전시 화면 안에 들어가 있으면 — 안내 카드를 띄우고, 넘어가는 버튼은 하나만 */
+var YkIntro=document.getElementById("intro"),YkNext=document.getElementById("float-next");
+YkNext.addEventListener("click",xd);
+if(parent!==window){document.body.classList.add("yk-embed");YkIntro.hidden=!1;
+  var hideIntro=()=>{if(YkIntro.hidden||YkIntro.classList.contains("leaving"))return;YkIntro.classList.add("leaving");setTimeout(()=>{YkIntro.hidden=!0},700)};
+  setTimeout(hideIntro,9e3);addEventListener("pointerdown",hideIntro)}
+setInterval(()=>{YkNext.hidden=!(Fc&&!Fi&&qc.hidden);fr&&typeof hideIntro=="function"&&hideIntro()},300);
+function Ed(){We.aspect=innerWidth/innerHeight,We.updateProjectionMatrix(),kn.setSize(innerWidth,innerHeight),gr.setPixelRatio(kn.getPixelRatio()),gr.setSize(innerWidth,innerHeight),bd.setSize(innerWidth,innerHeight)}/* 빛 번짐 단계도 화질의 해상도를 따른다 (처음 만든 해상도에 묶여 있지 않게) */addEventListener("resize",Ed);var Hc=new vs,Pi={pending:!0,frames:0,time:0},ad=!1;function Td(){requestAnimationFrame(Td);let i=Math.min(Hc.getDelta(),.05),t=Hc.elapsedTime,e=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw)),n=new P(Math.cos(Tt.yaw),0,-Math.sin(Tt.yaw));if(Di&&Gx(i),Tt.auto){ri+=i*.15;let u=Bn+.3;Tt.pos.x=Math.sin(ri)*u,Tt.pos.z=Math.cos(ri)*u,Tt.pos.y+=i*.15*(Qt/Es);let g=(Math.atan2(-Math.cos(ri),Math.sin(ri))-Tt.yaw+Math.PI)%Es-Math.PI;g<-Math.PI&&(g+=Es),Tt.yaw+=g*(1-Math.pow(.02,i))}else{let u=Ge.has("ShiftLeft")||Ge.has("ShiftRight")?2.2:1,f=7*i*u;(Ge.has("KeyW")||Ge.has("ArrowUp"))&&Tt.pos.addScaledVector(e,f),(Ge.has("KeyS")||Ge.has("ArrowDown"))&&Tt.pos.addScaledVector(e,-f),(Ge.has("KeyA")||Ge.has("ArrowLeft"))&&Tt.pos.addScaledVector(n,-f),(Ge.has("KeyD")||Ge.has("ArrowRight"))&&Tt.pos.addScaledVector(n,f),Ge.has("KeyQ")&&(Tt.pos.y+=f*.7),Ge.has("KeyE")&&(Tt.pos.y-=f*.7)}nn.active&&Tt.pos.lerp(nn.pos,1-Math.pow(.004,i)),Fi&&(Tt.pos.y+=i*.6,Tt.yaw+=i*.06),Tt.idle+=i,!Tt.auto&&!nn.active&&Tt.idle>25&&!Ts&&!Fi&&ai(!0);let s=Math.hypot(Tt.pos.x,Tt.pos.z);if(s>ae-2.2){let u=(ae-2.2)/s;Tt.pos.x*=u,Tt.pos.z*=u}Tt.pos.y=Math.max(Tt.pos.y,1),nn.active||(Tt.pos.y>kx?(Tt.pos.y-=Qt,ws.y-=Qt,Zo.y-=Qt,_n++,xn.position.y-=Qt,En.position.y-=Qt,xn.visible=Le&&_n<2,En.visible=!Le&&_n<2):_n>0&&Tt.pos.y<Hx&&(Tt.pos.y+=Qt,ws.y+=Qt,Zo.y+=Qt,_n--,xn.position.y+=Qt,En.position.y+=Qt,xn.visible=Le&&_n<2,En.visible=!Le&&_n<2)),Di||(en=Ts?null:Yc(ea.x,ea.y,92,en),jo.style.cursor=en?"pointer":"grab",en?(Fe.hidden=!1,Fe.classList.add("over"),Fe.classList.remove("pinch"),Fe.style.left=en.sx+"px",Fe.style.top=en.sy+"px",Fe.style.setProperty("--p","1")):Di||(Fe.hidden=!0)),Lc+=((en&&!Ts?1:0)-Lc)*(1-Math.pow(.01,i));let r=1-Math.pow(6e-4,i);Ve.x+=(Ve.tx-Ve.x)*r,Ve.y+=(Ve.ty-Ve.y)*r;let o=(Mx?.35:1)*(nn.active?.22:1)*(1-Lc*.6),a=Tt.pos.clone().addScaledVector(n,Ve.x*4.2*o).add(new P(0,-Ve.y*2.8*o,0));ws.lerp(a,1-Math.pow(.002,i)),We.position.copy(ws);let l,c=1-Math.pow(.004,i);if(nn.active&&nn.orb){Oc(nn.orb,t,Ic);let u=vd.copy(Ic).sub(We.position),f=u.length()||1;u.normalize();let g=yd.copy(u).cross(Ox).normalize(),x=Math.tan(wc.degToRad(We.fov)/2),p=innerWidth<560;l=Ic.clone().addScaledVector(g,p?0:f*x*We.aspect*.42).add(new P(0,(p?-f*x*.3:0)-Ve.y*1.2*o,0)),Tt.yaw=Math.atan2(-u.x,-u.z),c=1-Math.pow(.0015,i)}else l=Tt.pos.clone().addScaledVector(e,16).addScaledVector(n,-Ve.x*9*o).add(new P(0,-Ve.y*5.5*o+.8,0));Zo.lerp(l,c),We.lookAt(Zo),We.rotateZ(-Ve.x*.04*o),zn.visible=!1;for(let u=0;u<Ni.length;u++){let{mesh:f,items:g}=Ni[u];for(let x=0;x<g.length;x++){let p=g[x],m=fr&&fr.gi===u&&fr.id===x;Oc(p,t,bs.position),bs.rotation.set(0,t*p.spin+p.phase,0);let w=en&&en.gi===u&&en.id===x,v=w||m?p.amp*.08:p.amp;p.ampCur+=(v-p.ampCur)*(1-Math.pow(.015,i));let M=m?p.r*(1.16+Math.sin(t*2.2)*.05):w?p.r*1.22:p.r;bs.scale.setScalar(M),bs.updateMatrix(),f.setMatrixAt(x,bs.matrix),m&&(zn.position.copy(bs.position),zn.scale.setScalar(M*1.04),zn.visible=!0)}f.instanceMatrix.needsUpdate=!0}Xc.uniforms.uTime.value=t;let h=Zc.geometry.attributes.position,d=na*Qt*.6;for(let u=0;u<ia;u++){let f=h.array[u*3+1]+i*(.12+Bc[u]%10*.02);f>d&&(f=.2),h.array[u*3+1]=f,h.array[u*3]+=Math.sin(t*.3+Bc[u])*i*.12}h.needsUpdate=!0,fd.opacity=.68+Math.sin(t*.8)*.08,xn.visible&&(xn.material.uniforms.uTime.value=t),gr.render(),Pi.pending&&!Sx&&t>3&&(Pi.frames++,Pi.time+=i,Pi.time>2.5&&(Pi.pending=!1,Le&&Pi.time/Pi.frames>.045&&(Le=!1,sa()))),ad||(ad=!0,document.body.classList.add("ready"))}We.position.copy(ta);sa();setTimeout(()=>wd(!0),900);ai(Vc);Td();})();
 /*! Bundled license information:
 
 three/build/three.module.js:
