@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
-import { unlockSound, setScene, chime } from "./sound.js";
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261025b";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -134,10 +134,15 @@ function toStage(clientX, clientY) {
 /* ============================================================
    색
    ============================================================ */
-const ACCENT = "#1eff66";
+const ACCENT = "#9a5aff";
 const tint = { from: ACCENT, to: ACCENT, p: 1 };
 
 function rgbaOf(color, alpha) {
+  const hex = /^#([0-9a-f]{6})$/i.exec(String(color).trim());
+  if (hex) {
+    const v = parseInt(hex[1], 16);
+    return `rgba(${v >> 16},${(v >> 8) & 255},${v & 255},${alpha})`;
+  }
   const n = String(color).match(/[\d.]+/g);
   return n ? `rgba(${n[0]},${n[1]},${n[2]},${alpha})` : color;
 }
@@ -505,7 +510,7 @@ let spinLock = false;                     // 꾹 누르는 동안엔 고리을 �
 let pointerIn = false;                    // 손·마우스가 화면 안에 있는지
 
 /* 연출용 — 처음 펼쳐질 때 / 고른 뒤 흩어질 때 */
-const rig = { intro: 0, swirl: 0, fade: 1, spread: 1, tilt: 0, lift: 0 };
+const rig = { intro: 0, swirl: 0, fade: 1, front: 1, spread: 1, tilt: 0, lift: 0 };   // front: 정면 파편만 따로
 
 const mod = (a, n) => ((a % n) + n) % n;
 const decay = (dt, seconds) => 1 - Math.pow(0.001, dt / seconds);   // seconds 동안 99.9% 다가간다
@@ -593,7 +598,7 @@ function layoutSpiral() {
 
     const box = projectCard(a, y, R, tilt, sc, rig.lift);
     const isFront = t.k === focusCard;
-    const op = rig.intro * (isFront ? 1 : rig.fade);
+    const op = rig.intro * (isFront ? rig.front : rig.fade);
 
     t.el.style.transform =
       `translateY(${y}px) rotateY(${a.toFixed(2)}deg) translateZ(${R.toFixed(1)}px) scale(${sc.toFixed(3)})`;
@@ -840,7 +845,7 @@ const cameraHintEl = document.getElementById("cameraHint");
 /* 손 인식 상자 위 설명 — 화면마다 할 수 있는 게 달라서 바꿔 띄운다 */
 const HINT = {
   grid: "손을 화면 좌우 끝으로 가져가면 그쪽으로 돌아갑니다. 가운데 파편에 손을 올려 두면 골라집니다. 엄지와 검지를 모아 집으면 더 빨리 골라집니다.",
-  orb: "'확인하러 가기'에 손을 올려 두면 영상이 시작됩니다. 손이 어디 있든 엄지와 검지를 모아 집어도 넘어갑니다.",
+  orb: "아래 가운데 '확인하러 가기'에 손을 올려 두면 영상이 시작됩니다. 손이 어디 있든 엄지와 검지를 모아 집어도 넘어갑니다.",
 };
 cameraHintEl.textContent = HINT.grid;
 const hudIndexEl = document.getElementById("hudIndex");
@@ -852,6 +857,9 @@ const orbIndexEl = document.getElementById("orbIndex");
 
 function applyMarbleTheme(i) {
   const m = VIDEOS[i].marble;
+  // '확인하러 가기' 버튼도 구슬 빛 색으로 채운다 (반투명 빛 색을 불투명하게)
+  root.style.setProperty("--marble", m.glow.replace(/,\s*[\d.]+\)\s*$/, ",1)"));
+  root.style.setProperty("--marble-glow", m.glow);
   // 구슬 화면의 구슬과, 아카이브 가운데 구슬을 같은 색으로
   [marbleStage, coreEl].forEach((el) => {
     el.style.setProperty("--hue", m.hue + "deg");
@@ -1018,6 +1026,7 @@ function snapshot(vi) {
 
 function select() {
   if (locked || current !== "grid") return;
+  if (performance.now() < armAt) return;   // 로고가 걷히는 중에 누른 건 고르기가 아니다
 
   const idx = focusIndex;
 
@@ -1052,6 +1061,7 @@ function select() {
   const snap = morph.firstElementChild;
   tl.add(() => {
     gsap.set([featureEl, featNameEl, featSlugEl], { autoAlpha: 0 });
+    rig.front = 0;          // 정면 타일도 같이 숨긴다 — 이제부터는 응축하는 화면(morph)이 그 자리를 잇는다
     gsap.set(morph, {
       visibility: "visible", opacity: 1, filter: "brightness(1)",
       x: p.x, y: p.y, width: w, height: h,
@@ -1085,9 +1095,11 @@ function select() {
     { scale: 0.94, opacity: 0 },
     { scale: 1, opacity: 1, duration: 0.7, ease: "power2.out" }, 1.7);
   tl.to(morph, { opacity: 0, duration: 0.55, ease: "power1.in" }, 1.78);
+  // 구슬이 생기는 순간에만 퍼진다 (미리 그려 두면 날아오는 동안 빈 고리가 보인다)
+  tl.set(marbleRing, { opacity: 0 }, 0);
   tl.fromTo(marbleRing,
     { scale: 0.9, opacity: 0.8, borderWidth: 3 },
-    { scale: 1.45, opacity: 0, borderWidth: 1, duration: 1.0, ease: "power2.out" }, 1.85);
+    { scale: 1.45, opacity: 0, borderWidth: 1, duration: 1.0, ease: "power2.out", immediateRender: false }, 1.85);
 
   // 4. 글자들이 차례로 올라온다
   tl.fromTo("#orbHead span",
@@ -1116,6 +1128,7 @@ function select() {
 
 /* 아카이브를 원래 상태로 되돌린다 (구슬에서 오든 영상 끝에서 오든 같다) */
 function resetArchive() {
+  armHand();
   filmEl.pause();
   stopYt();
   if (current === "garden") releaseGardenHand();
@@ -1134,6 +1147,7 @@ function resetArchive() {
   // 고리가 축에서 다시 풀려 나온다 (검정 페이드가 걷히는 동안 보인다)
   gsap.killTweensOf(rig);
   rig.fade = 1;
+  rig.front = 1;
   gsap.fromTo(rig, { intro: 0.25, spread: 1, swirl: -2.5 },
     { intro: 1, swirl: 0, duration: 1.6, ease: "power3.out" });
   gsap.set(featureEl, { scale: 1, autoAlpha: 1 });
@@ -1247,8 +1261,10 @@ async function playFilm() {
   try {
     await filmEl.play();
   } catch {
+    // 소리가 막혔으면 소리 없이라도 틀고, 다음에 화면을 누르는 순간 소리를 켠다
     filmEl.muted = true;
     try { await filmEl.play(); } catch {}
+    unlockLater();
   }
 }
 
@@ -1333,8 +1349,6 @@ function loadFilmFile(seg) {
    자동문처럼 양옆으로 벌어지며 영상이 드러난다. */
 const doorL = document.getElementById("doorL");
 const doorR = document.getElementById("doorR");
-const wipeEl = document.getElementById("pixwipe");
-const wipeCtx = wipeEl.getContext("2d");
 
 async function doorTransition(layers, prepare) {
   locked = true;
@@ -1368,96 +1382,33 @@ async function doorTransition(layers, prepare) {
   locked = false;
 }
 
-/* ── 정원 → 영상 2 : 필름 릴 ─────────────────────────────
-   1) 정원이 작아지며 필름 한 칸이 되고, 양옆에 구멍 뚫린 필름 띠가 나타난다
-   2) 필름이 한 칸 감기며 다음 칸에 영상 2 가 올라온다
-   3) 그 칸이 커지며 화면 가득 영상이 된다
-   필름 띠와 다음 칸의 영상은 캔버스(정원 바로 아래)에 그린다. */
-const REEL = {
-  k: 0.6,           // 칸 크기 (화면 대비)
-  gap: 46,          // 칸 사이
-  margin: 66,       // 칸 바깥 띠 폭 (구멍이 뚫리는 자리)
-  hole: 30,         // 구멍 간격
-};
-const REEL_FW = STAGE_W * REEL.k;
-const REEL_FH = STAGE_H * REEL.k;
-const REEL_STEP = REEL_FH + REEL.gap;
+/* ── 정원 → 영상 2 : 환해지며 ─────────────────────────────
+   정원이 살짝 다가오며 화면이 처음엔 은근히, 끝에서 확 하얗게 밝아진다.
+   그 빛이 천천히 걷히면서 영상 2 가 드러난다. (한 가지 흰색만 — 그라데이션 없음) */
+const flashEl = document.getElementById("flash");
 
-function drawReel(s, withFilm) {
-  const g = wipeCtx;
-  g.imageSmoothingEnabled = true;            // 픽셀 전환이 꺼 둔 걸 되돌린다
-  const cx = STAGE_W / 2, cy = STAGE_H / 2;
-  const fl = cx - REEL_FW / 2;
-  const sl = fl - REEL.margin, sw = REEL_FW + REEL.margin * 2;
-  g.fillStyle = "#000";
-  g.fillRect(0, 0, STAGE_W, STAGE_H);
-  g.fillStyle = "#151515";
-  g.fillRect(sl, 0, sw, STAGE_H);
-  // 구멍 — 띠와 같이 흐른다
-  g.fillStyle = "#000";
-  for (let y = -(s % REEL.hole) - REEL.hole; y < STAGE_H + REEL.hole; y += REEL.hole) {
-    g.fillRect(sl + 22, y, 20, 13);
-    g.fillRect(sl + sw - 42, y, 20, 13);
-  }
-  // 칸 — 0 은 정원(위에 정원 화면이 얹힌다), 1 은 영상 2
-  g.font = '500 12px "tt-autonomous-mono", "Roboto Mono", monospace';
-  for (let i = -2; i <= 3; i++) {
-    const fy = cy - REEL_FH / 2 + i * REEL_STEP - s;
-    if (fy > STAGE_H || fy + REEL_FH < 0) continue;
-    g.fillStyle = "#070707";
-    g.fillRect(fl, fy, REEL_FW, REEL_FH);
-    g.fillStyle = "#9a5aff";
-    g.fillText(`${String(i + 1).padStart(2, "0")}  YK-2087`, fl, fy - REEL.gap / 2 + 4);
-    g.fillText("夜光", fl + REEL_FW - 26, fy - REEL.gap / 2 + 4);
-    if (i === 1 && withFilm && filmEl.style.visibility !== "hidden" && filmEl.readyState >= 2 && filmEl.videoWidth) {
-      const vw = filmEl.videoWidth, vh = filmEl.videoHeight, k = Math.max(REEL_FW / vw, REEL_FH / vh);
-      g.save();
-      g.beginPath(); g.rect(fl, fy, REEL_FW, REEL_FH); g.clip();
-      g.drawImage(filmEl, cx - vw * k / 2, fy + REEL_FH / 2 - vh * k / 2, vw * k, vh * k);
-      g.restore();
-    }
-  }
-}
-
-async function reelTransition(prepare) {
+async function flashTransition(prepare) {
   locked = true;
   endHold(true);
   hideChrome(true);
   gsap.to(cursorEl, { opacity: 0, duration: 0.2 });
-  const R = { s: 0 };
-  const paint = () => drawReel(R.s, true);
-  // 필름 띠는 정원 바로 아래에서 그린다
-  gsap.set(screenGarden, { zIndex: 7, transformOrigin: "50% 50%" });
-  gsap.set(wipeEl, { zIndex: 6 });
-  drawReel(0, false);
-
-  // 1) 정원이 필름 한 칸이 된다 — 그 사이 영상을 준비한다
-  const shrink = gsap.timeline();
-  shrink.to(screenGarden, { scale: REEL.k, duration: 0.85, ease: "power3.inOut" }, 0);
-  shrink.fromTo(wipeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: "power1.out" }, 0.25);
-  const ready = prepare();
-  gsap.set(screenFilm, { opacity: 0 });      // 칸이 커질 때까지 진짜 영상은 숨겨 둔다
-  await Promise.all([shrink, ready]);
-
-  // 2) 한 칸 감긴다
-  const roll = gsap.timeline({ onUpdate: paint });
-  roll.to(R, { s: REEL_STEP, duration: 0.9, ease: "power3.inOut" }, 0.1);
-  roll.to(screenGarden, { y: -REEL_STEP, duration: 0.9, ease: "power3.inOut" }, 0.1);
-  await roll;
-
-  // 3) 그 칸이 화면 가득 커진다 — 진짜 영상으로 바꿔 끼우고 띠는 걷어 낸다
-  gsap.set(screenGarden, { autoAlpha: 0 });
-  gsap.set(screenFilm, { scale: REEL.k, transformOrigin: "50% 50%", opacity: 1 });
-  const grow = gsap.timeline();
-  grow.to(screenFilm, { scale: 1, duration: 0.9, ease: "power3.inOut" }, 0);
-  grow.to(wipeEl, { autoAlpha: 0, duration: 0.35, ease: "power1.in" }, 0);
-  await grow;
+  gsap.set(screenGarden, { transformOrigin: "50% 50%" });
+  const up = gsap.timeline();
+  up.to(screenGarden, { scale: 1.06, duration: 1.0, ease: "power2.in" }, 0);
+  up.fromTo(flashEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 1.0, ease: "expo.in" }, 0);
+  await Promise.all([up, prepare(true)]);   // 영상은 정원(위) 뒤에서 준비만 해 둔다
 
   gsap.set([screenGrid, screenOrb, screenGarden], { autoAlpha: 0 });
-  gsap.set(screenGarden, { clearProps: "transform,transformOrigin,zIndex" });
-  gsap.set(screenFilm, { clearProps: "transform,transformOrigin" });
-  gsap.set(wipeEl, { clearProps: "zIndex" });
-  wipeCtx.clearRect(0, 0, STAGE_W, STAGE_H);
+  gsap.set(screenGarden, { clearProps: "transform,transformOrigin" });
+  // 첫 장면에 멈춘 채 빛이 다 걷히고 나서 재생한다 — 앞부분이 빛에 묻혀 건너뛴 듯 보이지 않게
+  const local = FILM[filmSegment].local;
+  if (local) { try { filmEl.currentTime = 0; } catch {} }
+  const down = gsap.timeline();
+  down.fromTo(filmEl, { scale: 1.04 }, { scale: 1, duration: 1.2, ease: "power2.out" }, 0);
+  down.to(flashEl, { autoAlpha: 0, duration: 1.0, ease: "power2.out" }, 0);
+  if (local) down.add(() => { try { filmEl.currentTime = 0; } catch {} playFilm(); }, 1.05);
+  await down;
+  gsap.set(filmEl, { clearProps: "transform" });
   locked = false;
 }
 
@@ -1485,11 +1436,11 @@ async function toFilm(segment) {
   if (!hasFilm) return back();          // 본편이 없는 저장소면 아카이브로
   const from = current;
   if (from === "garden") releaseGardenHand();
-  // 인터랙션 1 → 영상 1 은 자동문, 정원 → 영상 2 는 필름 릴
+  // 인터랙션 1 → 영상 1 은 자동문, 정원 → 영상 2 는 환해지며
   const run = from === "garden"
-    ? reelTransition
+    ? flashTransition
     : (prep) => doorTransition([screenGrid, screenOrb, "#aura", "#dust"], prep);
-  await run(async () => {
+  await run(async (hold) => {            // hold: 준비만 하고 재생은 전환이 직접 시작한다
     gsap.set(screenFilm, { autoAlpha: 1 });
     document.body.classList.remove("is-garden");
     hideChrome(true);
@@ -1504,7 +1455,7 @@ async function toFilm(segment) {
       gsap.set(filmEl, { autoAlpha: 1 });
       loadFilmFile(seg);
       await filmReady();
-      await playFilm();
+      if (!hold) await playFilm();
     } else {
       gsap.set(filmEl, { autoAlpha: 0 });
       filmEl.pause();
@@ -1543,6 +1494,7 @@ async function toGarden() {
     gsap.set(screenGarden, { autoAlpha: 1 });
     // 정원은 자체 마우스 조작이 있어서 실제 커서를 돌려준다
     document.body.classList.add("is-garden");
+    gsap.set(cursorEl, { opacity: 0 });   // 정원은 자기 손 커서가 있다
     current = "garden";
     setScene("garden");
     try { gardenFrame.contentWindow.focus(); } catch {}
@@ -1594,18 +1546,18 @@ function prepareGarden() {
   st.id = "yk-patch";
   st.textContent = `
     #outro{display:none !important}
-    /* 손끝 커서를 인터랙션 1 과 같은 모양·색으로 */
+    /* 손끝 커서를 인터랙션 1 과 같은 모양·색으로 (차오르는 게이지는 형광 마젠타) */
     .hand-cursor{width:86px !important;height:86px !important;margin:-43px 0 0 -43px !important}
     .hand-cursor .ring{
-      background: conic-gradient(#1eff66 calc(var(--p,0) * 1turn), rgba(255,255,255,.28) 0) !important;
+      background: conic-gradient(#ff2bd6 calc(var(--p,0) * 1turn), rgba(255,255,255,.28) 0) !important;
       -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%) !important;
               mask: radial-gradient(circle, transparent 64%, #000 66%) !important;
-      filter: drop-shadow(0 0 10px #1eff66);
+      filter: drop-shadow(0 0 10px #ff2bd6);
     }
     .hand-cursor .dot{
       inset:46% !important;
       background:#fff !important;
-      box-shadow:0 0 12px #1eff66, 0 0 26px rgba(30,255,102,.35) !important;
+      box-shadow:0 0 12px #ff2bd6, 0 0 26px rgba(255,43,214,.35) !important;
     }`;
   (doc.head || doc.documentElement).appendChild(st);
 
@@ -1702,6 +1654,17 @@ let holdTween = null;
 let holdBy = null;              // "hand" · "dwell" · "mouse" — 지금 누가 누르고 있는지
 let holdZone = null;            // 누르고 있는 자리 (handZone 참고)
 let dwellLatch = false;         // 올려 두기로 한 번 눌렀으면, 손을 뺄 때까지 다시 눌리지 않는다
+let armAt = 0;                  // 이 시각 전에는 손으로 고르지 않는다
+
+/* 아카이브가 열릴 때 — 이미 화면에 있던 손으로는 바로 골라지지 않게 한다.
+   (손을 카메라 앞에 둔 채 열리면 뜨자마자 '올려 둔 손'으로 잡혀 구슬 화면으로 넘어가 버렸다)
+   손을 한 번 치웠다 다시 올리거나, 펴서 꼬집어야 골라진다. 열린 뒤 잠깐은 아예 받지 않는다. */
+const ARM_DELAY = 1500;
+function armHand() {
+  dwellLatch = true;
+  pinchLatch = true;
+  armAt = performance.now() + ARM_DELAY;
+}
 const dwellAt = { zone: null, since: 0 };
 
 
@@ -1711,6 +1674,11 @@ const handCursorX = gsap.quickTo(cursorEl, "x", { duration: 0.12, ease: "power2"
 const handCursorY = gsap.quickTo(cursorEl, "y", { duration: 0.12, ease: "power2" });
 
 function moveCursor(sx, sy, byHand) {
+  // 정원(자기 커서가 있다)과 영상에서는 이 커서를 띄우지 않는다 — 포인터가 둘로 보이지 않게
+  if (current === "garden" || current === "film") {
+    gsap.set(cursorEl, { opacity: 0 });
+    return;
+  }
   cursorPos.x = sx;
   cursorPos.y = sy;
   (byHand ? handCursorX : cursorX)(sx);
@@ -1759,7 +1727,7 @@ function handZone(sx, sy) {
 /* by : "mouse"(마우스로 꾹) · "hand"(꼬집기) · "dwell"(손을 올려 두기)
    zone : 누르는 자리 — 구슬 화면에서 "back" 이면 다시 고르기, 아니면 확인하러 가기 */
 function startHold(by = "hand", zone = null) {
-  if (holding || locked || !ready) return;
+  if (holding || locked || !ready || performance.now() < armAt) return;
   holding = true;
   holdBy = by;
   holdZone = zone;
@@ -1966,6 +1934,8 @@ marbleImg.src = "assets/marble.png";
 function reveal() {
   if (ready) return;
   ready = true;
+  armHand();
+  armAt = Infinity;          // 로고가 다 걷히고 고리가 자리 잡을 때까지는 아무것도 고르지 않는다 (맨 끝에서 푼다)
 
   const tl = gsap.timeline();
   bootOutro(tl);
@@ -2027,6 +1997,7 @@ function reveal() {
 
   tl.add(() => { focusNameEl.textContent = VIDEOS[focusIndex].name; }, "-=0.5");
   tl.fromTo(focusNameEl, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.5");
+  tl.add(() => { armAt = performance.now() + 400; });
 }
 
 /* 로딩 화면 걷기 — 로고와 글씨가 깜빡이며 꺼지고, 테두리가 번지고,
@@ -2051,16 +2022,87 @@ function bootOutro(tl) {
 /* 다 받으면 '화면을 눌러 시작하세요' — 브라우저는 사람이 한 번 누르기 전엔 소리를 막는다.
    손으로만 고르면 '누름'이 없어서 영상 1 이 소리 없이 나왔다 (깃허브에서 특히).
    전시를 열 때 한 번만 누르면 페이지를 닫기 전까지 계속 소리가 난다. */
-function askStart() {
+/* 시작 — 손을 1초쯤 비추거나, 화면을 누르거나.
+   브라우저는 손짓을 '누름'으로 치지 않아서, 손으로 시작하면 소리가 막혀 있을 수 있다.
+   그래서 그 뒤 처음으로 화면을 누를 때 소리를 마저 연다 (unlockLater).
+   브라우저 설정에서 이 사이트의 자동 재생을 허용해 두면 안내 없이 바로 시작한다. */
+const START_HAND = 1100;                 // 손이 이만큼(ms) 이어서 잡히면 시작
+const loaderStartBar = document.getElementById("loaderStartBar");
+async function askStart() {
+  if (await soundReady()) { reveal(); return; }   // 이미 허락돼 있으면 누를 필요 없다
   gsap.fromTo(loaderStart, { opacity: 0 }, { opacity: 1, duration: 0.5 });
-  const go = (e) => {
+  let handFor = 0, last = performance.now();
+  const watch = setInterval(() => {
+    const now = performance.now();
+    handFor = handActive ? handFor + (now - last) : Math.max(0, handFor - (now - last) * 2);
+    last = now;
+    loaderStartBar.style.transform = `scaleX(${Math.min(1, handFor / START_HAND).toFixed(3)})`;
+    if (handFor >= START_HAND) go(null);
+  }, 50);
+  const events = ["pointerdown", "touchstart", "keydown"];
+  function go(e) {
     if (e && e.type === "keydown" && e.repeat) return;
-    ["pointerdown", "touchstart", "keydown"].forEach((t) => window.removeEventListener(t, go, true));
-    unlockSound();
-    unlockFilm();
+    clearInterval(watch);
+    events.forEach((t) => window.removeEventListener(t, go, true));
+    if (e) { unlockSound(); unlockFilm(); swallowClick(); }
+    else unlockLater();
     reveal();
+  }
+  events.forEach((t) => window.addEventListener(t, go, true));
+}
+
+/* 시작하려고 누른 그 클릭은 시작에만 쓴다.
+   누르는 순간 아카이브가 열리므로, 손을 떼며 나는 click 이 바로 뒤의 가운데 파편을 눌러
+   곧장 구슬 화면으로 넘어가 버렸다. 이어지는 mousedown · click 을 잠깐 막는다. */
+function swallowClick() {
+  const types = ["mousedown", "mouseup", "click"];
+  const off = () => types.forEach((t) => window.removeEventListener(t, stop, true));
+  function stop(ev) {
+    ev.stopPropagation();
+    ev.preventDefault();
+    if (ev.type === "click") off();       // 그 클릭까지 막았으면 끝
+  }
+  types.forEach((t) => window.addEventListener(t, stop, true));
+  setTimeout(off, 3000);                  // 클릭이 안 오는 경우(키보드 등)에도 풀리게
+}
+
+/* 누르지 않아도 소리가 나는지 — 배경 소리와 영상 소리 둘 다 실제로 틀어 보고 판단한다.
+   (사파리는 배경 소리는 허락해도 영상 소리는 막는 경우가 있다) */
+async function soundReady() {
+  unlockSound();
+  if (!soundAllowed()) return false;
+  try {
+    if (!filmEl.getAttribute("src")) filmEl.setAttribute("src", FILM[0].file);
+    filmEl.muted = false;
+    filmEl.volume = 0;
+    await filmEl.play();
+    filmEl.pause();
+    try { filmEl.currentTime = 0; } catch {}
+    return true;
+  } catch {
+    return false;
+  } finally {
+    filmEl.volume = 1;
+  }
+}
+
+/* 손으로 시작했으면 — 나중에 처음 누를 때 소리를 연다 (재생 중인 영상은 멈추지 않고 소리만 켠다).
+   그때까지는 '소리 꺼짐' 표시를 띄워 둔다 */
+const soundOffEl = document.getElementById("soundOff");
+function unlockLater() {
+  if (unlockLater.on) return;
+  unlockLater.on = true;
+  soundOffEl.hidden = false;
+  const events = ["pointerdown", "touchstart", "keydown"];
+  const once = () => {
+    unlockLater.on = false;
+    soundOffEl.hidden = true;
+    events.forEach((t) => window.removeEventListener(t, once, true));
+    unlockSound();
+    if (!filmEl.paused) filmEl.muted = false;
+    else unlockFilm();
   };
-  ["pointerdown", "touchstart", "keydown"].forEach((t) => window.addEventListener(t, go, true));
+  events.forEach((t) => window.addEventListener(t, once, true));
 }
 
 /* 누르는 그 순간에 영상 요소도 한 번 '소리 켜고 재생'을 해 둔다 (아이패드 사파리는 요소마다 허락을 받는다) */
@@ -2227,15 +2269,15 @@ function toCanvas(lm, box) {
 }
 
 function drawHand(lms, box) {
-  // 엄지-검지 — 모으면 초록으로 이어진다 (지금 '집었다'고 읽히는지 바로 보이게)
+  // 엄지-검지 — 모으면 마젠타로 이어진다 (지금 '집었다'고 읽히는지 바로 보이게)
   {
     const a = toCanvas(lms[4], box), b = toCanvas(lms[8], box);
     const on = pinchSince > 0;
     camCtx.save();
-    camCtx.strokeStyle = on ? "#1eff66" : "rgba(255,255,255,0.35)";
+    camCtx.strokeStyle = on ? "#ff2bd6" : "rgba(255,255,255,0.35)";
     camCtx.lineWidth = on ? 6 : 2;
     if (!on) camCtx.setLineDash([6, 6]);
-    if (on) { camCtx.shadowColor = "#1eff66"; camCtx.shadowBlur = 18; }
+    if (on) { camCtx.shadowColor = "#ff2bd6"; camCtx.shadowBlur = 18; }
     camCtx.beginPath(); camCtx.moveTo(a.x, a.y); camCtx.lineTo(b.x, b.y); camCtx.stroke();
     camCtx.restore();
   }
@@ -2264,9 +2306,9 @@ function drawHand(lms, box) {
     const big = idx === 8;
     const r = big ? 10 : 6;
     camCtx.save();
-    camCtx.shadowColor = "rgba(255,32,32,0.95)";
+    camCtx.shadowColor = "rgba(154,90,255,0.95)";
     camCtx.shadowBlur = big ? 24 : 12;
-    camCtx.fillStyle = big ? "#ff1e1e" : "#ff4d4d";
+    camCtx.fillStyle = big ? "#9a5aff" : "#b48cff";      // 손끝 — 보라
     camCtx.beginPath();
     camCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
     camCtx.fill();
@@ -2343,7 +2385,7 @@ function processHand(lms, now, box) {
     const released = openSince && now - openSince >= HAND.pinchOut;
 
     // 손이 막 잡힌 직후에는 랜드마크가 흔들려 꼬집음으로 오인되기 쉽다
-    const settled = now - handSeenAt > HOLD.grace;
+    const settled = now - handSeenAt > HOLD.grace && now > armAt;
     if (released) pinchLatch = false;            // 한 번 펴야 다음 선택이 가능
     const zone = handZone(handPos.x * STAGE_W, handPos.y * STAGE_H);
 

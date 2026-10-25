@@ -3,12 +3,13 @@
    소리 파일 없이 웹 오디오로 직접 만든다 (받을 것도, 저작권도 없다).
 
    두 인터랙션은 서로 다른 공간처럼 들려야 한다.
-   archive  : 인터랙션 1 — 마르고 텅 빈 바깥. 울림 없이 바로 귀 앞에서.
-              차가운 바람, 아주 낮게 맥놀이 치는 저음, 오래된 필름 먼지 같은 틱 소리
+   archive  : 인터랙션 1 — 바람 소리만. 마르고 텅 빈 바깥, 울림 없이 바로 귀 앞에서.
+              (음이 있는 소리는 넣지 않는다 — 정원과 같은 음이 이어지는 것처럼 들리지 않게)
    orb      : 구슬 화면 — 바람이 잦아든다
    crossing : 영상 1 이 끝나고 정원이 뜨기 전 — 소리가 위로 빨려 올라간다
-   garden   : 인터랙션 2 — 물속처럼 감싸는 넓고 젖은 공간. 긴 울림, 따뜻한 화음,
-              흐르는 물, 물방울, 구슬끼리 부딪는 맑은 소리.
+   garden   : 인터랙션 2 — 꿈속처럼 감싸는 넓고 젖은 공간. 잡음이 아니라 음으로 채운다.
+              긴 울림, 크게 숨쉬는 화음, 오르골처럼 느리게 떨어지는 맑은 음,
+              물방울, 구슬끼리 부딪는 소리. (물줄기는 아주 옅게만 — 바람과 겹쳐 들리지 않게)
               crossing 에서 넘어오면 '풍덩' 잠기고, 먹먹하던 소리가 천천히 열린다
    film / silent : 조용히 (영상 소리만)
 
@@ -30,12 +31,19 @@ const OPEN = 5;     // 정원에 들어가 먹먹하던 소리가 다 열리기�
 let ctx = null;
 let out = null;       // 모든 소리가 모이는 곳
 let hall = null;      // 정원의 긴 울림
+let gardenSend = null; // 정원에 늘 깔리는 소리(화음·반짝임·물줄기)의 울림 — 정원 볼륨을 따라야 한다.
+                       // (울림으로 바로 보내면 정원 볼륨을 0 으로 내려도 화음의 울림이 인터랙션 1 에서도 계속 났다)
 let gardenTone = null; // 정원 소리 전체의 밝기 — 들어갈 때 막혔다가 열린다
 const bed = {};       // 장면별 소리 묶음의 볼륨
+const gate = {};      // 장면별 스위치 — 볼륨을 내린 뒤 직접 끈다 (볼륨 예약이 무시되는 기기에서도 소리가 남지 않게)
+const gateTimer = {};
 let scene = "silent";
 let gardenTimers = [];
 
 const rand = (a, b) => a + Math.random() * (b - a);
+
+// 디버그용 — 지금 장면과 묶음별 볼륨
+window.__ykSound = () => ({ ctx: ctx && ctx.state, scene, out: out && out.gain.value, archive: bed.archive && +bed.archive.gain.value.toFixed(3), garden: bed.garden && +bed.garden.gain.value.toFixed(3), gardenWet: gardenSend && +gardenSend.gain.value.toFixed(3), gates: Object.fromEntries(Object.entries(gate).map(([k, g]) => [k, g.gain.value])) });
 
 export function unlockSound() {
   try {
@@ -49,12 +57,40 @@ export function unlockSound() {
   } catch (e) { console.warn("[소리] 시작 실패", e); }
 }
 
+/* 소리가 이미 허락돼 있는지 (브라우저 설정에서 자동 재생을 허용했거나, 한 번 눌렀거나) */
+export function soundAllowed() {
+  return !!ctx && ctx.state === "running";
+}
+
+let sleepTimer = 0;
 export function setScene(name) {
   const prev = scene;
   scene = name;
   if (!ctx) return;
+  // 영상이 나오는 동안은 페이드가 끝나면 출력 자체를 0 으로 막는다 (볼륨 예약만 믿으면 기기에 따라 계속 들리기도 한다)
+  clearTimeout(sleepTimer);
+  if (name === "film" || name === "silent") {
+    sleepTimer = setTimeout(() => { if (scene === name) out.gain.value = 0; }, FADE * 1500);
+  } else {
+    out.gain.value = LEVEL.master;
+  }
   const t = ctx.currentTime;
-  const to = (g, v, tau = FADE / 3) => { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(v, t, tau); };
+  // 지금 볼륨을 기준점으로 먼저 찍는다 — 사파리는 예약을 지운 뒤 기준점 없이 바꾸면 무시하기도 한다
+  const to = (g, v, tau = FADE / 3) => {
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.setTargetAtTime(v, t, tau);
+  };
+  // 켜질 묶음은 스위치를 바로 켜고, 꺼질 묶음은 페이드가 끝난 뒤 스위치를 내린다
+  const sw = (key, on) => {
+    clearTimeout(gateTimer[key]);
+    if (on) gate[key].gain.value = 1;
+    else gateTimer[key] = setTimeout(() => { gate[key].gain.value = 0; }, FADE * 1500);
+  };
+  sw("archive", name === "archive" || name === "orb");
+  sw("garden", name === "garden");
+  sw("gardenWet", name === "garden");
+  to(gardenSend, name === "garden" ? 1 : 0, name === "garden" ? 0.25 : FADE / 3);
   to(bed.archive, name === "archive" ? LEVEL.archive : name === "orb" ? LEVEL.orb : 0,
      name === "crossing" ? 0.08 : FADE / 3);
   if (name === "garden" && prev === "crossing") {
@@ -94,8 +130,16 @@ function build() {
 
   bed.archive = ctx.createGain();
   bed.archive.gain.value = 0;
-  bed.archive.connect(out);
+  gate.archive = ctx.createGain();
+  gate.archive.gain.value = 0;
+  bed.archive.connect(gate.archive).connect(out);
   buildArchive(bed.archive);
+
+  gardenSend = ctx.createGain();
+  gardenSend.gain.value = 0;
+  gate.gardenWet = ctx.createGain();
+  gate.gardenWet.gain.value = 0;
+  gardenSend.connect(gate.gardenWet).connect(hall);
 
   gardenTone = ctx.createBiquadFilter();
   gardenTone.type = "lowpass";
@@ -103,7 +147,9 @@ function build() {
   gardenTone.Q.value = 0.7;
   bed.garden = ctx.createGain();
   bed.garden.gain.value = 0;
-  gardenTone.connect(bed.garden).connect(out);
+  gate.garden = ctx.createGain();
+  gate.garden.gain.value = 0;
+  gardenTone.connect(bed.garden).connect(gate.garden).connect(out);
   buildGarden(gardenTone);
 
   setScene(scene);
@@ -149,7 +195,7 @@ function impulse(seconds, decay) {
   return buf;
 }
 
-/* 인터랙션 1 — 마르고 텅 빈 바깥 */
+/* 인터랙션 1 — 바람만. 마르고 텅 빈 바깥 */
 function buildArchive(dest) {
   // 바람 — 낮은 숨소리. 귀 앞에 좁게
   const low = noise(7, "brown", true);
@@ -158,11 +204,11 @@ function buildArchive(dest) {
   const lowGain = ctx.createGain(); lowGain.gain.value = 0.7;
   low.connect(lowBand).connect(lowGain).connect(dest);
 
-  // 가늘게 우는 휘파람
+  // 높은 바람결 — 대역을 넓게 둬서 음(휘파람)으로 들리지 않게
   const high = noise(5, "white", true);
   const whistle = ctx.createBiquadFilter();
-  whistle.type = "bandpass"; whistle.frequency.value = 1200; whistle.Q.value = 12;
-  const highGain = ctx.createGain(); highGain.gain.value = 0.04;
+  whistle.type = "bandpass"; whistle.frequency.value = 1200; whistle.Q.value = 2.5;
+  const highGain = ctx.createGain(); highGain.gain.value = 0.02;   // 대역이 넓어진 만큼 작게
   high.connect(whistle).connect(highGain).connect(dest);
 
   // 차가운 공기 — 아주 높고 얇은 쉭 소리
@@ -171,83 +217,47 @@ function buildArchive(dest) {
   const airGain = ctx.createGain(); airGain.gain.value = 0.012;
   air.connect(airHp).connect(airGain).connect(dest);
 
-  // 아주 낮은 저음 — 두 음이 살짝 어긋나 천천히 울렁인다 (텅 빈 넓이)
-  [[41.2, 0.06], [41.7, 0.05], [82.4, 0.012]].forEach(([f, a]) => {
-    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f;
-    const g = ctx.createGain(); g.gain.value = a;
-    o.connect(g).connect(dest); o.start();
-  });
-
   // 돌풍 — 무작위로 세졌다 약해지고, 휘파람 높이가 미끄러진다
   (function gust() {
     const t = ctx.currentTime;
     const len = rand(2.5, 6);
     lowGain.gain.setTargetAtTime(rand(0.3, 1.0), t, len / 3);
     lowBand.frequency.setTargetAtTime(rand(260, 650), t, len / 3);
-    highGain.gain.setTargetAtTime(rand(0.005, 0.06), t, len / 2);
+    highGain.gain.setTargetAtTime(rand(0.003, 0.03), t, len / 2);
     whistle.frequency.setTargetAtTime(rand(850, 1700), t, len / 2);
     setTimeout(gust, len * 1000);
   })();
-
-  // 먼지 — 오래된 필름처럼 이따금 '틱'. 울림 없이 마르게
-  const tickBuf = noiseBuffer(0.01, "white", true);
-  const tickHp = ctx.createBiquadFilter(); tickHp.type = "highpass"; tickHp.frequency.value = 2500;
-  tickHp.connect(dest);
-  (function tick() {
-    if (scene === "archive" || scene === "orb") {
-      const t = ctx.currentTime;
-      const n = Math.random() < 0.25 ? 2 : 1;
-      for (let k = 0; k < n; k++) {
-        const s = ctx.createBufferSource(); s.buffer = tickBuf;
-        const g = ctx.createGain(); g.gain.value = rand(0.05, 0.16);
-        const p = ctx.createStereoPanner(); p.pan.value = rand(-0.3, 0.3);
-        s.connect(g).connect(p).connect(tickHp);
-        s.start(t + k * rand(0.03, 0.07), 0, rand(0.002, 0.006));
-      }
-    }
-    setTimeout(tick, rand(250, 2400));
-  })();
 }
 
-/* 인터랙션 2 — 물속처럼 감싸는 넓은 공간.
-   물 흐르는 바닥 소리와 몽환적인 화음은 늘 깔리고, 물방울·구슬 소리는 이따금 */
+/* 인터랙션 2 — 꿈속처럼 감싸는 넓은 공간.
+   몽환적인 화음과 옅은 물소리가 깔리고, 오르골·물방울·구슬 소리는 이따금 */
 function buildGarden(dest) {
   // 물줄기 — 낮게 흐르는 소리 + 그 위에서 자글거리는 소리
   const stream = noise(6, "brown");
   const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900;
   const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 120;
-  const sg = ctx.createGain(); sg.gain.value = 0.3;
+  const sg = ctx.createGain(); sg.gain.value = 0.06;    // 아주 옅게 — 잡음이 크면 인터랙션 1 의 바람처럼 들린다
   stream.connect(lp).connect(hp).connect(sg).connect(dest);
-  const ss = ctx.createGain(); ss.gain.value = 0.25; sg.connect(ss).connect(hall);
+  const ss = ctx.createGain(); ss.gain.value = 0.1; sg.connect(ss).connect(gardenSend);
 
   const babble = noise(4, "white");
   const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1200; bp.Q.value = 3;
-  const bg = ctx.createGain(); bg.gain.value = 0.025;
+  const bg = ctx.createGain(); bg.gain.value = 0.008;
   babble.connect(bp).connect(bg).connect(dest);
   (function ripple() {
     const t = ctx.currentTime;
     bp.frequency.setTargetAtTime(rand(600, 1900), t, 0.05);
-    bg.gain.setTargetAtTime(rand(0.01, 0.04), t, 0.08);
+    bg.gain.setTargetAtTime(rand(0.003, 0.012), t, 0.08);
     setTimeout(ripple, rand(80, 220));
   })();
 
-  // 물속의 숨 — 아주 낮은 D 가 느리게 부풀었다 가라앉는다
-  {
-    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = 73.42;
-    const g = ctx.createGain(); g.gain.value = 0.035;
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07;
-    const depth = ctx.createGain(); depth.gain.value = 0.025;
-    lfo.connect(depth).connect(g.gain);
-    o.connect(g).connect(dest); o.start(); lfo.start();
-  }
-
   // 화음 — D 장9화음을 아주 느리게 숨쉬듯. 음마다 두 개를 살짝 어긋나게 겹쳐 흔들린다
   const padOut = ctx.createGain(); padOut.gain.value = 1;
-  const padLp = ctx.createBiquadFilter(); padLp.type = "lowpass"; padLp.frequency.value = 1100; padLp.Q.value = 0.4;
+  const padLp = ctx.createBiquadFilter(); padLp.type = "lowpass"; padLp.frequency.value = 1500; padLp.Q.value = 0.4;
   padOut.connect(padLp);
   padLp.connect(dest);
   const send = ctx.createGain(); send.gain.value = 1;
-  padLp.connect(send).connect(hall);
+  padLp.connect(send).connect(gardenSend);
   [146.83, 220.0, 329.63, 369.99, 554.37].forEach((f, i) => {
     const g = ctx.createGain();
     [-7, 7].forEach((cents, k) => {
@@ -262,14 +272,14 @@ function buildGarden(dest) {
     g.connect(padOut);
     // 음마다 다른 빠르기로 커졌다 작아진다
     const lfo = ctx.createOscillator(); lfo.frequency.value = rand(0.04, 0.11);
-    const depth = ctx.createGain(); depth.gain.value = 0.012;
+    const depth = ctx.createGain(); depth.gain.value = 0.02;
     lfo.connect(depth).connect(g.gain);
-    g.gain.value = 0.017 - i * 0.0015;
+    g.gain.value = 0.03 - i * 0.003;
     lfo.start(ctx.currentTime + rand(0, 4));
   });
   // 화음 전체의 밝기도 천천히 오르내린다
   const sweep = ctx.createOscillator(); sweep.frequency.value = 0.03;
-  const sweepDepth = ctx.createGain(); sweepDepth.gain.value = 500;
+  const sweepDepth = ctx.createGain(); sweepDepth.gain.value = 800;
   sweep.connect(sweepDepth).connect(padLp.frequency);
   sweep.start();
 
@@ -278,9 +288,9 @@ function buildGarden(dest) {
     const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f;
     const g = ctx.createGain(); g.gain.value = 0;
     const lfo = ctx.createOscillator(); lfo.frequency.value = rand(0.05, 0.09);
-    const depth = ctx.createGain(); depth.gain.value = 0.006;
+    const depth = ctx.createGain(); depth.gain.value = 0.014;
     lfo.connect(depth).connect(g.gain);
-    o.connect(g).connect(hall); o.start(); lfo.start(ctx.currentTime + rand(0, 6));
+    o.connect(g).connect(gardenSend); o.start(); lfo.start(ctx.currentTime + rand(0, 6));
   });
 }
 
@@ -377,6 +387,24 @@ function clink(base, level = 0.05, panv = rand(-0.7, 0.7), decay = rand(0.6, 1.3
   });
 }
 
+/* 오르골 음 — D 장조 5음 (레 미 파# 라 시), 두 옥타브 */
+const BELL = [587.33, 659.25, 739.99, 880, 987.77, 1174.66, 1318.51, 1479.98, 1760];
+function bell(f, level = 0.045) {
+  const t = ctx.currentTime;
+  const pan = ctx.createStereoPanner(); pan.pan.value = rand(-0.75, 0.75);
+  pan.connect(gardenTone);
+  const s = ctx.createGain(); s.gain.value = 1.1; pan.connect(s).connect(hall);   // 울림을 더 크게 — 멀리서 번지듯
+  [[1, 1, "sine"], [2, 0.22, "sine"], [3.01, 0.07, "triangle"]].forEach(([m, a, type]) => {
+    const o = ctx.createOscillator(); o.type = type; o.frequency.value = f * m;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(level * a, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.8 / m);
+    o.connect(g).connect(pan);
+    o.start(t); o.stop(t + 3);
+  });
+}
+
 function startGardenEvents() {
   if (gardenTimers.length) return;
   const loop = (fn, min, max) => {
@@ -385,7 +413,13 @@ function startGardenEvents() {
     id.t = setTimeout(tick, rand(min, max));
     gardenTimers.push(id);
   };
-  loop(() => drip(), 350, 1600);
+  loop(() => drip(), 900, 2800);
+  // 오르골 — 맑은 음이 느리게, 아무렇게나 떨어진다. 가끔은 두 음이 함께
+  loop(() => {
+    const f = BELL[(Math.random() * BELL.length) | 0];
+    bell(f);
+    if (Math.random() < 0.3) setTimeout(() => bell(BELL[(Math.random() * BELL.length) | 0], 0.03), rand(120, 260));
+  }, 650, 2100);
   loop(() => {
     // 둘이 가볍게 '딸깍' — 가끔은 한 번 더 튄다
     const b = rand(1800, 3200);

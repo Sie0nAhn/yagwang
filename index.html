@@ -10,7 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <!-- 영문 — TT Autonomous Mono (Adobe Fonts) -->
 <link rel="stylesheet" href="https://use.typekit.net/pgv0czs.css" />
-<link rel="stylesheet" href="style.css" />
+<!-- ?v= : 고칠 때마다 올린다 — 브라우저가 예전 파일을 쥐고 있지 않게 -->
+<link rel="stylesheet" href="style.css?v=20261025b" />
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 </head>
 <body>
@@ -108,11 +109,13 @@
 
     <!-- 장면이 바뀔 때 덮는 검정 — 모든 전환은 이걸로 페이드 -->
     <div class="fade" id="fade"></div>
+    <!-- 소리가 막혀 있을 때만 — 브라우저는 화면을 한 번 눌러야 소리를 낸다 (손짓은 누름으로 치지 않는다) -->
+    <p class="sound-off" id="soundOff" hidden>소리 꺼짐 · 화면을 한 번 눌러 주세요</p>
     <!-- 인터랙션 1 → 영상 1 : 양옆에서 닫혔다가 자동문처럼 벌어지는 검은 패널 -->
     <div class="door door--l" id="doorL"></div>
     <div class="door door--r" id="doorR"></div>
-    <!-- 정원 → 영상 2 : 필름 띠 (정원 바로 아래에 그린다) -->
-    <canvas class="pixwipe" id="pixwipe" width="1440" height="805"></canvas>
+    <!-- 정원 → 영상 2 : 화면이 하얗게 밝아졌다 걷힌다 -->
+    <div class="flash" id="flash"></div>
 
     <!-- ============ 항상 떠 있는 요소들 ============ -->
 
@@ -212,7 +215,7 @@
       </svg>
         <p class="loader__tag" id="loaderTag" data-text="Yagwang: Without Your Knowing"></p>
         <!-- 다 받으면 뜬다 — 한 번 눌러야 소리가 난다 (브라우저 규칙) -->
-        <p class="loader__start" id="loaderStart">화면을 눌러 시작하세요</p>
+        <p class="loader__start" id="loaderStart">손을 들어 비추거나 화면을 누르면 시작합니다<span class="loader__start-bar"><i id="loaderStartBar"></i></span></p>
       </div>
       <div class="loader__frame" id="loaderFrame"></div>
     </div>
@@ -220,6 +223,6 @@
   </div>
 </div>
 
-<script type="module" src="main.js"></script>
+<script type="module" src="main.js?v=20261025b"></script>
 </body>
 </html>

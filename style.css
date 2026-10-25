@@ -24,11 +24,12 @@
   --font-mono: "tt-autonomous-mono", "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;   /* 영문 — Adobe Fonts (index.html) */
 
   /* UI 액센트 */
-  --acc: #1eff66;
+  --acc: #ff2bd6;            /* 강조 — 형광 마젠타 */
+  --gauge: #ff2bd6;          /* 손으로 고를 때 차오르는 게이지 — 형광 마젠타 */
   --boot: #9a5aff;           /* 로딩 화면 색 — 타이틀 도장(夜光)과 같은 보라 */
   /* 선택 중인 영상의 색 (JS 가 갱신) */
-  --tint: #1eff66;
-  --tint-soft: rgba(30,255,102,.35);
+  --tint: #9a5aff;           /* 은은한 빛 — 보라 */
+  --tint-soft: rgba(154,90,255,.35);
 
   --line: rgba(255,255,255,.16);
   --dim: rgba(255,255,255,.45);
@@ -197,8 +198,8 @@ body { font-family: var(--font-kr); color: #fff; cursor: none; }
   pointer-events: none;
   opacity: 0;
 }
-.spiral__edge--l { left: 0;  background: linear-gradient(to right, rgba(30,255,102,.16), transparent); }
-.spiral__edge--r { right: 0; background: linear-gradient(to left,  rgba(30,255,102,.16), transparent); }
+.spiral__edge--l { left: 0;  background: linear-gradient(to right, rgba(154,90,255,.16), transparent); }
+.spiral__edge--r { right: 0; background: linear-gradient(to left,  rgba(154,90,255,.16), transparent); }
 
 /* ── 정면 파편 위의 문자 화면 ───────────────────────── */
 /* 정면 카드 안으로 옮겨 들어가 카드를 꽉 채운다 */
@@ -390,7 +391,7 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
   background: var(--acc);
   transform: scaleX(0);
   transform-origin: 0 50%;
-  box-shadow: 0 0 18px rgba(30,255,102,.55);
+  box-shadow: 0 0 18px rgba(255,43,214,.55);
 }
 
 /* ============================================================
@@ -491,6 +492,21 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
   animation: startBreath 1.8s ease-in-out infinite;
 }
 @keyframes startBreath { 0%, 100% { filter: brightness(.7); } 50% { filter: brightness(1.35); } }
+/* 손이 잡혀 있는 동안 차오르는 막대 — 다 차면 시작 */
+.loader__start-bar {
+  display: block;
+  width: 180px;
+  height: 2px;
+  margin: 14px auto 0;
+  background: rgba(154, 90, 255, .25);
+}
+.loader__start-bar i {
+  display: block;
+  height: 100%;
+  background: var(--boot);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
 
 /* 다 차면 가운데에서 번지는 얇은 사각 테두리 */
 .loader__frame {
@@ -536,11 +552,13 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
 }
 
 .orb-actions {
+  /* 화면 아래 가운데 — 손을 크게 뻗지 않아도 닿게 (왼쪽 끝에 있으면 카메라 바깥까지 손을 뻗어야 했다) */
   position: absolute;
-  left: 40px;
-  top: 412px;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
   display: flex;
-  gap: 18px;                      /* 두 버튼 사이를 벌려 손이 어느 쪽인지 분명하게 */
+  gap: 28px;                      /* 두 버튼 사이를 벌려 손이 어느 쪽인지 분명하게 */
   z-index: 13;
 }
 
@@ -560,7 +578,7 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
   white-space: nowrap;
   transition: border-color 350ms ease, background 350ms ease;
 }
-.ghost-btn--go { border-color: rgba(30,255,102,.45); }
+.ghost-btn--go { border-color: rgba(255,43,214,.45); }
 .ghost-btn:not(.ghost-btn--go) { color: rgba(255,255,255,.6); padding-left: 30px; }
 .ghost-btn.is-armed:not(.ghost-btn--go) { color: #fff; border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.08); }
 .ghost-btn__dot {
@@ -570,7 +588,30 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
   background: var(--acc);
   box-shadow: 0 0 10px var(--acc);
 }
-.ghost-btn.is-armed { border-color: var(--acc); background: rgba(30,255,102,.1); }
+.ghost-btn.is-armed { border-color: var(--acc); background: rgba(255,43,214,.1); }
+
+/* 구슬 화면의 두 버튼 — 폭을 맞추고 글자를 가운데에 */
+.orb-actions .ghost-btn {
+  justify-content: center;
+  min-width: 220px;
+  padding: 22px 36px 23px;
+  font-size: 17px;
+}
+/* 확인하러 가기 — 지금 구슬과 같은 색으로 채운다 (--marble 은 구슬을 고를 때마다 바뀐다) */
+.orb-actions .ghost-btn--go {
+  background: var(--marble, var(--tint));
+  border-color: transparent;
+  color: #120d16;
+  font-weight: 700;
+  box-shadow: 0 0 30px var(--marble-glow, transparent);
+  transition: background 600ms ease, box-shadow 350ms ease;
+}
+.orb-actions .ghost-btn--go .ghost-btn__dot { display: none; }
+.orb-actions .ghost-btn--go.is-armed {
+  background: var(--marble, var(--tint));
+  border-color: transparent;
+  box-shadow: 0 0 0 3px #fff, 0 0 40px var(--marble-glow, transparent);
+}
 
 .orb-caption {
   position: absolute;
@@ -799,17 +840,34 @@ body.is-garden { cursor: auto; }
 }
 .door--l { left: 0; box-shadow: inset -1px 0 0 rgba(255, 255, 255, .12); }
 .door--r { right: 0; box-shadow: inset 1px 0 0 rgba(255, 255, 255, .12); }
-/* 필름 띠 — 정원 → 영상 2 */
-.pixwipe {
+/* 환한 빛 — 정원 → 영상 2 */
+.flash {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
   z-index: 78;
+  background: #fffdf9;
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
 }
+.sound-off {
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  transform: translateX(-50%);
+  z-index: 90;
+  margin: 0;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 43, 214, .55);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .6);
+  color: var(--acc);
+  font-family: var(--font-kr);
+  font-size: 13px;
+  letter-spacing: .04em;
+  pointer-events: none;
+}
+.sound-off[hidden] { display: none; }
 .fade {
   position: absolute;
   inset: 0;
@@ -869,12 +927,12 @@ body.is-garden { cursor: auto; }
 .cursor__track { fill: none; stroke: rgba(255,255,255,.28); stroke-width: 3; }
 .cursor__prog {
   fill: none;
-  stroke: var(--acc);
+  stroke: var(--gauge);
   stroke-width: 7;
   stroke-linecap: round;
   stroke-dasharray: 276.5;
   stroke-dashoffset: 276.5;
-  filter: drop-shadow(0 0 10px var(--acc));
+  filter: drop-shadow(0 0 10px var(--gauge));
 }
 .cursor__dot {
   position: absolute;
@@ -885,7 +943,7 @@ body.is-garden { cursor: auto; }
   margin: -4px 0 0 -4px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 12px var(--acc), 0 0 26px var(--tint-soft);
+  box-shadow: 0 0 12px var(--gauge), 0 0 26px rgba(255,43,214,.35);
 }
 
 /* ============================================================
