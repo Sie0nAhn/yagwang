@@ -1,0 +1,141 @@
+{
+ "version": "e70a3d2981",
+ "files": [
+  {
+   "url": "./",
+   "size": 28861
+  },
+  {
+   "url": "index.html",
+   "size": 28861
+  },
+  {
+   "url": "style.css?v=20261027a",
+   "size": 28972
+  },
+  {
+   "url": "main.js?v=20261027a",
+   "size": 109758
+  },
+  {
+   "url": "sound.js?v=20261027a",
+   "size": 19531
+  },
+  {
+   "url": "offline.js?v=20261027a",
+   "size": 3485
+  },
+  {
+   "url": "gooseulbit-garden.html",
+   "size": 901429
+  },
+  {
+   "url": "manifest.webmanifest",
+   "size": 419
+  },
+  {
+   "url": "assets/marble.png",
+   "size": 861616
+  },
+  {
+   "url": "assets/fonts/Orbit-Regular.woff2",
+   "size": 217976
+  },
+  {
+   "url": "assets/icon-180.png",
+   "size": 9050
+  },
+  {
+   "url": "assets/icon-192.png",
+   "size": 9705
+  },
+  {
+   "url": "assets/icon-512.png",
+   "size": 33692
+  },
+  {
+   "url": "vendor/gsap.min.js",
+   "size": 72435
+  },
+  {
+   "url": "vendor/fonts/roboto-mono-400.woff2",
+   "size": 32752
+  },
+  {
+   "url": "vendor/fonts/roboto-mono-500.woff2",
+   "size": 32752
+  },
+  {
+   "url": "vendor/fonts/roboto-mono.css",
+   "size": 794
+  },
+  {
+   "url": "vendor/mediapipe/hand_landmarker.task",
+   "size": 7819105
+  },
+  {
+   "url": "vendor/mediapipe/vision_bundle.mjs",
+   "size": 136824
+  },
+  {
+   "url": "vendor/mediapipe/wasm/vision_wasm_internal.js",
+   "size": 209826
+  },
+  {
+   "url": "vendor/mediapipe/wasm/vision_wasm_internal.wasm",
+   "size": 9423986
+  },
+  {
+   "url": "vendor/mediapipe/wasm/vision_wasm_nosimd_internal.js",
+   "size": 209735
+  },
+  {
+   "url": "vendor/mediapipe/wasm/vision_wasm_nosimd_internal.wasm",
+   "size": 9294247
+  },
+  {
+   "url": "01-dawn-air.mp4",
+   "size": 6843593
+  },
+  {
+   "url": "02-afternoon-light.mp4",
+   "size": 7115374
+  },
+  {
+   "url": "03-water-glitter.mp4",
+   "size": 7468199
+  },
+  {
+   "url": "04-season-edge.mp4",
+   "size": 9166765
+  },
+  {
+   "url": "05-silence.mp4",
+   "size": 7528960
+  },
+  {
+   "url": "06-stranger-warmth.mp4",
+   "size": 6215094
+  },
+  {
+   "url": "07-petrichor.mp4",
+   "size": 8720492
+  },
+  {
+   "url": "08-flutter.mp4",
+   "size": 4464473
+  },
+  {
+   "url": "09-first-snow.mp4",
+   "size": 4626594
+  },
+  {
+   "url": "film1.mp4",
+   "size": 46684673
+  },
+  {
+   "url": "film2.mp4",
+   "size": 57538789
+  }
+ ]
+}

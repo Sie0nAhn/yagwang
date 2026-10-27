@@ -4802,8 +4802,8 @@ void main() {
    예전 추적기는 카메라 화면에서 피부색 덩어리를 찾아 쫓았다. 그래서 얼굴을 손으로
    잡기도 하고 조명에 따라 자주 놓쳤다. 손 모델(21개 관절)로 바꾸고,
    바깥에서 쓰는 모양(state / start / stop / update / drawPreview)은 그대로 둔다. */
-const MP="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
-const MODEL="https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+const MP=new URL("vendor/mediapipe",location.href).href;  /* 오프라인용으로 폴더에 둔 @mediapipe/tasks-vision 0.10.14 */
+const MODEL=MP+"/hand_landmarker.task";
 const H={
   detect:.4,      /* 손 찾기 기준 — 낮을수록 어두운 곳에서도 잘 잡힌다 */
   lostGrace:320,  /* 이 시간(ms) 동안 손이 안 잡혀도 마지막 손을 그대로 둔다 */

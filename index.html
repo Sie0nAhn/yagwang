@@ -5,14 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>야광(夜光) — 당신이 모르는 사이</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<!-- 인터넷 없이도 돌아가게 — 라이브러리·글꼴·손 인식 모델은 vendor/ 에 둔다 -->
+<link rel="stylesheet" href="vendor/fonts/roboto-mono.css" />
+<!-- 아이패드 홈 화면 앱 — 사파리 → 공유 → '홈 화면에 추가' 하면 전체 화면으로 열린다 -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="야광" />
+<link rel="apple-touch-icon" href="assets/icon-180.png" />
 <!-- 영문 — TT Autonomous Mono (Adobe Fonts) -->
 <link rel="stylesheet" href="https://use.typekit.net/pgv0czs.css" />
 <!-- ?v= : 고칠 때마다 올린다 — 브라우저가 예전 파일을 쥐고 있지 않게 -->
-<link rel="stylesheet" href="style.css?v=20261025b" />
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<link rel="stylesheet" href="style.css?v=20261027a" />
+<script src="vendor/gsap.min.js"></script>
 </head>
 <body>
 
@@ -111,6 +117,8 @@
     <div class="fade" id="fade"></div>
     <!-- 소리가 막혀 있을 때만 — 브라우저는 화면을 한 번 눌러야 소리를 낸다 (손짓은 누름으로 치지 않는다) -->
     <p class="sound-off" id="soundOff" hidden>소리 꺼짐 · 화면을 한 번 눌러 주세요</p>
+    <!-- 오프라인 저장 진행 — 처음 한 번 저장하는 동안만 보인다 (offline.js) -->
+    <p class="offline-status" id="offlineStatus" hidden></p>
     <!-- 인터랙션 1 → 영상 1 : 양옆에서 닫혔다가 자동문처럼 벌어지는 검은 패널 -->
     <div class="door door--l" id="doorL"></div>
     <div class="door door--r" id="doorR"></div>
@@ -223,6 +231,7 @@
   </div>
 </div>
 
-<script type="module" src="main.js?v=20261025b"></script>
+<script type="module" src="main.js?v=20261027a"></script>
+<script type="module" src="offline.js?v=20261027a"></script>
 </body>
 </html>

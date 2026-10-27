@@ -9,8 +9,8 @@
 import {
   HandLandmarker,
   FilesetResolver,
-} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261025b";   // ?v= 는 index.html 과 같이 올린다
+} from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261027a";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -2211,12 +2211,12 @@ async function initHands() {
     camStatus.textContent = "인식 준비 중";
 
     const vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+      new URL("vendor/mediapipe/wasm", location.href).href
     );
     handLandmarker = await HandLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetPath:
-          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          new URL("vendor/mediapipe/hand_landmarker.task", location.href).href,
         delegate: "GPU",
       },
       runningMode: "VIDEO",

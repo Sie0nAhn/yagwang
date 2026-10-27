@@ -868,6 +868,24 @@ body.is-garden { cursor: auto; }
   pointer-events: none;
 }
 .sound-off[hidden] { display: none; }
+.offline-status {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  z-index: 90;
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .6);
+  border: 1px solid rgba(154, 90, 255, .5);
+  color: #c9b0ff;
+  font-family: var(--font-kr);
+  font-size: 12px;
+  letter-spacing: .03em;
+  pointer-events: none;
+}
+.offline-status.is-warn { border-color: rgba(255, 43, 214, .6); color: var(--acc); }
+.offline-status[hidden] { display: none; }
 .fade {
   position: absolute;
   inset: 0;
