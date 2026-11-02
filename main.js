@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261027a";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261102a";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -1183,7 +1183,7 @@ async function back() {
    (깃허브 웹 업로드는 파일당 25MB 까지라 큰 영상은 못 올린다) */
 const FILM = [
   // cut : 로컬 파일을 이 지점(초)에서 끊고 정원으로 — 문이 닫히고 어두워지는 순간. 끝 1초에 뜨는 것을 안 보이게
-  { file: "film1.mp4", yt: "-xtSbOMBKkA", start: 0,  end: 26, cut: 26.5 },   // 유튜브로 틀 땐 26초에서 멈춘다
+  { file: "film1.mp4", yt: "-xtSbOMBKkA", start: 0,  end: 26, cut: 28.5 },   // 유튜브로 틀 땐 26초에서 멈춘다
   { file: "film2.mp4", yt: "-xtSbOMBKkA", start: 26, end: null }, // 26초부터 끝까지
 ];
 const USE_YOUTUBE = true;            // 로컬 파일이 없을 때 유튜브로 대신 틀지

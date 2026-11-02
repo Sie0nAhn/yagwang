@@ -408,7 +408,7 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
 .loader {
   color: var(--boot);
   font-family: var(--font-mono), var(--font-kr);
-  font-size: 11px;
+  font-size: 15px;
   letter-spacing: .02em;
 }
 .loader__corner {
@@ -427,14 +427,14 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
   left: 28px;
   right: 28px;
   top: 74%;                    /* 가운데는 타이틀 로고 자리 */
-  height: 14px;
-  margin-top: -7px;
+  height: 20px;
+  margin-top: -10px;
 }
 .loader__cell {
   position: absolute;
   top: 0;
   margin: 0;
-  line-height: 14px;
+  line-height: 20px;
   white-space: nowrap;
 }
 .loader__cell--1   { left: 0; }
@@ -471,10 +471,10 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
 .logo__seal { fill: var(--boot); filter: drop-shadow(0 0 7px rgba(154,90,255,.75)); }
 /* 아래 영문 한 줄 — 첫 줄(야광 + 도장)과 비슷한 폭 */
 .loader__tag {
-  height: 14px;
+  height: 20px;
   margin: 30px 0 0;
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 15px;
+  line-height: 20px;
   letter-spacing: .17em;
   text-indent: .17em;          /* 마지막 글자 뒤 자간만큼 왼쪽도 띄워 가운데를 맞춘다 */
   white-space: nowrap;
@@ -485,7 +485,7 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
 .loader__start {
   margin: 34px 0 0;
   font-family: var(--font-kr);
-  font-size: 13px;
+  font-size: 18px;
   letter-spacing: .08em;
   color: var(--boot);
   opacity: 0;
@@ -495,9 +495,9 @@ body.is-booting .baseline__fill { background: var(--boot); box-shadow: 0 0 18px 
 /* 손이 잡혀 있는 동안 차오르는 막대 — 다 차면 시작 */
 .loader__start-bar {
   display: block;
-  width: 180px;
-  height: 2px;
-  margin: 14px auto 0;
+  width: 240px;
+  height: 3px;
+  margin: 16px auto 0;
   background: rgba(154, 90, 255, .25);
 }
 .loader__start-bar i {
