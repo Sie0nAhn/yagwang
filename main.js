@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261102a";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112a";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
