@@ -2,73 +2,148 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>야광 · 손 인식 화면</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>야광 · 손 인식과 조작</title>
 <!--
-  아이패드 쪽에 띄워 두는 손 인식 화면.
+  아이패드 쪽에 띄워 두는 화면 — 관람객용.
+  왼쪽: 손 인식 카메라 (작품 쪽이 카메라 그림과 손 좌표를 보내 준다)
+  오른쪽: 손 인식이 잘 안 될 때 버튼으로 조작하는 판. 장면마다 쓸 수 있는 버튼만 보인다.
   작품(index.html)은 모니터 쪽 사파리 창에, 이 화면은 아이패드 쪽 사파리 창에 연다.
-  카메라는 작품 쪽이 쓰고, 여기로 카메라 그림과 손 좌표를 보내 준다 (BroadcastChannel — 같은 사파리, 일반 창끼리만).
+  둘은 BroadcastChannel 로 이어진다 — 같은 사파리의 일반 창끼리만 된다.
+
+  운영자용: 왼쪽 위 '작품과 연결됨'을 2초 누르고 있으면 카메라 위아래가 뒤집힌다 (관람객 눈에는 안 띄게).
 -->
 <style>
-  :root { --acc: #9a5aff; --pink: #ff2bd6; }
+  @font-face { font-family: "Orbit"; src: url("assets/fonts/Orbit-Regular.woff2") format("woff2"); }
+  :root {
+    --acc: #9a5aff; --acc-soft: #b48cff; --pink: #ff2bd6;
+    --line: rgba(255,255,255,.16); --dim: rgba(255,255,255,.55);
+  }
+  * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden;
-    font-family: "Pretendard", -apple-system, system-ui, sans-serif; word-break: keep-all;
-    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-  .bar {
-    position: fixed; left: 0; right: 0; top: 0;
-    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    padding: max(16px, env(safe-area-inset-top)) 20px 16px;
-    background: linear-gradient(#000c, #0000);
-    font-size: 18px;
+    font-family: "Orbit", "Pretendard", -apple-system, system-ui, sans-serif; word-break: keep-all;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent; touch-action: none; }
+
+  .wrap {
+    position: fixed; inset: 0;
+    display: grid; grid-template-columns: 1fr minmax(340px, 38%);
+    gap: 16px;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   }
-  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 99px;
-    background: #ffffff14; border: 1px solid #ffffff26; font-weight: 600; }
-  .pill i { width: 10px; height: 10px; border-radius: 50%; background: #666; }
-  .pill.on i { background: #3ee07a; box-shadow: 0 0 10px #3ee07a; }
-  .pill.hand.on { background: #9a5aff33; border-color: #9a5aff; }
-  .pill.hand.on i { background: var(--acc); box-shadow: 0 0 10px var(--acc); }
-  .pill.pinch.on { background: #ff2bd633; border-color: var(--pink); }
-  .pill.pinch.on i { background: var(--pink); box-shadow: 0 0 10px var(--pink); }
-  .scene { margin-left: auto; opacity: .75; }
-  .foot {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding: 16px 20px max(16px, env(safe-area-inset-bottom));
-    background: linear-gradient(#0000, #000c);
-  }
-  button {
-    font: inherit; font-size: 17px; font-weight: 700; color: #fff;
-    padding: 14px 22px; border-radius: 14px; border: 1px solid #ffffff40; background: #ffffff1a;
-  }
-  button:active { background: #ffffff33; }
-  .note { font-size: 15px; opacity: .6; line-height: 1.45; }
-  .empty {
-    position: fixed; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px;
-    padding: 24px; font-size: 20px; line-height: 1.5;
-  }
-  .empty small { font-size: 15px; opacity: .6; }
+  @media (max-aspect-ratio: 1/1) { .wrap { grid-template-columns: 1fr; grid-template-rows: 1fr auto; } }
+
+  /* ── 카메라 ── */
+  .cam { position: relative; border-radius: 22px; overflow: hidden; background: #0a0c0f; border: 1px solid var(--line); min-height: 0; }
+  .cam canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .chips { position: absolute; left: 14px; top: 14px; right: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 99px;
+    background: rgba(0,0,0,.5); border: 1px solid var(--line); font-size: 16px; }
+  .chip i { width: 10px; height: 10px; border-radius: 50%; background: #666; }
+  .chip.on i { background: #3ee07a; box-shadow: 0 0 10px #3ee07a; }
+  .chip.hand.on { border-color: var(--acc); background: rgba(154,90,255,.25); }
+  .chip.hand.on i { background: var(--acc); box-shadow: 0 0 10px var(--acc); }
+  .chip.pinch { display: none; }
+  .chip.pinch.on { display: inline-flex; border-color: var(--pink); background: rgba(255,43,214,.25); }
+  .chip.pinch.on i { background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+  .chip.hold { transition: background .2s; }
+  .chip.hold.charging { background: rgba(154,90,255,.45); }
+  .empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px;
+    padding: 24px; font-size: 20px; line-height: 1.5; }
+  .empty small { font-size: 15px; color: var(--dim); }
   .empty[hidden] { display: none; }
+
+  /* ── 조작판 ── */
+  .pad { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+  .head { padding: 6px 4px 0; }
+  .head h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.01em; }
+  .head p { margin: 8px 0 0; font-size: 17px; line-height: 1.5; color: var(--dim); }
+
+  button {
+    font: inherit; color: #fff; border: 1px solid var(--line); background: rgba(255,255,255,.07);
+    border-radius: 20px; padding: 0; touch-action: none; cursor: pointer;
+    transition: background .12s, transform .12s, border-color .12s, opacity .2s;
+  }
+  button.down, button:active { background: rgba(154,90,255,.45); border-color: var(--acc); transform: scale(.96); }
+  button[hidden] { display: none; }
+
+  /* 방향 + 가운데 선택 (3×3) */
+  .dpad { flex: 1; min-height: 0; display: grid; gap: 12px;
+    grid-template-columns: 1fr 1.15fr 1fr; grid-template-rows: 1fr 1.15fr 1fr; max-height: 460px; }
+  .dpad button { display: grid; place-items: center; font-size: 15px; }
+  .dpad svg { width: 44px; height: 44px; stroke: #fff; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .dpad .k-up { grid-area: 1 / 2; } .dpad .k-left { grid-area: 2 / 1; }
+  .dpad .k-right { grid-area: 2 / 3; } .dpad .k-down { grid-area: 3 / 2; }
+  .dpad .k-sel { grid-area: 2 / 2; border-radius: 50%; aspect-ratio: 1; align-self: center; justify-self: center; width: 100%;
+    background: radial-gradient(circle at 50% 40%, rgba(180,140,255,.55), rgba(154,90,255,.25));
+    border-color: var(--acc); font-size: 20px; font-weight: 700; box-shadow: 0 0 30px rgba(154,90,255,.35); }
+  .dpad button.off { opacity: .14; pointer-events: none; }
+  .dpad .lab { display: block; font-size: 14px; color: var(--dim); margin-top: 2px; }
+
+  /* 장면에 맞춘 큰 버튼 (구슬 화면 · 정원 '다음 영상으로' · 시작) */
+  .big { min-height: 84px; font-size: 22px; font-weight: 700; padding: 18px; }
+  .big.main { background: linear-gradient(165deg, rgba(180,140,255,.6), rgba(154,90,255,.3)); border-color: var(--acc); }
+  .big.warm { color: #3a2412; border-color: rgba(255,255,255,.7);
+    background: linear-gradient(165deg, rgba(255,238,214,.97), rgba(255,213,166,.9)); }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .stack[hidden], .dpad[hidden] { display: none; }
+
+  .film { flex: 1; display: grid; place-content: center; text-align: center; gap: 10px;
+    border: 1px dashed var(--line); border-radius: 20px; padding: 24px; font-size: 20px; line-height: 1.5; }
+  .film small { color: var(--dim); font-size: 16px; }
+  .film[hidden] { display: none; }
 </style>
 </head>
 <body>
-<canvas id="view"></canvas>
+<div class="wrap">
 
-<div class="empty" id="empty">
-  <b>작품 화면을 기다리는 중이에요</b>
-  <small>같은 사파리의 다른 창에서 작품(index.html)을 열어 두세요.<br />작품 쪽 카메라가 켜지면 여기 크게 보여요.</small>
-</div>
+  <section class="cam" id="camBox">
+    <canvas id="view"></canvas>
+    <div class="empty" id="empty">
+      <b id="emptyT">작품 화면을 기다리는 중이에요</b>
+      <small id="emptyS">같은 사파리의 다른 창에서 작품을 열어 두세요.<br />작품 쪽 카메라가 켜지면 여기 크게 보여요.</small>
+    </div>
+    <div class="chips">
+      <span class="chip hold" id="link"><i></i><span id="linkText">연결 안 됨</span></span>
+      <span class="chip hand" id="hand"><i></i><span id="handText">손을 카메라에 비춰 주세요</span></span>
+      <span class="chip pinch" id="pinch"><i></i><span>집었어요</span></span>
+    </div>
+  </section>
 
-<div class="bar">
-  <span class="pill" id="link"><i></i><span id="linkText">연결 안 됨</span></span>
-  <span class="pill hand" id="hand"><i></i><span id="handText">손 없음</span></span>
-  <span class="pill pinch" id="pinch"><i></i><span>집기</span></span>
-  <span class="scene" id="scene"></span>
-</div>
+  <section class="pad">
+    <div class="head">
+      <h1 id="title">잠시만요</h1>
+      <p id="hint">작품과 연결되면 여기서도 조작할 수 있어요.</p>
+    </div>
 
-<div class="foot">
-  <button id="rot" type="button">카메라 위아래 뒤집기</button>
-  <span class="note" id="rotNote">사람이 거꾸로 보이면 눌러 주세요. 이 기기에 기억돼요.</span>
+    <!-- 시작 · 구슬 화면 -->
+    <div class="stack" id="stack" hidden>
+      <button class="big main" id="bMain" type="button">시작하기</button>
+      <button class="big" id="bSub" type="button" hidden>다시 고르기</button>
+    </div>
+
+    <!-- 영상 -->
+    <div class="film" id="film" hidden>
+      <b>영상을 보고 있어요</b>
+      <small>영상이 끝나면 저절로 다음으로 넘어가요.</small>
+    </div>
+
+    <!-- 방향 + 선택 -->
+    <div class="dpad" id="dpad" hidden>
+      <button class="k-up" data-key="up" type="button" aria-label="앞으로">
+        <span><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg><span class="lab">앞으로</span></span></button>
+      <button class="k-left" data-key="left" type="button" aria-label="왼쪽">
+        <span><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg><span class="lab" id="labL">왼쪽</span></span></button>
+      <button class="k-sel" id="bSel" type="button"><span id="selText">고르기</span></button>
+      <button class="k-right" data-key="right" type="button" aria-label="오른쪽">
+        <span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span class="lab" id="labR">오른쪽</span></span></button>
+      <button class="k-down" data-key="down" type="button" aria-label="뒤로">
+        <span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg><span class="lab">뒤로</span></span></button>
+    </div>
+
+    <button class="big warm" id="bNext" type="button" hidden>다음 영상으로 →</button>
+  </section>
 </div>
 
 <script>
@@ -78,7 +153,7 @@ const g = cv.getContext("2d");
 const $ = (id) => document.getElementById(id);
 
 let frame = null, frameW = 4, frameH = 3;     // 마지막 카메라 그림
-let state = null, lastMsg = 0;
+let state = null, ui = null, lastMsg = 0;
 
 ch.onmessage = async (e) => {
   const m = e.data || {};
@@ -89,31 +164,108 @@ ch.onmessage = async (e) => {
       if (frame && frame.close) frame.close();
       frame = bmp; frameW = m.w; frameH = m.h;
     } catch {}
-  } else if (m.t === "hand") {
-    state = m;
-  }
+  } else if (m.t === "hand") state = m;
+  else if (m.t === "ui") { ui = m; layout(); }
 };
 
 // 작품 쪽에 '여기 화면이 있다'고 알린다 — 그래야 그림을 보내기 시작한다
 const hello = () => ch.postMessage({ t: "hello" });
 hello(); setInterval(hello, 1000);
 
-$("rot").addEventListener("click", () => ch.postMessage({ t: "rotate" }));
-
 // 아이패드 화면이 꺼지지 않게
-async function keepAwake() {
-  try { if (navigator.wakeLock) await navigator.wakeLock.request("screen"); } catch {}
-}
+async function keepAwake() { try { if (navigator.wakeLock) await navigator.wakeLock.request("screen"); } catch {} }
 keepAwake();
 document.addEventListener("visibilitychange", () => { if (!document.hidden) keepAwake(); });
 
+// 두 번 눌러 확대·길게 눌러 메뉴 같은 아이패드 기본 동작을 막는다
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+document.addEventListener("dblclick", (e) => e.preventDefault());
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+
+/* ── 방향키 — 누르고 있는 동안 움직인다 ── */
+const held = new Set();
+const sendPad = () => ch.postMessage({ t: "pad", keys: [...held] });
+setInterval(() => { if (held.size) sendPad(); }, 400);     // 놓는 신호를 놓쳐도 작품 쪽이 알아서 멈추게
+document.querySelectorAll("[data-key]").forEach((b) => {
+  const k = b.dataset.key;
+  const on = (e) => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); held.add(k); b.classList.add("down"); sendPad(); };
+  const off = () => { if (!held.has(k)) return; held.delete(k); b.classList.remove("down"); sendPad(); };
+  b.addEventListener("pointerdown", on);
+  b.addEventListener("pointerup", off);
+  b.addEventListener("pointercancel", off);
+  b.addEventListener("lostpointercapture", off);
+});
+// 한 번 누르면 되는 버튼 — 손가락이 닿는 순간 반응한다
+function tap(el, fn) {
+  el.addEventListener("pointerdown", (e) => { e.preventDefault(); el.classList.add("down"); fn(); });
+  const up = () => el.classList.remove("down");
+  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
+}
+tap($("bSel"), () => ch.postMessage({ t: "select" }));
+tap($("bMain"), () => ch.postMessage({ t: "select" }));
+tap($("bSub"), () => { ch.postMessage({ t: "pad", keys: ["left"] }); setTimeout(() => ch.postMessage({ t: "pad", keys: [] }), 150); });
+tap($("bNext"), () => ch.postMessage({ t: "next" }));
+
+/* 운영자용 — '작품과 연결됨'을 2초 누르면 카메라 위아래 뒤집기 */
+{
+  const el = $("link"); let t = 0;
+  el.addEventListener("pointerdown", () => { el.classList.add("charging"); t = setTimeout(() => { ch.postMessage({ t: "rotate" }); el.classList.remove("charging"); }, 2000); });
+  const cancel = () => { clearTimeout(t); el.classList.remove("charging"); };
+  el.addEventListener("pointerup", cancel); el.addEventListener("pointercancel", cancel); el.addEventListener("pointerleave", cancel);
+}
+
+/* ── 장면마다 보이는 버튼 ── */
+const COPY = {
+  wait:   ["잠시만요", "작품과 연결되면 여기서도 조작할 수 있어요."],
+  boot:   ["시작하기", "손을 카메라에 비추거나, 아래 버튼을 눌러 주세요."],
+  grid:   ["파편 고르기", "◀ ▶ 로 고리를 돌리고, 가운데 파편이 마음에 들면 ‘고르기’를 눌러요."],
+  orb:    ["구슬이 되었어요", "보관된 감각을 확인하러 가거나, 다시 고를 수 있어요."],
+  film:   ["영상", ""],
+  garden: ["구슬빛 정원", "◀ ▶ 로 둘러보고 ▲ ▼ 로 걸어요. 가운데 버튼으로 앞에 보이는 구슬을 열어요."],
+};
+let shown = "";
+function layout() {
+  const live = performance.now() - lastMsg < 2000;
+  const sc = live && ui ? ui.scene : "wait";
+  const key = sc + "|" + (ui && ui.canNext) + "|" + (ui && ui.reading);
+  if (key === shown) return;
+  shown = key;
+  const [title, hint] = COPY[sc] || COPY.wait;
+  $("title").textContent = title;
+  $("hint").textContent = hint;
+  $("hint").hidden = !hint;
+
+  const dpad = sc === "grid" || sc === "garden";
+  $("dpad").hidden = !dpad;
+  $("stack").hidden = !(sc === "boot" || sc === "orb");
+  $("film").hidden = sc !== "film";
+  $("bNext").hidden = !(sc === "garden" && ui && ui.canNext);
+
+  // 아카이브는 좌우만, 정원은 네 방향
+  document.querySelector(".k-up").classList.toggle("off", sc !== "garden");
+  document.querySelector(".k-down").classList.toggle("off", sc !== "garden");
+  $("labL").textContent = sc === "garden" ? "왼쪽 보기" : "돌리기";
+  $("labR").textContent = sc === "garden" ? "오른쪽 보기" : "돌리기";
+  $("selText").textContent = sc === "garden" ? (ui && ui.reading ? "닫기" : "구슬 열기") : "고르기";
+
+  if (sc === "boot") { $("bMain").textContent = "시작하기"; $("bSub").hidden = true; }
+  if (sc === "orb") { $("bMain").textContent = "확인하러 가기"; $("bSub").hidden = false; }
+
+  // 장면이 바뀌면 누르고 있던 방향은 놓는다
+  if (held.size) { held.clear(); document.querySelectorAll("[data-key].down").forEach((b) => b.classList.remove("down")); sendPad(); }
+}
+setInterval(layout, 500);
+layout();
+
+/* ── 카메라 + 손 그리기 ── */
 const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
   [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 
 function draw() {
   requestAnimationFrame(draw);
+  const box = $("camBox").getBoundingClientRect();
   const dpr = Math.min(devicePixelRatio || 1, 2);
-  const W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr);
+  const W = Math.round(box.width * dpr), H = Math.round(box.height * dpr);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   g.clearRect(0, 0, W, H);
 
@@ -121,6 +273,7 @@ function draw() {
   $("link").classList.toggle("on", live);
   $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
   $("empty").hidden = live && !!frame;
+  if (live && !frame) { $("emptyT").textContent = "카메라를 켜는 중이에요"; $("emptyS").textContent = "조금만 기다려 주세요. 오른쪽 버튼으로도 조작할 수 있어요."; }
   if (!frame) return;
 
   // 카메라 그림 전체가 보이게 (잘리지 않게) — 거울처럼 좌우를 뒤집는다
@@ -130,21 +283,18 @@ function draw() {
   g.translate(W, 0); g.scale(-1, 1);
   g.drawImage(frame, W - dx - dw, dy, dw, dh);
   g.restore();
-  g.fillStyle = live ? "rgba(0,0,0,.25)" : "rgba(0,0,0,.65)";
+  g.fillStyle = live ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.65)";
   g.fillRect(dx, dy, dw, dh);
 
   const st = state || {};
   const hand = live ? st.hand : null;
   $("hand").classList.toggle("on", !!hand);
-  $("handText").textContent = hand ? "손 인식됨" : "손 없음";
+  $("handText").textContent = hand ? "손을 찾았어요" : "손을 카메라에 비춰 주세요";
   $("pinch").classList.toggle("on", !!(hand && st.pinch));
-  $("scene").textContent = live ? (st.scene || "") : "";
   if (!hand) return;
 
   const P = (p) => ({ x: dx + (1 - p[0]) * dw, y: dy + p[1] * dh });
   const k = dw / 600;
-
-  // 엄지-검지
   {
     const a = P(hand[4]), b = P(hand[8]);
     g.save();
@@ -164,7 +314,6 @@ function draw() {
     g.save(); g.shadowColor = "rgba(154,90,255,.95)"; g.shadowBlur = (big ? 24 : 12) * k;
     g.fillStyle = big ? "#9a5aff" : "#b48cff"; g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI * 2); g.fill(); g.restore();
   }
-  // 게이지 — 작품 쪽 커서 고리와 같은 진행률을 검지 끝에
   if (st.gauge > 0) {
     const p = P(hand[8]), r = 26 * k;
     g.lineWidth = 6 * k;

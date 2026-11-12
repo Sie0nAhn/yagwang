@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112d";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112e";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -2058,6 +2058,7 @@ async function askStart() {
     reveal();
   }
   events.forEach((t) => window.addEventListener(t, go, true));
+  remoteStart = () => { remoteStart = null; go(null); };   // 아이패드 조작판의 '시작'
 }
 
 /* 시작하려고 누른 그 클릭은 시작에만 쓴다.
@@ -2306,8 +2307,74 @@ if (monitorCh) {
     const m = e.data || {};
     if (m.t === "hello") monitorSeen = performance.now();
     if (m.t === "rotate") rotateCamera();
+    if (m.t === "pad") padKeys(m.keys || []);
+    if (m.t === "select") padSelect();
+    if (m.t === "next") padNext();
   };
 }
+
+/* ── 아이패드 조작판 ──
+   손 인식이 잘 안 될 때 관람객이 아이패드 화면의 버튼으로도 같은 걸 할 수 있게.
+   ◀▶ : 아카이브 돌리기 / 정원에서 돌아보기 · ▲▼ : 정원에서 걷기 · 선택 : 고르기·확인·구슬 열기
+   영상 1·2 는 여기서도 건너뛸 수 없다. 누르고 있는 키는 조작판이 0.4초마다 다시 알려 온다 —
+   손을 떼는 신호를 놓쳐도 1.2초 뒤엔 저절로 놓인다. */
+let padHeld = new Set(), padAt = 0, padRepeat = null;
+let remoteStart = null;                    // 로딩 화면에서 '시작' — askStart 가 채운다
+function gardenCtl() {
+  try { return gardenFrame.contentWindow && gardenFrame.contentWindow.__gardenCtl; } catch { return null; }
+}
+function padKeys(keys) {
+  padAt = performance.now();
+  const next = new Set(keys);
+  const pressed = [...next].filter((k) => !padHeld.has(k));
+  padHeld = next;
+  if (current === "grid" && ready && !locked) {
+    for (const k of pressed) if (k === "left" || k === "right") nudge(k === "right" ? 1 : -1);
+    clearInterval(padRepeat);
+    const dir = padHeld.has("right") ? 1 : padHeld.has("left") ? -1 : 0;
+    if (dir) padRepeat = setInterval(() => {
+      if (!padHeld.has(dir > 0 ? "right" : "left") || current !== "grid" || locked) return clearInterval(padRepeat);
+      nudge(dir);
+    }, 650);
+  }
+  if (current === "orb" && pressed.includes("left") && !locked) back();
+  const g = gardenCtl();
+  if (g) {
+    if (current !== "garden") g.move(0, 0);       // 정원을 떠났으면 멈춘다
+    else g.move(
+      (padHeld.has("right") ? 1 : 0) - (padHeld.has("left") ? 1 : 0),
+      (padHeld.has("up") ? 1 : 0) - (padHeld.has("down") ? 1 : 0),
+    );
+  }
+}
+setInterval(() => {
+  if (padHeld.size && performance.now() - padAt > 1200) padKeys([]);
+}, 300);
+function padSelect() {
+  if (!ready) { if (remoteStart) remoteStart(); return; }
+  if (locked) return;
+  if (current === "grid") select();
+  else if (current === "orb") whenUnlocked(() => { if (current === "orb") toFilm(0); });
+  else if (current === "garden") { const g = gardenCtl(); if (g) g.select(); }
+  // 영상 중에는 아무것도 하지 않는다
+}
+function padNext() {
+  if (current !== "garden") return;
+  const g = gardenCtl();
+  if (g && g.canNext()) g.next();
+}
+// 조작판이 지금 보여 줄 버튼을 고를 수 있게 — 장면과 정원 상태를 알려 준다
+setInterval(() => {
+  if (!monitorCh || performance.now() - monitorSeen > 3000) return;
+  const g = current === "garden" && gardenCtl();
+  monitorCh.postMessage({
+    t: "ui",
+    scene: !ready ? "boot" : current,
+    canNext: !!(g && g.canNext()),
+    reading: !!(g && g.reading()),
+    locked,
+  });
+}, 250);
 function sendMonitor(lms, pinch) {
   if (!monitorCh || performance.now() - monitorSeen > 3000) return;
   const now = performance.now();

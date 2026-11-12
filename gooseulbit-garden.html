@@ -5132,6 +5132,24 @@ Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.class
 /* 전시 화면 안에 들어가 있으면 — 안내 카드를 띄우고, 넘어가는 버튼은 하나만 */
 var YkIntro=document.getElementById("intro"),YkNext=document.getElementById("float-next");
 YkNext.addEventListener("click",xd);
+/* 아이패드 조작판(monitor.html)에서 오는 조작 — 바깥(main.js)이 이걸 부른다.
+   ◀▶ 돌아보기 · ▲▼ 걷기 (누르고 있는 동안) · 선택 = 가운데에 가장 가까운 구슬 열기 / 열려 있으면 닫기 */
+var YkCtl={turn:0,walk:0,last:0};
+function ykCtlTick(t){requestAnimationFrame(ykCtlTick);let dt=Math.min(.05,(t-(YkCtl.last||t))/1e3);YkCtl.last=t;
+  if(!YkCtl.turn&&!YkCtl.walk)return;Tt.auto&&ai(!1);Rs();
+  Tt.yaw-=YkCtl.turn*1.3*dt;
+  if(YkCtl.walk){let c=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw));Tt.pos.addScaledVector(c,YkCtl.walk*4*dt)}}
+requestAnimationFrame(ykCtlTick);
+window.__gardenCtl={
+  move(turn,walk){YkCtl.turn=turn;YkCtl.walk=walk;if(turn||walk)typeof hideIntro=="function"&&hideIntro()},
+  select(){typeof hideIntro=="function"&&hideIntro();
+    if(!qc.hidden){mr();return"closed"}
+    let l=Yc(innerWidth/2,innerHeight/2,Math.max(innerWidth,innerHeight)*.5,null);
+    if(l){Md(l.gi,l.id);return"opened"}return null},
+  canNext(){return!YkNext.hidden},
+  reading(){return!qc.hidden},
+  next(){if(!YkNext.hidden)YkNext.click()}
+};
 if(parent!==window){document.body.classList.add("yk-embed");YkIntro.hidden=!1;
   var YkMouseT=0;addEventListener("mousemove",()=>{document.body.classList.add("yk-mouse");clearTimeout(YkMouseT);YkMouseT=setTimeout(()=>document.body.classList.remove("yk-mouse"),2500)});
   var hideIntro=()=>{if(YkIntro.hidden||YkIntro.classList.contains("leaving"))return;YkIntro.classList.add("leaving");setTimeout(()=>{YkIntro.hidden=!0},700)};
