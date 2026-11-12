@@ -17,8 +17,8 @@
 <style>
   @font-face { font-family: "Orbit"; src: url("assets/fonts/Orbit-Regular.woff2") format("woff2"); }
   :root {
-    --bg: #6e00ff;           /* 피그마 배경 보라 */
-    --pill: #ff3fc8;         /* 참고 이미지의 파란 FILTER 자리 — 작품의 마젠타 */
+    --bg: #000;              /* 검정 — 작품 화면(모니터)과 같은 바탕 */
+    --pill: #ff2bd6;         /* 참고 이미지의 파란 FILTER 자리 — 작품의 강조 마젠타 (style.css --acc) */
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: #fff; overflow: hidden;
@@ -46,7 +46,8 @@
     position: relative; flex: none;
     width: var(--w); aspect-ratio: var(--arn);
     border-radius: 36px; overflow: hidden;
-    background: #000;
+    background: #0d0a14;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);   /* 검정 바탕에서 칸이 보이게 */
   }
   #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
@@ -58,7 +59,7 @@
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   .chip i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.4); }
   .chip.on i { background: #3ee07a; }
-  .chip.hand.on { background: rgba(110, 0, 255, .6); }
+  .chip.hand.on { background: rgba(154, 90, 255, .7); }
   .chip.hand.on i { background: #d4b8ff; }
   .chip.pinch { display: none; }
   .chip.pinch.on { display: inline-flex; background: rgba(255, 43, 214, .6); }
@@ -71,17 +72,17 @@
 
   /* 손 인식 안내 — 카메라 칸 오른쪽 아래 (x626 y556, 488×105) */
   .coach {
-    position: absolute; right: var(--in); bottom: var(--in); width: min(488px, calc(100% - 2 * var(--in))); min-height: 96px;
-    display: flex; align-items: center; gap: 16px;
-    padding: 18px 24px; border-radius: 26px;
+    position: absolute; right: var(--in); bottom: var(--in); width: auto; max-width: calc(100% - 2 * var(--in));
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px 12px 12px; border-radius: 18px;
     background: rgba(20, 0, 50, .72);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    font-size: 22px; font-weight: 800; line-height: 1.35;
+    font-size: 17px; font-weight: 800; line-height: 1.35;
     animation: coachIn .35s cubic-bezier(.2,.9,.3,1);
   }
-  .coach small { display: block; margin-top: 2px; font-size: 16px; font-weight: 500; color: rgba(240, 228, 255, .8); }
-  .coach__ic { flex: none; width: 44px; height: 44px; border-radius: 32%; display: grid; place-items: center;
-    background: #ffd6f7; color: #ff4fc3; font-size: 24px; font-weight: 800;
+  .coach small { display: block; margin-top: 1px; font-size: 13px; font-weight: 500; color: rgba(240, 228, 255, .8); }
+  .coach__ic { flex: none; width: 34px; height: 34px; border-radius: 32%; display: grid; place-items: center;
+    background: #ffd6f7; color: #ff4fc3; font-size: 18px; font-weight: 800;
     box-shadow: inset 0 0 8px 2px rgba(255,255,255,.8); }
   .coach.ok .coach__ic { background: #d9f7b0; color: #4da82a; }
   @keyframes coachIn { from { opacity: 0; transform: translateY(10px); } }
@@ -90,12 +91,13 @@
   .pad {
     position: relative; flex: none;
     width: var(--w); height: var(--pad-h);
-    display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 36px;
-    align-items: center;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 36px;
+    align-items: start;    /* 글은 위로 */
   }
+  .pad .dpad { align-self: end; }   /* 버튼은 아래로 */
 
   /* 글 — 짧게 세 줄: 제목 · 할 일 · 버튼 안내 */
-  .say { padding-left: 6px; }
+  .say { padding-left: 6px; align-self: start; }
   .say h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; }
   .say p { margin: 10px 0 0; font-size: 17px; line-height: 1.45; color: rgba(255,255,255,.92); }
   .say .tip { margin-top: 6px; font-size: 14px; font-weight: 700; color: rgba(228, 210, 255, .85); }
@@ -130,7 +132,8 @@
     box-shadow: inset 0 4px 8px -2px rgba(120, 140, 170, .3); }
 
   /* 십자 — 가운데는 비워 둔다 */
-  .dpad { display: grid; gap: 9px; grid-template-columns: repeat(3, 66px); grid-template-rows: repeat(3, 66px); }
+  /* 버튼 판 — 십자 3칸 + 띄움 + 오른쪽 열. 모든 버튼이 같은 66px 줄에 맞춰 선다 */
+  .dpad { display: grid; gap: 9px; grid-template-columns: repeat(3, 66px) 10px 200px; grid-template-rows: repeat(3, 66px); }
   .dpad .jelly { width: 66px; height: 66px; }
   .dpad svg { width: 28px; height: 28px; }
   .dpad .k-up    { grid-area: 1 / 2; }
@@ -138,14 +141,15 @@
   .dpad .k-right { grid-area: 2 / 3; }
   .dpad .k-down  { grid-area: 3 / 2; }
 
-  /* 큰 버튼 — 참고 이미지의 FILTER: 꽉 찬 색, 그림자 없이 (258×92) */
-  .act { width: 230px; height: 84px; border-radius: 999px; background: var(--pill); color: #fff;
-    font-size: 22px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap;
+  /* 큰 버튼 — 참고 이미지의 FILTER: 꽉 찬 색, 그림자 없이. 가운데 줄 (← → 와 같은 높이) */
+  .act { grid-area: 3 / 5; width: 200px; height: 66px; border-radius: 999px; background: var(--pill); color: #fff;
+    font-size: 18px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap;
     transition: transform .1s ease, background .15s ease; }
-  .act.down { transform: scale(.96); background: #f02cb6; }
+  .act.down { transform: scale(.96); background: #e91fc4; }
 
   /* 다음 영상으로 — 노란 젤리 알약 (정원에서 기억을 읽은 뒤) */
-  .pill { display: block; width: 230px; height: 60px; border-radius: 999px;
+  /* 다음 영상으로 — 고르기와 같은 크기, 바로 윗줄 */
+  .dpad .pill, .pill { grid-area: 2 / 5; display: block; width: 200px; height: 66px; border-radius: 999px;
     font-size: 18px; font-weight: 800; }
 </style>
 </head>
@@ -183,10 +187,8 @@
       <svg viewBox="0 0 24 24"><path d="M18 12l-9 7V5z"/></svg></button>
     <button class="jelly c-peri k-down" data-key="down" type="button" aria-label="뒤로">
       <svg viewBox="0 0 24 24"><path d="M12 18l-7-9h14z"/></svg></button>
-  </div>
-
-  <div class="acts">
-    <button class="pill jelly c-sun" id="bNext" type="button" hidden>다음 영상으로 →</button>
+    <!-- 오른쪽 열 — 아래로 맞춘다: 맨 아랫줄 '고르기', 그 위 '다음 영상으로' -->
+    <button class="pill jelly c-sun" id="bNext" type="button" hidden>다음 영상으로</button>
     <button class="act" id="bSel" type="button"><span id="selText">선택</span></button>
   </div>
 </section>
