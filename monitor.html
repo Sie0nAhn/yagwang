@@ -28,7 +28,7 @@
   /* ── 카메라 — 화면 가득 ── */
   #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   .shade { position: fixed; inset: 0; pointer-events: none;
-    background: linear-gradient(90deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.45)); }
+    background: linear-gradient(90deg, rgba(0,0,0,0) 50%, rgba(0,0,0,.35)); }
 
   .glass {
     background: var(--panel);
@@ -55,32 +55,22 @@
   .empty[hidden] { display: none; }
 
   /* ── 조작판 — 말랑한 젤리 버튼 (보라) ──
-     어두운 자두색 유리 판 위에 통통한 젤리 버튼. 안쪽 테두리가 하얗게 빛나고, 바깥으로 같은 색 빛이 번진다.
-     쓸 수 없는 버튼은 색이 빠진 납작한 회보라로. 십자키는 네 갈래가 따로 떨어진 모양. */
+     바탕 판 없이 카메라 위에 버튼만 떠 있다.
+     젤리: 선명한 보라 몸통 + 가장자리 안쪽이 하얗게 번지는 빛 + 같은 색 그림자.
+     아이콘: 진한 보라, 둘레에 연한 빛이 번진다. 쓸 수 없는 버튼은 색이 빠진 연회색. */
   .pad {
     position: fixed;
-    right: max(20px, env(safe-area-inset-right));
+    right: max(28px, env(safe-area-inset-right));
     top: 50%; transform: translateY(-50%);
     width: min(400px, calc(100vw - 40px));
     max-height: calc(100% - 40px);
-    padding: 22px;
-    border-radius: 36px;
-    display: flex; flex-direction: column; gap: 18px;
-    background: linear-gradient(170deg, rgba(46,36,60,.86), rgba(24,18,34,.9));
-    border: 1px solid rgba(255,255,255,.1);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 24px 60px rgba(0,0,0,.5);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    display: flex; flex-direction: column; gap: 22px;
   }
-  .brand { display: flex; align-items: center; justify-content: space-between; padding: 0 6px;
-    font-family: "Roboto Mono", ui-monospace, monospace; font-size: 11px; letter-spacing: .18em;
-    color: rgba(225,210,255,.55); }
-  .brand i { width: 10px; height: 10px; border-radius: 50%; background: #4a405a; }
-  .brand i.on { background: #c9a2ff; box-shadow: 0 0 10px #b48cff, 0 0 2px #fff inset; }
+  .brand { display: none; }
 
-  .head { padding: 16px 18px; border-radius: 22px;
-    background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
-  .head h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; color: #efe4ff; }
-  .head p { margin: 6px 0 0; font-size: 15px; line-height: 1.5; color: rgba(225,210,255,.65); }
+  .head { padding: 0 4px; text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 0 18px rgba(0,0,0,.55); }
+  .head h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.01em; color: #fff; }
+  .head p { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: rgba(255,255,255,.88); }
 
   button { font: inherit; color: #fff; border: 0; padding: 0; background: none;
     touch-action: none; cursor: pointer; -webkit-appearance: none; appearance: none; }
@@ -88,69 +78,67 @@
 
   /* 젤리 — 공통 재질 */
   .jelly {
-    --c1: #f3eaff; --c2: #d4b8ff; --c3: #b28aff; --glow: rgba(178,138,255,.55); --ink: #7b3fe6;
-    background: radial-gradient(120% 100% at 50% 22%, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%);
+    --body: #dcbcff;        /* 몸통 — 연보라 */
+    --core: #c597ff;        /* 가운데 (조금 진하게) */
+    --rim: rgba(255,255,255,.62);   /* 가장자리 안쪽에 번지는 빛 */
+    --drop: rgba(150,80,255,.55);   /* 바깥 그림자 */
+    --ink: #7a14ff;         /* 아이콘 — 선명한 보라 */
+    --ink-glow: rgba(240,220,255,.95);
+    background: radial-gradient(75% 75% at 50% 52%, var(--core) 0%, var(--body) 72%);
     box-shadow:
-      inset 0 0 0 5px rgba(255,255,255,.42),
-      inset 0 0 18px 6px rgba(255,255,255,.45),
-      inset 0 -10px 18px rgba(110,50,200,.28),
-      0 0 26px var(--glow),
-      0 8px 18px rgba(20,6,40,.45);
+      inset 0 0 16px 7px var(--rim),
+      inset 0 -5px 10px rgba(80,20,180,.18),
+      0 10px 26px var(--drop);
     color: var(--ink);
-    transition: transform .09s ease, box-shadow .12s ease, filter .12s ease, opacity .2s;
+    transition: transform .09s ease, box-shadow .12s ease, filter .12s ease;
   }
-  .jelly.down { transform: scale(.93);
-    filter: saturate(1.25) brightness(1.06);
-    box-shadow:
-      inset 0 0 0 5px rgba(255,255,255,.55),
-      inset 0 0 22px 8px rgba(255,255,255,.55),
-      inset 0 -6px 14px rgba(110,50,200,.3),
-      0 0 44px rgba(255,120,240,.75),
-      0 4px 10px rgba(20,6,40,.45); }
-  /* 쓸 수 없을 때 — 색이 빠진 납작한 회보라 (참고 이미지의 비활성 줄) */
+  .jelly svg, .jelly .t { filter: drop-shadow(0 0 3px var(--ink-glow)) drop-shadow(0 0 9px var(--ink-glow)); }
+  .jelly.down { transform: scale(.92); filter: brightness(1.08) saturate(1.2);
+    box-shadow: inset 0 0 20px 9px var(--rim), inset 0 -4px 8px rgba(80,20,180,.2), 0 0 34px rgba(190,120,255,.95), 0 6px 14px var(--drop); }
+  /* 쓸 수 없을 때 — 색이 빠진 연회색 (참고 이미지의 비활성 줄) */
   .jelly.off { pointer-events: none;
-    background: #3a3446; color: #6d6680;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), inset 0 2px 6px rgba(0,0,0,.25); }
+    --ink: #b4bfd6; --ink-glow: transparent;
+    background: #dde3ec;
+    box-shadow: inset 0 3px 6px rgba(120,130,160,.25), inset 0 -2px 4px rgba(255,255,255,.6), 0 6px 16px rgba(0,0,0,.25);
+    opacity: .5; }
 
-  .ctrl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; padding: 4px 0 2px; }
+  .ctrl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 18px; }
 
-  /* 십자키 — 네 갈래가 떨어져 있고, 바깥쪽이 둥글다 */
-  .dpad { position: relative; width: 216px; height: 216px; display: grid; gap: 6px;
+  /* 십자키 — 네 갈래가 떨어져 있고, 바깥쪽이 더 둥글다 */
+  .dpad { position: relative; width: 228px; height: 228px; display: grid; gap: 8px;
     grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
   .dpad button { display: grid; place-items: center; position: relative; }
-  .dpad .k-up    { grid-area: 1 / 2; border-radius: 50% 50% 18px 18px / 46% 46% 18px 18px; }
-  .dpad .k-down  { grid-area: 3 / 2; border-radius: 18px 18px 50% 50% / 18px 18px 46% 46%; }
-  .dpad .k-left  { grid-area: 2 / 1; border-radius: 50% 18px 18px 50% / 46% 18px 18px 46%; }
-  .dpad .k-right { grid-area: 2 / 3; border-radius: 18px 50% 50% 18px / 18px 46% 46% 18px; }
-  .dpad .hub { grid-area: 2 / 2; align-self: center; justify-self: center; width: 34px; height: 34px; border-radius: 50%;
-    background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.12), rgba(0,0,0,.25)); }
-  .dpad svg { width: 30px; height: 30px; fill: currentColor;
-    filter: drop-shadow(0 1px 0 rgba(255,255,255,.7)) drop-shadow(0 0 6px rgba(255,255,255,.5)); }
-  .dpad svg path { stroke: currentColor; stroke-width: 3.2; stroke-linejoin: round; }   /* 끝이 둥근 세모 */
-  .dpad .lab { position: absolute; font-size: 12.5px; font-weight: 700; color: rgba(225,210,255,.75); white-space: nowrap; pointer-events: none; }
-  .dpad .k-left .lab, .dpad .k-right .lab { top: calc(100% + 6px); }
-  .dpad .k-up .lab, .dpad .k-down .lab { display: none; }
-  .dpad .off .lab { opacity: 0; }
+  .dpad .k-up    { grid-area: 1 / 2; border-radius: 50% 50% 30% 30%; }
+  .dpad .k-down  { grid-area: 3 / 2; border-radius: 30% 30% 50% 50%; }
+  .dpad .k-left  { grid-area: 2 / 1; border-radius: 50% 30% 30% 50%; }
+  .dpad .k-right { grid-area: 2 / 3; border-radius: 30% 50% 50% 30%; }
+  .dpad .hub { display: none; }
+  .dpad svg { width: 34px; height: 34px; fill: currentColor; }
+  .dpad svg path { stroke: currentColor; stroke-width: 3.6; stroke-linejoin: round; }
+  .dpad .lab { position: absolute; top: calc(100% + 6px); font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap;
+    pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,.7), 0 0 10px rgba(0,0,0,.5); }
+  .dpad .k-up .lab, .dpad .k-down .lab, .dpad .off .lab { display: none; }
 
-  /* 고르기 — 크고 진한 보라 젤리 */
+  /* 고르기 — 크고 진한 보라 젤리, 글씨는 하얗게 */
   .abtn { display: grid; justify-items: center; }
-  .k-sel { width: 124px; height: 124px; border-radius: 50%;
-    --c1: #e2ccff; --c2: #a874ff; --c3: #7a3ee6; --glow: rgba(154,90,255,.7); --ink: #fff;
-    font-size: 19px; font-weight: 800; letter-spacing: -.01em;
-    text-shadow: 0 1px 0 rgba(80,20,160,.6), 0 0 10px rgba(255,255,255,.4); }
+  .k-sel { width: 132px; height: 132px; border-radius: 42% 42% 42% 42%;
+    --body: #9d5cff; --core: #8a3dff; --rim: rgba(230,200,255,.75); --drop: rgba(130,50,255,.65);
+    --ink: #fff; --ink-glow: rgba(255,255,255,.55);
+    font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
 
   /* 알약 버튼 — 시작·확인·다시 고르기·다음 영상으로 */
-  .pill { display: block; width: 100%; min-height: 66px; padding: 14px 20px; border-radius: 999px;
-    font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
-  .pill.main { --c1: #e2ccff; --c2: #a874ff; --c3: #7a3ee6; --glow: rgba(154,90,255,.7); --ink: #fff;
-    text-shadow: 0 1px 0 rgba(80,20,160,.6); }
-  .pill.soft { --ink: #6a2fd6; }
-  .pill.warm { --c1: #fff4e6; --c2: #ffd9ad; --c3: #ffb877; --glow: rgba(255,190,120,.55); --ink: #6b3a12; }
-  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .pill { display: block; width: 100%; min-height: 70px; padding: 14px 22px; border-radius: 999px;
+    font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+  .pill.main { --body: #9d5cff; --core: #8a3dff; --rim: rgba(230,200,255,.75); --drop: rgba(130,50,255,.65);
+    --ink: #fff; --ink-glow: rgba(255,255,255,.5); }
+  .pill.soft { --body: #e6d4ff; --core: #d6bbff; --ink: #6a12ff; }
+  .pill.warm { --body: #ffd98a; --core: #ffcc5c; --rim: rgba(255,250,225,.75); --drop: rgba(255,170,40,.5);
+    --ink: #c25a00; --ink-glow: rgba(255,240,200,.9); }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
 
-  .film { display: grid; gap: 8px; text-align: center; padding: 22px 12px; border-radius: 22px;
-    background: rgba(255,255,255,.05); font-size: 18px; line-height: 1.5; color: #efe4ff; }
-  .film small { color: rgba(225,210,255,.65); font-size: 15px; }
+  .film { display: grid; gap: 8px; text-align: center; padding: 8px 4px; font-size: 20px; line-height: 1.5; color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 0 18px rgba(0,0,0,.55); }
+  .film small { color: rgba(255,255,255,.85); font-size: 16px; }
 
   .coach {
     position: fixed; left: max(18px, env(safe-area-inset-left)); right: 440px; bottom: max(22px, env(safe-area-inset-bottom));
@@ -232,7 +220,7 @@
       <span class="hub"></span>
     </div>
     <div class="abtn">
-      <button class="jelly k-sel" id="bSel" type="button"><span id="selText">선택</span></button>
+      <button class="jelly k-sel" id="bSel" type="button"><span id="selText" class="t">선택</span></button>
     </div>
   </div>
 
