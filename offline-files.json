@@ -1,5 +1,5 @@
 {
- "version": "fb4a938a07",
+ "version": "c2651f4794",
  "files": [
   {
    "url": "./",
@@ -38,8 +38,8 @@
   },
   {
    "url": "monitor.html",
-   "size": 20690,
-   "hash": "0f392a16a48c"
+   "size": 20889,
+   "hash": "cce012dd463d"
   },
   {
    "url": "manifest.webmanifest",

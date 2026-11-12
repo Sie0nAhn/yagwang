@@ -50,7 +50,9 @@
   }
   #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
-  .chips { position: absolute; left: 24px; top: 20px; right: 24px; display: flex; gap: 8px; flex-wrap: wrap; }
+  /* 카메라 칸 안쪽 여백 — 위·아래·양옆 모두 같게 (상태 알약은 왼쪽 위, 손 인식 안내는 오른쪽 아래) */
+  .cam { --in: 24px; }
+  .chips { position: absolute; left: var(--in); top: var(--in); right: var(--in); display: flex; gap: 8px; flex-wrap: wrap; }
   .chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px;
     font-size: 15px; font-weight: 700; color: #fff; background: rgba(255, 255, 255, .16);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
@@ -69,7 +71,7 @@
 
   /* 손 인식 안내 — 카메라 칸 오른쪽 아래 (x626 y556, 488×105) */
   .coach {
-    position: absolute; right: 57px; bottom: 30px; width: min(488px, calc(100% - 80px)); min-height: 105px;
+    position: absolute; right: var(--in); bottom: var(--in); width: min(488px, calc(100% - 2 * var(--in))); min-height: 96px;
     display: flex; align-items: center; gap: 16px;
     padding: 18px 24px; border-radius: 26px;
     background: rgba(20, 0, 50, .72);
