@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112l";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112m";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -2501,6 +2501,8 @@ setInterval(() => {
     same: !!(g && g.same && g.same()),   // 지금 누르면 열린 구슬 설명을 닫는지 (아니면 고리가 뜬 다른 구슬을 연다)
     film: current === "film" ? filmInfo() : null,
     camOff: !!(camBadSince && performance.now() - camBadSince > 5000),   // 카메라가 멈췄는지 — 아이패드에 알린다
+    camAsk: camWaiting,      // 모니터에 카메라 허용 창이 떠 있다
+    camDenied,               // 카메라가 거절됐다
     locked,
   });
 }, 250);
@@ -2536,27 +2538,22 @@ function sendMonitor(lms, pinch) {
 }
 
 let camStarting = null;
+let camWaiting = false;     // 허용 창이 떠 있는 중
+let camDenied = false;      // 거절됐다 — 누를 때만 다시 묻는다
 async function startCamera() {
   if (camStream) return true;
   if (camStarting) return camStarting;
   camStarting = (async () => {
     try {
-      // 허용 창이 다른 화면에 떠서 아무도 못 누르면 영영 기다린다 — 12초 넘으면 접고 다시 해 본다
-      const ask = navigator.mediaDevices.getUserMedia({
+      // 한 번에 하나만 묻고, 답이 올 때까지 기다린다.
+      // (예전엔 허용 창이 떠 있는 동안 또 물어서 창이 새로 바뀌었고, 누른 '허용'이 사라진 창에 눌려 소용없었다)
+      camWaiting = true;
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: "user", frameRate: { ideal: 30 } },
         audio: false,
       });
-      const stream = await Promise.race([
-        ask,
-        new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 12000)),
-      ]).catch((e) => {
-        // 늦게라도 열리면 — 그때 카메라가 없으면 그걸 쓰고, 있으면 닫는다
-        ask.then((late) => {
-          if (camStream) late.getTracks().forEach((t) => t.stop());
-          else { camStream = late; camVideo.srcObject = late; camVideo.play().catch(() => {}); camFrameAt = performance.now(); }
-        }, () => {});
-        throw e;
-      });
+      camWaiting = false;
+      camDenied = false;
       if (camStream) { stream.getTracks().forEach((t) => t.stop()); return true; }   // 그 사이 다른 쪽이 열었다
       camStream = stream;
       camVideo.srcObject = stream;
@@ -2569,7 +2566,10 @@ async function startCamera() {
       return true;
     } catch (e) {
       console.warn("[camera] 열기 실패:", e && e.name);
+      camWaiting = false;
       camFailures++;
+      // 거절됨 — 저절로 다시 묻지 않는다 (계속 물으면 사파리가 아예 막아 버린다). 화면을 누르면 다시 묻는다
+      camDenied = !!e && (e.name === "NotAllowedError" || e.name === "SecurityError");
       camStream = null;
       return false;
     } finally {
@@ -2615,7 +2615,9 @@ setInterval(() => {
     if (now - camBadSince > 5000) setCamStatus("카메라가 멈췄어요<br />이 화면을 한 번 눌러 주세요");
   }
   if (!camStream) {
-    // 열기에 실패했으면 점점 뜸하게 다시 해 본다 (2.5초 → 최대 15초) — 이 창을 누르면 바로
+    if (camWaiting || camStarting) { setCamStatus("카메라 허용 창에서 '허용'을 눌러 주세요"); return; }   // 답을 기다린다 — 또 묻지 않는다
+    if (camDenied) { setCamStatus("카메라가 막혀 있어요<br />화면을 한 번 누르면 다시 물어요"); return; }
+    // 그 밖의 실패(카메라를 다른 데서 쓰는 중 등)는 점점 뜸하게 다시 해 본다 (2.5초 → 최대 15초)
     if (camEverAsked && now - camRestartAt > Math.min(15000, 2500 * (1 + camFailures))) restartCamera("없음");
     return;
   }
@@ -2627,14 +2629,16 @@ setInterval(() => {
   if (now - camFrameAt > 6000) restartCamera("멈춤");
 }, 2000);
 // 이 창으로 돌아오거나(포커스) 한 번 누르면 — 카메라가 멈췄거나 꺼져 있으면 바로 깨운다 (누름은 사파리가 카메라를 다시 열어 주는 열쇠)
-function wakeCamera() {
+function wakeCamera(byTap) {
   camFrameAt = performance.now();
   if (camVideo.paused) camVideo.play().catch(() => {});
-  if (!camStream) { camRestartAt = 0; restartCamera("깨우기"); }
+  if (camStream || camStarting) return;              // 허용 창이 떠 있으면 또 묻지 않는다
+  if (camDenied && !byTap) return;                   // 거절됐으면 누를 때만 다시 묻는다
+  camRestartAt = 0; restartCamera("깨우기");
 }
-document.addEventListener("visibilitychange", () => { if (!document.hidden) wakeCamera(); });
-window.addEventListener("focus", wakeCamera);
-window.addEventListener("pointerdown", () => { if (!camHealthy()) wakeCamera(); }, true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) wakeCamera(false); });
+window.addEventListener("focus", () => wakeCamera(false));
+window.addEventListener("pointerdown", () => { if (!camHealthy()) wakeCamera(true); }, true);
 let camEverAsked = false;
 
 let handLandmarker = null;

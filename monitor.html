@@ -357,10 +357,10 @@ function draw() {
   $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
   $("empty").hidden = live && !!frame;
   if (live && !frame) { $("emptyT").textContent = "카메라를 켜는 중이에요"; $("emptyS").textContent = "조금만 기다려 주세요. 아래 버튼으로도 조작할 수 있어요."; }
-  if (ui && ui.camOff && performance.now() - uiAt < 1500) {
+  if (ui && performance.now() - uiAt < 1500 && (ui.camOff || ui.camAsk || ui.camDenied)) {
     $("empty").hidden = false;
-    $("emptyT").textContent = "카메라가 멈췄어요";
-    $("emptyS").textContent = "모니터 쪽 작품 화면을 한 번 눌러 주세요. 아래 버튼으로는 계속 조작할 수 있어요.";
+    $("emptyT").textContent = ui.camAsk ? "모니터에 카메라 허용 창이 떠 있어요" : ui.camDenied ? "카메라가 막혀 있어요" : "카메라가 멈췄어요";
+    $("emptyS").textContent = (ui.camAsk ? "모니터 쪽 창에서 '허용'을 눌러 주세요." : "모니터 쪽 작품 화면을 한 번 눌러 주세요.") + " 아래 버튼으로는 계속 조작할 수 있어요.";
   }
   if (!frame) return;
 
@@ -378,8 +378,13 @@ function draw() {
   const hand = live ? st.hand : null;
   const filming = ui && ui.scene === "film" && performance.now() - uiAt < 1500;
   // 카메라가 멈췄으면 그 안내가 먼저 — 모니터 쪽 창을 눌러야 사파리가 카메라를 다시 열어 준다
-  const camOff = ui && ui.camOff && performance.now() - uiAt < 1500;
-  showCoach(camOff ? { kind: "black", text: "카메라가 멈췄어요", sub: "모니터 쪽 작품 화면을 한 번 눌러 주세요" }
+  const fresh = ui && performance.now() - uiAt < 1500;
+  const camMsg = !fresh ? null
+    : ui.camAsk ? { kind: "black", text: "모니터에 카메라 허용 창이 떠 있어요", sub: "모니터 쪽 창에서 '허용'을 눌러 주세요" }
+    : ui.camDenied ? { kind: "black", text: "카메라가 막혀 있어요", sub: "모니터 쪽 작품 화면을 한 번 누르면 다시 물어요" }
+    : ui.camOff ? { kind: "black", text: "카메라가 멈췄어요", sub: "모니터 쪽 작품 화면을 한 번 눌러 주세요" } : null;
+  const camOff = !!camMsg;
+  showCoach(camMsg ? camMsg
     : live && !filming ? st.coach : null);   // 영상 중엔 손 안내도 띄우지 않는다
   $("hand").classList.toggle("on", !!hand);
   $("handText").textContent = hand ? "손을 찾았어요" : "손을 카메라에 비춰 주세요";
