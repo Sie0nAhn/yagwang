@@ -5151,7 +5151,7 @@ var YkIntro=document.getElementById("intro"),YkNext=document.getElementById("flo
 YkNext.addEventListener("click",xd);
 /* 아이패드 조작판(monitor.html)에서 오는 조작 — 바깥(main.js)이 이걸 부른다.
    ◀▶ 돌아보기 · ▲▼ 걷기 (누르고 있는 동안) · 선택 = 가운데에 가장 가까운 구슬 열기 / 열려 있으면 닫기 */
-var YkCtl={turn:0,walk:0,last:0,used:0,moved:0,opened:0};
+var YkCtl={turn:0,walk:0,last:0,used:-1/0,moved:0,opened:0};  /* used: 아이패드 버튼을 실제로 누른 시각 — 처음엔 '안 누름' */
 /* 버튼으로 열 구슬 — 화면 가운데에 가장 가까운 구슬.
    기억 창이 열려 있고 그 뒤로 돌아보지 않았으면, 지금 열린 구슬이 대상이다 (누르면 설명을 닫는다) */
 function ykTarget(){let reading=!qc.hidden;
@@ -5165,7 +5165,7 @@ function ykCtlTick(t){requestAnimationFrame(ykCtlTick);let dt=Math.min(.05,(t-(Y
   if(YkCtl.walk){let c=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw));Tt.pos.addScaledVector(c,YkCtl.walk*4*dt)}}
 requestAnimationFrame(ykCtlTick);
 window.__gardenCtl={
-  move(turn,walk){YkCtl.turn=turn;YkCtl.walk=walk;YkCtl.used=performance.now();if(turn||walk){YkCtl.moved=performance.now();typeof hideIntro=="function"&&hideIntro()}},
+  move(turn,walk){YkCtl.turn=turn;YkCtl.walk=walk;if(turn||walk){YkCtl.used=YkCtl.moved=performance.now();typeof hideIntro=="function"&&hideIntro()}},
   /* 고리가 떠 있는 구슬을 연다. 열려 있는 구슬이 대상이면 설명을 닫는다 — 다른 구슬로 돌아봤으면 닫지 않고 바로 그 구슬로 */
   select(){typeof hideIntro=="function"&&hideIntro();YkCtl.used=performance.now();
     let t=ykTarget();
