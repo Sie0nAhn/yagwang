@@ -302,6 +302,7 @@ function layout() {
   $("bNext").hidden = !(sc === "garden" && ui && ui.canNext);
   $("dpad").classList.toggle("two", !$("bNext").hidden);
   $("bSel").hidden = sc === "film";
+  $("dpad").hidden = sc === "film";        // 영상이 나오는 동안엔 버튼을 다 감춘다 (건너뛸 수 없으니 누를 것이 없다)
   $("selText").textContent =
     sc === "boot" ? "시작하기" :
     sc === "orb" ? "확인하러 가기" :
@@ -344,7 +345,8 @@ function draw() {
 
   const st = state || {};
   const hand = live ? st.hand : null;
-  showCoach(live ? st.coach : null);
+  const filming = ui && ui.scene === "film" && performance.now() - uiAt < 1500;
+  showCoach(live && !filming ? st.coach : null);   // 영상 중엔 손 안내도 띄우지 않는다
   $("hand").classList.toggle("on", !!hand);
   $("handText").textContent = hand ? "손을 찾았어요" : "손을 카메라에 비춰 주세요";
   $("pinch").classList.toggle("on", !!(hand && st.pinch));
