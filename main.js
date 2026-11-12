@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112e";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112h";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -94,8 +94,8 @@ const HAND = {
   detect: 0.4,     // 손 찾기 기준 (낮을수록 어두운 전시장에서도 잘 잡힌다)
   keep: 0.25,      // 이미 잡은 손을 계속 따라가는 기준 — 찾기보다 낮게, 손이 어둡거나 흐려져도 놓치지 않게
   // 커서 떨림 거르기 (One Euro 필터) — 가만히 있을 땐 단단하게, 빨리 움직일 땐 바로 따라온다
-  calm: 1.0,       // 멈춰 있을 때 걸러 내는 정도 (Hz, 낮을수록 단단)
-  agile: 3.0,      // 빨리 움직일수록 얼마나 바로 따라올지
+  calm: 1.8,       // 멈춰 있을 때 걸러 내는 정도 (Hz, 낮을수록 단단 — 낮으면 손보다 늦게 따라온다)
+  agile: 5.0,      // 빨리 움직일수록 얼마나 바로 따라올지
 };
 
 /* 꾹 눌러 고르기 */
@@ -318,7 +318,8 @@ const GRID_CELL = 105.3;     // 칸 크기(px) — 판 폭의 1/4
    화면 가운데에서는 저절로 천천히 돌고, 좌우 끝으로 갈수록 그쪽으로 빨리 돈다.
    (가운데를 넓게 비워야 파편을 마우스로 누르러 가도 고리가 도망가지 않는다) */
 const SPIN = {
-  dead: 0.40,      // 가운데에서 이만큼(화면 폭 비율)은 저절로 도는 구간
+  near: 0.17,      // 가운데에서 이만큼 벗어나면 옆이 옅게 밝아지기 시작한다
+  dead: 0.27,      // 가운데에서 이만큼(화면 폭 비율)은 저절로 도는 구간 — 0.40 이면 손이 끝까지 가야 해서 잘 안 돌았다
   max: 1.8,        // 끝까지 갔을 때 초당 넘어가는 장 수
   ramp: 0.35,      // 속도가 붙는 시간(초)
   settle: 0.5,     // 꾹 누르거나 파편을 눌렀을 때 제자리에 맞춰 서는 시간(초)
@@ -384,6 +385,9 @@ function updateVideoSources() {
     const s = videoSrc[i];
     if (!liveVideo[i] && i !== focusIndex && s.ready) return;   // 첫 프레임은 한 번 떠 둔다
     if (v.readyState < 2 || !v.videoWidth) { s.ready = false; return; }
+    // 영상에 새 프레임이 없으면 다시 뜨지 않는다 — 영상은 초당 24~30장, 화면은 60번이라 절반은 헛일이었다
+    if (s.ready && v.currentTime === s.t) return;
+    s.t = v.currentTime;
 
     // 세로 영상(9:16)이라 가로 프레임에 맞춰 가운데를 잘라 쓴다
     const vw = v.videoWidth, vh = v.videoHeight;
@@ -511,7 +515,7 @@ let focusCard = MID;       // 정면에 뜬 파편 (가운데 고리 중 하나)
 let locked = false;        // 화면 전환 중에는 고리을 건드리지 않는다
 
 /* ── 고리 상태 ───────────────────────────────────── */
-const spin = { s: 0, v: 0, drive: 0 };   // s = 연속 위치(장 단위), v = 속도(장/초)
+const spin = { s: 0, v: 0, drive: 0, near: 0 };   // s = 연속 위치(장 단위), v = 속도(장/초)
 let spinTarget = null;                    // 클릭·키보드로 정한 목적지
 let spinLock = false;                     // 꾹 누르는 동안엔 고리을 세워둔다
 let pointerIn = false;                    // 손·마우스가 화면 안에 있는지
@@ -524,11 +528,15 @@ const decay = (dt, seconds) => 1 - Math.pow(0.001, dt / seconds);   // seconds �
 
 function stepSpiral(dt) {
   // 손·마우스가 좌우 끝에 있을수록 그쪽으로 더 빨리 (왼쪽 끝이면 거꾸로)
+  // (위아래 끝도 받는다 — 예전엔 화면 위·아래 가장자리에선 돌지 않아 '안 된다'고 느껴졌다)
   let want = 0;
-  if (pointerIn && !spinLock && cursorPos.y > 110 && cursorPos.y < STAGE_H - 90) {
+  spin.near = 0;
+  if (pointerIn && !spinLock) {
     const nx = cursorPos.x / STAGE_W - 0.5;
     const over = Math.abs(nx) - SPIN.dead;
     if (over > 0) want = Math.sign(nx) * Math.min(1, over / (0.5 - SPIN.dead)) * SPIN.max;
+    // 끝에 가까워지는 중 — 옆이 살짝 밝아져 '이쪽으로 가면 돈다'를 미리 보여 준다
+    spin.near = Math.sign(nx) * gsap.utils.clamp(0, 1, (Math.abs(nx) - SPIN.near) / (SPIN.dead - SPIN.near));
   }
   spin.drive = want / SPIN.max;
   if (want !== 0) spinTarget = null;
@@ -633,8 +641,13 @@ function layoutSpiral() {
   gridPanels.forEach((el) => { el.style.backgroundPosition = gx; el.style.opacity = go; });
 
   // 좌우 끝 표시 — 손이 그쪽에 가 있으면 밝아진다
-  edgeL.style.opacity = Math.max(0, -spin.drive).toFixed(2);
-  edgeR.style.opacity = Math.max(0, spin.drive).toFixed(2);
+  // 다가가는 중엔 옅게(최대 0.35), 실제로 돌면 진하게 + 화살표가 흐른다
+  const eL = Math.max(Math.max(0, -spin.near) * 0.35, Math.max(0, -spin.drive) * 0.65 + (spin.drive < 0 ? 0.35 : 0));
+  const eR = Math.max(Math.max(0, spin.near) * 0.35, Math.max(0, spin.drive) * 0.65 + (spin.drive > 0 ? 0.35 : 0));
+  edgeL.style.opacity = eL.toFixed(2);
+  edgeR.style.opacity = eR.toFixed(2);
+  edgeL.classList.toggle("is-on", spin.drive < 0);
+  edgeR.classList.toggle("is-on", spin.drive > 0);
 }
 
 /* ── 그리기 ──────────────────────────────────────── */
@@ -1454,6 +1467,7 @@ async function toFilm(segment) {
     gsap.to(cursorEl, { opacity: 0, duration: 0.3 });
     current = "film";
     filmSegment = segment;
+    if (segment === 1) unloadGarden();     // 정원을 나왔으면 끈다 — 영상 2 뒤에서 3D 정원이 계속 돌지 않게
     setScene("film");
 
     const seg = FILM[segment];
@@ -1511,6 +1525,13 @@ async function toGarden() {
 }
 
 /* 정원 → 영상 뒷부분 */
+/* 정원 끄기 — 빈 페이지로 바꿔 3D 그리기와 메모리를 내려놓는다 */
+function unloadGarden() {
+  sharedHand.on = false;
+  gardenLoaded = false;
+  try { gardenFrame.src = "about:blank"; } catch {}
+}
+
 async function toFilmTail() {
   if (locked || current !== "garden") return;
   await toFilm(1);
@@ -2001,7 +2022,9 @@ function reveal() {
     filmProbe.then(() => {
       if (FILM[0].local) loadFilmFile(FILM[0]);   // 앞 영상 미리 받기
     });
-    if (!gardenLoaded) { gardenFrame.src = "gooseulbit-garden.html"; gardenLoaded = true; }
+    // 정원은 파일만 받아 둔다 — 예전엔 여기서 정원을 통째로 띄워서, 아카이브(인터랙션 1) 내내
+    // 보이지 않는 3D 정원이 뒤에서 돌며 렉을 만들었다. 어차피 들어갈 때 새로 띄운다.
+    fetch("gooseulbit-garden.html").catch(() => {});
   });
 
   tl.add(() => { focusNameEl.textContent = VIDEOS[focusIndex].name; }, "-=0.5");
@@ -2222,13 +2245,90 @@ function measureLight() {
   if (now - lightAt < LIGHT.every) return;
   lightAt = now;
   try {
-    meterCtx.drawImage(camVideo, 0, 0, 32, 24);
-    const d = meterCtx.getImageData(0, 0, 32, 24).data;
+    // 손 인식에 넘기는 그림과 같은 방향으로 돌려서 잰다 — 손이 있는 칸의 밝기도 같이 보려고 (안내: 뒤가 밝아 손이 어두움)
+    const r = camRotation(), swap = r % 180 !== 0;
+    const mw = swap ? 24 : 32, mh = swap ? 32 : 24;
+    if (meterCanvas.width !== mw) { meterCanvas.width = mw; meterCanvas.height = mh; }
+    const vw = camVideo.videoWidth, vh = camVideo.videoHeight, k = Math.max(mw, mh) / Math.max(vw, vh);
+    meterCtx.setTransform(k, 0, 0, k, mw / 2, mh / 2);
+    meterCtx.rotate((r * Math.PI) / 180);
+    meterCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
+    meterCtx.setTransform(1, 0, 0, 1, 0, 0);
+    const d = meterCtx.getImageData(0, 0, mw, mh).data;
     let sum = 0;
     for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
     const mean = sum / (d.length / 4);
+    meter.data = d; meter.w = mw; meter.h = mh; meter.mean = mean;
     lightTarget = gsap.utils.clamp(0, 2, ((LIGHT.dark - mean) / (LIGHT.dark - LIGHT.full)) * 2);
   } catch {}
+}
+const meter = { data: null, w: 32, h: 24, mean: 128 };
+/* 손바닥 자리(손목·손가락 뿌리 다섯 점의 가운데) 둘레 3×3 칸의 밝기 */
+function palmLuma(lms) {
+  if (!meter.data) return null;
+  const px = (lms[0].x + lms[5].x + lms[9].x + lms[13].x + lms[17].x) / 5;
+  const py = (lms[0].y + lms[5].y + lms[9].y + lms[13].y + lms[17].y) / 5;
+  const cx = Math.round(px * (meter.w - 1)), cy = Math.round(py * (meter.h - 1));
+  let sum = 0, n = 0;
+  for (let y = cy - 1; y <= cy + 1; y++) for (let x = cx - 1; x <= cx + 1; x++) {
+    if (x < 0 || y < 0 || x >= meter.w || y >= meter.h) continue;
+    const i = (y * meter.w + x) * 4, d = meter.data;
+    sum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114; n++;
+  }
+  return n ? sum / n : null;
+}
+
+/* ── 손 인식 안내 ──
+   왜 잘 안 잡히는지 한 줄로 알려 준다. 작품 쪽 손 인식 상자와 아이패드 화면(monitor.html)에 같이 뜬다.
+   손 크기 = 손목에서 가운데 손가락 뿌리까지 길이 ÷ 화면 짧은 변 (카메라에서 50cm 쯤이면 0.15 안팎) */
+const COACH = {
+  far: 0.075,     // 이보다 작으면 너무 멂
+  close: 0.38,    // 이보다 크면 너무 가까움
+  edge: 0.02,     // 손끝이 화면 가장자리에서 이만큼 안쪽까지 오면 '끝에 걸림'
+  dark: 45,       // 화면 평균 밝기가 이보다 어두우면 '어두움'
+  backlit: 0.6,   // 손바닥이 화면 평균의 이 비율보다 어두우면 '뒤가 밝음'
+  wait: 2500,     // 손이 이만큼(ms) 안 보이면 손 드는 법을 알려 준다
+  settle: 450,    // 같은 안내가 이만큼 이어져야 띄운다 (깜빡이지 않게)
+};
+const COACH_TEXT = {
+  close:   ["너무 가까워요", "한 걸음 물러나 주세요"],
+  far:     ["너무 멀어요", "한 걸음 다가와 주세요"],
+  edge:    ["손이 화면 끝에 걸렸어요", "손을 조금 가운데로 옮겨 주세요"],
+  dark:    ["너무 어두워요", "손에 빛이 닿는 곳에 서 주세요"],
+  backlit: ["손이 어둡게 보여요", "뒤가 너무 밝아요 · 창문이나 조명을 등지지 않게 서 주세요"],
+  none1:   ["손바닥을 펴서 카메라에 보여 주세요", "카메라에서 50cm ~ 1m 떨어지면 잘 보여요"],
+  none2:   ["손을 가슴 높이로 들어 주세요", "손 전체가 화면 안에 들어오게요"],
+};
+let coachRawKind = "", coachRawAt = 0, coachNow = null, noHandSince = 0;
+const camCoachEl = document.getElementById("camCoach");
+function coachFor(lms, now) {
+  let kind = "";
+  if (lms) {
+    noHandSince = 0;
+    const W = camSrc.videoWidth || 4, H = camSrc.videoHeight || 3;
+    const size = Math.hypot((lms[0].x - lms[9].x) * W, (lms[0].y - lms[9].y) * H) / Math.min(W, H);
+    let x0 = 1, x1 = 0, y0 = 1, y1 = 0;
+    for (const p of lms) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
+    const palm = palmLuma(lms);
+    if (size > COACH.close) kind = "close";
+    else if (size < COACH.far) kind = "far";
+    else if (x0 < COACH.edge || y0 < COACH.edge || x1 > 1 - COACH.edge || y1 > 1 - COACH.edge) kind = "edge";
+    else if (meter.mean < COACH.dark) kind = "dark";
+    else if (palm !== null && meter.mean > 90 && palm < meter.mean * COACH.backlit) kind = "backlit";
+  } else {
+    if (!noHandSince) noHandSince = now;
+    if (meter.mean < COACH.dark) kind = "dark";
+    else if (now - noHandSince > COACH.wait) kind = Math.floor((now - noHandSince) / 5000) % 2 ? "none2" : "none1";
+  }
+  if (kind !== coachRawKind) { coachRawKind = kind; coachRawAt = now; }
+  if (now - coachRawAt >= COACH.settle || !kind) {
+    const next = kind ? { kind, text: COACH_TEXT[kind][0], sub: COACH_TEXT[kind][1] } : null;
+    if ((next && next.kind) !== (coachNow && coachNow.kind)) {
+      coachNow = next;
+      if (camCoachEl) { camCoachEl.hidden = !next; if (next) camCoachEl.textContent = next.text; }
+    }
+  }
+  return coachNow;
 }
 
 function refreshCamSource() {
@@ -2239,11 +2339,13 @@ function refreshCamSource() {
   if (!r && !boost) { camSrc = camVideo; sharedHand.video = camVideo; return camSrc; }
   const vw = camVideo.videoWidth, vh = camVideo.videoHeight;
   const swap = r % 180 !== 0;
-  const w = swap ? vh : vw, h = swap ? vw : vh;
+  // 손 모델에는 작게(긴 쪽 480) 넘긴다 — 그리기·올리기가 가벼워져 손이 덜 밀린다 (모델은 어차피 더 작게 줄여 본다)
+  const sc = Math.min(1, 480 / Math.max(vw, vh));
+  const w = Math.round((swap ? vh : vw) * sc), h = Math.round((swap ? vw : vh) * sc);
   if (rotCanvas.width !== w || rotCanvas.height !== h) { rotCanvas.width = w; rotCanvas.height = h; }
   // 정원과 MediaPipe 는 비디오처럼 읽는다 — 크기·준비 상태를 비디오와 같은 이름으로 달아 둔다
   rotCanvas.videoWidth = w; rotCanvas.videoHeight = h; rotCanvas.readyState = 4;
-  rotCtx.setTransform(1, 0, 0, 1, w / 2, h / 2);
+  rotCtx.setTransform(sc, 0, 0, sc, w / 2, h / 2);
   rotCtx.rotate((r * Math.PI) / 180);
   rotCtx.globalCompositeOperation = "source-over";
   rotCtx.globalAlpha = 1;
@@ -2382,11 +2484,12 @@ function sendMonitor(lms, pinch) {
   let scene = SCENE_NAME[current] || "";
   if (current === "film") scene = filmSegment === 1 ? "영상 2" : "영상 1";
   monitorCh.postMessage({
-    t: "hand", hand, pinch: !!pinch, gauge: hold.p || 0, scene,
+    t: "hand", hand, pinch: !!pinch, gauge: hold.p || 0, scene, coach: coachNow,
     rot: camRotation(), portrait: camIsPortrait(),
   });
-  // 카메라 그림은 초당 15장 정도, 작게 — 한 장이 가는 중이면 건너뛴다
-  if (monitorBusy || now - monitorSentAt < 66 || !camSrc.videoWidth) return;
+  // 카메라 그림은 초당 10장, 작게 — 한 장이 가는 중이면 건너뛴다.
+  // (JPEG 로 바꾸는 일이 작품 쪽 화면을 붙잡아 손이 끊겨 보였다 — 손 관절은 따로, 매 프레임 보낸다)
+  if (monitorBusy || now - monitorSentAt < 100 || !camSrc.videoWidth) return;
   monitorSentAt = now;
   const w = 480, h = Math.round((w * camSrc.videoHeight) / camSrc.videoWidth);
   if (monitorCanvas.width !== w || monitorCanvas.height !== h) { monitorCanvas.width = w; monitorCanvas.height = h; }
@@ -2395,7 +2498,7 @@ function sendMonitor(lms, pinch) {
   monitorCanvas.toBlob((blob) => {
     monitorBusy = false;
     if (blob) monitorCh.postMessage({ t: "frame", blob, w, h });
-  }, "image/jpeg", 0.65);
+  }, "image/jpeg", 0.6);
 }
 
 let camStarting = null;
@@ -2678,8 +2781,9 @@ function processHand(lms, now, box) {
     const grip = { x: (lms[4].x + lms[8].x) / 2, y: (lms[4].y + lms[8].y) / 2 };
     const p = box ? toCanvas(grip, box) : { x: (1 - grip.x), y: grip.y };
     const cw = box ? box.cw : 1, ch = box ? box.ch : 1;
-    const nx = gsap.utils.clamp(0, 1, (p.x / cw - 0.12) / 0.76);
-    const ny = gsap.utils.clamp(0, 1, (p.y / ch - 0.15) / 0.7);
+    // 카메라 가운데 60% 만 움직여도 화면 끝까지 닿게 — 손을 크게 휘두르지 않아도 되게
+    const nx = gsap.utils.clamp(0, 1, (p.x / cw - 0.2) / 0.6);
+    const ny = gsap.utils.clamp(0, 1, (p.y / ch - 0.2) / 0.6);
     handPos.x = fx.filter(nx, now);
     handPos.y = fy.filter(ny, now);
     moveCursor(handPos.x * STAGE_W, handPos.y * STAGE_H, true);
@@ -2763,6 +2867,7 @@ function trackTick() {
     const lms = lastHands && lastHands.landmarks && lastHands.landmarks[0];
     if (lms) drawHand(lms, box);
     processHand(lms || null, now, box);
+    coachFor(lms || null, now);
     sendMonitor(lms || null, pinchSince > 0);
   }
 }
@@ -2776,6 +2881,7 @@ function feedGarden() {
   const res = handLandmarker.detectForVideo(camSrc, performance.now());
   const lms = (res && res.landmarks && res.landmarks[0]) || null;
   const st = g.ingest(lms, gw.performance.now());
+  coachFor(lms, performance.now());
   sendMonitor(lms, st && st.pinch);
 }
 

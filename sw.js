@@ -5,6 +5,12 @@
    (그래서 인터넷이 끊겨도 아이패드 홈 화면 앱으로 그대로 돌아간다)
 
    영상은 브라우저가 조각(Range)으로 나눠 달라고 하므로 저장된 파일을 잘라서 준다.
+
+   페이지·스크립트(html · js · css · json)는 인터넷에서 먼저 받는다 — 고친 게 바로 보이게.
+   (저장분부터 쓰면, 고쳐 올린 뒤에도 저장이 다 끝날 때까지 예전 작품이 떠 있었다.
+    아이패드 조작판은 새것인데 작품은 예전 것이라 서로 말이 안 통한 적이 있다)
+   3초 안에 안 오면 저장분으로 답하고, 그 뒤 1분은 곧장 저장분을 쓴다 (와이파이가 약할 때 매번 기다리지 않게).
+   영상·손 모델·그림처럼 큰 파일은 지금처럼 저장분을 먼저 쓴다.
    ============================================================ */
 
 const COMPLETE = new URL("__yk_complete", self.location.href).href;   // offline.js 가 다 저장하면 남기는 표시
@@ -19,8 +25,26 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.endsWith("/offline-files.json")) return;     // 저장 목록은 늘 새로 받는다
   if (req.headers.get("x-yk-precache")) return;                 // 저장하려고 받는 중이면 인터넷에서 바로
   if (req.method !== "GET" && req.method !== "HEAD") return;
-  event.respondWith(answer(req));
+  const code = req.mode === "navigate" ||
+    (/\.(html|js|css|json|webmanifest)$/.test(url.pathname) && !url.pathname.includes("/vendor/"));
+  event.respondWith(code ? fresh(req) : answer(req));
 });
+
+let slowUntil = 0;                      // 이 시각까지는 인터넷을 기다리지 않는다
+async function fresh(req) {
+  if (Date.now() < slowUntil) return answer(req);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3000);
+  try {
+    const res = await fetch(req.url, { signal: ctrl.signal, cache: "no-cache", credentials: "same-origin" });
+    clearTimeout(timer);
+    if (res.ok) return res;
+  } catch {
+    clearTimeout(timer);
+    slowUntil = Date.now() + 60000;
+  }
+  return answer(req);
+}
 
 async function answer(req) {
   let hit = null;

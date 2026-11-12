@@ -195,13 +195,33 @@ body { word-break: keep-all; overflow-wrap: break-word; }
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 200px;
+  width: 300px;
   z-index: 4;
   pointer-events: none;
   opacity: 0;
+  transition: opacity .15s linear;
 }
-.spiral__edge--l { left: 0;  background: linear-gradient(to right, rgba(154,90,255,.16), transparent); }
-.spiral__edge--r { right: 0; background: linear-gradient(to left,  rgba(154,90,255,.16), transparent); }
+/* 손이 끝에 가까워지면 옅게, 돌기 시작하면 진하게 — 분홍·보라 빛이 가장자리에서 번진다 */
+.spiral__edge--l { left: 0;
+  background: radial-gradient(120% 60% at 0% 50%, rgba(255,43,214,.55), rgba(154,90,255,.32) 40%, transparent 75%),
+              linear-gradient(to right, rgba(154,90,255,.35), transparent 70%); }
+.spiral__edge--r { right: 0;
+  background: radial-gradient(120% 60% at 100% 50%, rgba(255,43,214,.55), rgba(154,90,255,.32) 40%, transparent 75%),
+              linear-gradient(to left, rgba(154,90,255,.35), transparent 70%); }
+/* 도는 중 — 그쪽으로 흐르는 화살표 */
+.spiral__edge::after {
+  position: absolute; top: 50%; margin-top: -0.5em;
+  font-family: var(--font-grotesk); font-size: 64px; line-height: 1; font-weight: 700; letter-spacing: -.12em;
+  color: #fff; text-shadow: 0 0 18px #ff2bd6, 0 0 36px rgba(154,90,255,.9);
+  opacity: 0; transition: opacity .2s;
+}
+.spiral__edge--l::after { content: "‹‹‹"; left: 36px; }
+.spiral__edge--r::after { content: "›››"; right: 36px; }
+.spiral__edge.is-on::after { opacity: 1; }
+.spiral__edge--l.is-on::after { animation: edgeFlowL .7s linear infinite; }
+.spiral__edge--r.is-on::after { animation: edgeFlowR .7s linear infinite; }
+@keyframes edgeFlowL { 0% { transform: translateX(14px); opacity: .3; } 50% { opacity: 1; } 100% { transform: translateX(-14px); opacity: .3; } }
+@keyframes edgeFlowR { 0% { transform: translateX(-14px); opacity: .3; } 50% { opacity: 1; } 100% { transform: translateX(14px); opacity: .3; } }
 
 /* ── 정면 파편 위의 문자 화면 ───────────────────────── */
 /* 정면 카드 안으로 옮겨 들어가 카드를 꽉 채운다 */
@@ -1022,6 +1042,14 @@ body.is-garden { cursor: auto; }
   background: #0a0c0f;
   transition: opacity 400ms ease;
 }
+/* 손 인식 안내 — 손 인식 상자 아래쪽에 분홍 띠로 */
+.camera-coach {
+  position: absolute; left: 6px; right: 6px; bottom: 6px; margin: 0;
+  padding: 6px 8px; border-radius: 6px; text-align: center;
+  font-family: var(--font-kr); font-size: 13px; font-weight: 700; line-height: 1.35; color: #fff;
+  background: rgba(255, 43, 214, .82); box-shadow: 0 0 14px rgba(255, 43, 214, .5);
+}
+.camera-coach[hidden] { display: none; }
 /* 카메라는 켜졌고 손 모델만 받는 중 — 카메라 화면 위에 글씨만 옅게 */
 .camera-status.is-soft { background: rgba(10, 12, 15, .45); align-items: end; padding-bottom: 10px; color: #fff; }
 .camera-status.is-hidden { opacity: 0; }
