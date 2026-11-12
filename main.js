@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112h";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112i";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -2491,14 +2491,21 @@ function sendMonitor(lms, pinch) {
   // (JPEG 로 바꾸는 일이 작품 쪽 화면을 붙잡아 손이 끊겨 보였다 — 손 관절은 따로, 매 프레임 보낸다)
   if (monitorBusy || now - monitorSentAt < 100 || !camSrc.videoWidth) return;
   monitorSentAt = now;
-  const w = 480, h = Math.round((w * camSrc.videoHeight) / camSrc.videoWidth);
+  // 카메라 원본 그대로(640) 돌려서 보낸다 — 손 인식용으로 줄인 그림(480)을 쓰면 아이패드 큰 칸에서 얼굴이 뭉개졌다.
+  // 밝히기 없이 원래 색 그대로. 한 장 크기가 조금 커질 뿐 초당 10장은 그대로라 작품 쪽 부담은 거의 같다.
+  const r = camRotation(), vw = camVideo.videoWidth, vh = camVideo.videoHeight;
+  const swap = r % 180 !== 0;
+  const w = swap ? vh : vw, h = swap ? vw : vh;
   if (monitorCanvas.width !== w || monitorCanvas.height !== h) { monitorCanvas.width = w; monitorCanvas.height = h; }
-  monitorCtx.drawImage(camSrc, 0, 0, w, h);
+  monitorCtx.setTransform(1, 0, 0, 1, w / 2, h / 2);
+  monitorCtx.rotate((r * Math.PI) / 180);
+  monitorCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
+  monitorCtx.setTransform(1, 0, 0, 1, 0, 0);
   monitorBusy = true;
   monitorCanvas.toBlob((blob) => {
     monitorBusy = false;
     if (blob) monitorCh.postMessage({ t: "frame", blob, w, h });
-  }, "image/jpeg", 0.6);
+  }, "image/jpeg", 0.75);
 }
 
 let camStarting = null;
