@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112k";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112l";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -2233,8 +2233,8 @@ function camRotation() { return camIsPortrait() ? camRot.portrait : camRot.lands
    그러면 손 모델이 손을 잡았다 놓쳤다 한다. 0.5초마다 화면 밝기를 재서, 어두우면
    손 인식에 넘기기 전에 그림을 밝혀 준다 ('screen' 으로 겹쳐 그리기 — 밝은 곳은 덜, 어두운 곳은 많이 밝아진다). */
 const LIGHT = {
-  dark: 125,      // 평균 밝기(0~255)가 이보다 어두우면 밝히기 시작한다
-  full: 60,       // 이만큼 어두우면 가장 세게 (겹쳐 그리기 두 번)
+  aim: 115,       // 손 인식에 넘기는 그림의 평균 밝기를 이쯤으로 맞춘다 (0~255)
+  maxGain: 4,     // 가장 세게 밝힐 때 몇 배까지 (어두운 전시장)
   every: 500,     // 밝기를 재는 간격(ms)
 };
 const meterCanvas = document.createElement("canvas");
@@ -2260,7 +2260,8 @@ function measureLight() {
     for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
     const mean = sum / (d.length / 4);
     meter.data = d; meter.w = mw; meter.h = mh; meter.mean = mean;
-    lightTarget = gsap.utils.clamp(0, 2, ((LIGHT.dark - mean) / (LIGHT.dark - LIGHT.full)) * 2);
+    // 밝힐 배수 - 1 (0 이면 그대로). 거의 검정(카메라가 멈춤)이면 밝혀 봐야 소용없으니 그대로 둔다
+    lightTarget = mean < 6 ? 0 : gsap.utils.clamp(0, LIGHT.maxGain - 1, LIGHT.aim / Math.max(mean, 1) - 1);
   } catch {}
 }
 const meter = { data: null, w: 32, h: 24, mean: 128 };
@@ -2286,7 +2287,8 @@ const COACH = {
   far: 0.075,     // 이보다 작으면 너무 멂
   close: 0.38,    // 이보다 크면 너무 가까움
   edge: 0.02,     // 손끝이 화면 가장자리에서 이만큼 안쪽까지 오면 '끝에 걸림'
-  dark: 45,       // 화면 평균 밝기가 이보다 어두우면 '어두움'
+  dark: 22,       // 화면 평균 밝기가 이보다 어두우면 '어두움' (손이 잡히는 동안엔 띄우지 않는다)
+  black: 6,       // 이보다 어두우면 카메라 그림이 아예 안 오는 것 — '카메라가 멈췄어요'
   backlit: 0.6,   // 손바닥이 화면 평균의 이 비율보다 어두우면 '뒤가 밝음'
   wait: 2500,     // 손이 이만큼(ms) 안 보이면 손 드는 법을 알려 준다
   settle: 450,    // 같은 안내가 이만큼 이어져야 띄운다 (깜빡이지 않게)
@@ -2296,6 +2298,7 @@ const COACH_TEXT = {
   far:     ["너무 멀어요", "한 걸음 다가와 주세요"],
   edge:    ["손이 화면 끝에 걸렸어요", "손을 조금 가운데로 옮겨 주세요"],
   dark:    ["너무 어두워요", "손에 빛이 닿는 곳에 서 주세요"],
+  black:   ["카메라가 멈췄어요", "모니터 쪽 작품 화면을 한 번 눌러 주세요"],
   backlit: ["손이 어둡게 보여요", "뒤가 너무 밝아요 · 창문이나 조명을 등지지 않게 서 주세요"],
   none1:   ["손바닥을 펴서 카메라에 보여 주세요", "카메라에서 50cm ~ 1m 떨어지면 잘 보여요"],
   none2:   ["손을 가슴 높이로 들어 주세요", "손 전체가 화면 안에 들어오게요"],
@@ -2314,11 +2317,11 @@ function coachFor(lms, now) {
     if (size > COACH.close) kind = "close";
     else if (size < COACH.far) kind = "far";
     else if (x0 < COACH.edge || y0 < COACH.edge || x1 > 1 - COACH.edge || y1 > 1 - COACH.edge) kind = "edge";
-    else if (meter.mean < COACH.dark) kind = "dark";
     else if (palm !== null && meter.mean > 90 && palm < meter.mean * COACH.backlit) kind = "backlit";
   } else {
     if (!noHandSince) noHandSince = now;
-    if (meter.mean < COACH.dark) kind = "dark";
+    if (meter.mean < COACH.black) kind = "black";
+    else if (meter.mean < COACH.dark) kind = "dark";
     else if (now - noHandSince > COACH.wait) kind = Math.floor((now - noHandSince) / 5000) % 2 ? "none2" : "none1";
   }
   if (kind !== coachRawKind) { coachRawKind = kind; coachRawAt = now; }
@@ -2352,12 +2355,13 @@ function refreshCamSource() {
   rotCtx.globalAlpha = 1;
   rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
   if (boost) {
-    rotCtx.globalCompositeOperation = "screen";
-    rotCtx.globalAlpha = Math.min(1, lightBoost);
-    rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
-    if (lightBoost > 1) {
-      rotCtx.globalAlpha = lightBoost - 1;
+    // 같은 그림을 '더하기'로 겹쳐 그려 밝힌다 — 한 번 겹치면 두 배. 어두운 전시장에서도 손 윤곽이 살아나게
+    rotCtx.globalCompositeOperation = "lighter";
+    let left = lightBoost;
+    while (left > 0.02) {
+      rotCtx.globalAlpha = Math.min(1, left);
       rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
+      left -= 1;
     }
     rotCtx.globalCompositeOperation = "source-over";
     rotCtx.globalAlpha = 1;
@@ -2496,6 +2500,7 @@ setInterval(() => {
     reading: !!(g && g.reading()),
     same: !!(g && g.same && g.same()),   // 지금 누르면 열린 구슬 설명을 닫는지 (아니면 고리가 뜬 다른 구슬을 연다)
     film: current === "film" ? filmInfo() : null,
+    camOff: !!(camBadSince && performance.now() - camBadSince > 5000),   // 카메라가 멈췄는지 — 아이패드에 알린다
     locked,
   });
 }, 250);
@@ -2555,12 +2560,16 @@ async function startCamera() {
       if (camStream) { stream.getTracks().forEach((t) => t.stop()); return true; }   // 그 사이 다른 쪽이 열었다
       camStream = stream;
       camVideo.srcObject = stream;
-      stream.getVideoTracks().forEach((t) => t.addEventListener("ended", () => restartCamera("끊김")));
+      stream.getVideoTracks().forEach((t) => {
+        t.addEventListener("ended", () => restartCamera("끊김"));
+        t.addEventListener("unmute", () => { camFrameAt = performance.now(); camVideo.play().catch(() => {}); });
+      });
       await camVideo.play().catch(() => {});
       camFrameAt = performance.now();
       return true;
     } catch (e) {
       console.warn("[camera] 열기 실패:", e && e.name);
+      camFailures++;
       camStream = null;
       return false;
     } finally {
@@ -2585,19 +2594,47 @@ function restartCamera(why) {
   camVideo.srcObject = null;
   startCamera();
 }
+/* 아이패드에서 다른 창(손 인식·조작 화면)을 만지면, 사파리가 이 창의 카메라를 잠깐 '멈춤(muted)'으로 둔다.
+   그때 카메라를 닫고 다시 열면 사파리가 다시 열어 주지 않아 아예 꺼져 버렸다 (화면이 검게 → '너무 어두워요').
+   그래서 멈춤이면 닫지 않고 기다린다 — 저절로 풀리거나, 이 창을 한 번 누르면 바로 다시 깨운다.
+   정말 끝난(ended) 카메라나, 멈춤이 아닌데 그림이 오래 안 오는 때만 다시 연다. */
+let camFailures = 0;
+function camHealthy() {
+  if (!camStream) return false;
+  const track = camStream.getVideoTracks()[0];
+  return !!track && track.readyState === "live" && !track.muted && performance.now() - camFrameAt < 4000;
+}
+let camBadSince = 0;
 setInterval(() => {
   if (document.hidden) return;                       // 안 보이는 동안은 브라우저가 멈춰 두는 게 정상
   const now = performance.now();
-  if (!camStream) { if (camEverAsked) restartCamera("없음"); return; }
+  // 카메라가 5초 넘게 멈춰 있으면 — 손 인식 상자에 알린다 (아이패드 화면에도 ui 로 간다)
+  if (camHealthy()) camBadSince = 0;
+  else if (camEverAsked && handLandmarker) {
+    if (!camBadSince) camBadSince = now;
+    if (now - camBadSince > 5000) setCamStatus("카메라가 멈췄어요<br />이 화면을 한 번 눌러 주세요");
+  }
+  if (!camStream) {
+    // 열기에 실패했으면 점점 뜸하게 다시 해 본다 (2.5초 → 최대 15초) — 이 창을 누르면 바로
+    if (camEverAsked && now - camRestartAt > Math.min(15000, 2500 * (1 + camFailures))) restartCamera("없음");
+    return;
+  }
   const track = camStream.getVideoTracks()[0];
   if (!track || track.readyState === "ended") return restartCamera("끝남");
   if (camVideo.paused) camVideo.play().catch(() => {});
-  if (camVideo.currentTime !== camLastTime) { camLastTime = camVideo.currentTime; camFrameAt = now; return; }
-  if (now - camFrameAt > 4000) restartCamera("멈춤");
+  if (camVideo.currentTime !== camLastTime) { camLastTime = camVideo.currentTime; camFrameAt = now; camFailures = 0; return; }
+  if (track.muted) return;                           // 다른 창을 만지는 중 — 닫지 말고 기다린다
+  if (now - camFrameAt > 6000) restartCamera("멈춤");
 }, 2000);
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) { camFrameAt = performance.now(); if (camVideo.paused) camVideo.play().catch(() => {}); }
-});
+// 이 창으로 돌아오거나(포커스) 한 번 누르면 — 카메라가 멈췄거나 꺼져 있으면 바로 깨운다 (누름은 사파리가 카메라를 다시 열어 주는 열쇠)
+function wakeCamera() {
+  camFrameAt = performance.now();
+  if (camVideo.paused) camVideo.play().catch(() => {});
+  if (!camStream) { camRestartAt = 0; restartCamera("깨우기"); }
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) wakeCamera(); });
+window.addEventListener("focus", wakeCamera);
+window.addEventListener("pointerdown", () => { if (!camHealthy()) wakeCamera(); }, true);
 let camEverAsked = false;
 
 let handLandmarker = null;
