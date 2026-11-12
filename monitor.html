@@ -99,8 +99,17 @@
   /* 글 — 짧게 세 줄: 제목 · 할 일 · 버튼 안내 */
   .say { padding-left: 6px; align-self: start; }
   .say h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; }
-  .say p { margin: 10px 0 0; font-size: 17px; line-height: 1.45; color: rgba(255,255,255,.92); }
+  .say p { white-space: pre-line; margin: 10px 0 0; font-size: 17px; line-height: 1.45; color: rgba(255,255,255,.92); }
   .say .tip { margin-top: 6px; font-size: 14px; font-weight: 700; color: rgba(228, 210, 255, .85); }
+
+  /* 영상 진행 막대 */
+  .prog { margin-top: 18px; max-width: 520px; }
+  .prog__bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.14); overflow: hidden; }
+  .prog__bar i { display: block; height: 100%; width: 0; border-radius: inherit;
+    background: linear-gradient(90deg, #9a5aff, #ff2bd6); transition: width .25s linear; }
+  .say .prog__time { margin: 10px 0 0; font-size: 20px;
+    color: rgba(255,255,255,.7); letter-spacing: .02em; }
+  .prog__time b { color: #fff; font-weight: 700; }
 
   /* 오른쪽 — 큰 버튼 (정원에서 기억을 읽으면 위에 '다음 영상으로'가 붙는다) */
   .acts { display: flex; flex-direction: column; gap: 10px; }
@@ -142,16 +151,15 @@
   .dpad .k-down  { grid-area: 3 / 2; }
 
   /* 큰 버튼 — 참고 이미지의 FILTER: 꽉 찬 색, 그림자 없이. 가운데 줄 (← → 와 같은 높이) */
-  /* 혼자일 땐 ◀ ▶ 와 같은 가운데 줄, '다음 영상으로'가 같이 뜨면 둘이 아래로 (다음 영상으로 위 · 고르기 아래) */
+  /* 고르기·구슬 열기는 언제나 ◀ ▶ 와 같은 가운데 줄. '다음 영상으로'는 그 아래 (▼ 옆) */
   .act { grid-area: 2 / 5; width: 200px; height: 66px; border-radius: 999px; background: var(--pill); color: #fff;
     font-size: 18px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap;
     transition: transform .1s ease, background .15s ease; }
-  .dpad.two .act { grid-area: 3 / 5; }
   .act.down { transform: scale(.96); background: #8443f2; }
 
   /* 다음 영상으로 — 노란 젤리 알약 (정원에서 기억을 읽은 뒤) */
-  /* 다음 영상으로 — 고르기와 같은 크기, 바로 윗줄 */
-  .dpad .pill, .pill { grid-area: 2 / 5; display: block; width: 200px; height: 66px; border-radius: 999px;
+  /* 다음 영상으로 — 고르기와 같은 크기, 바로 아랫줄 */
+  .dpad .pill, .pill { grid-area: 3 / 5; display: block; width: 200px; height: 66px; border-radius: 999px;
     font-size: 18px; font-weight: 800; }
 </style>
 </head>
@@ -178,6 +186,10 @@
     <h1 id="title">조작하기</h1>
     <p id="hint">손으로, 또는 버튼으로</p>
     <p class="tip" id="tip">손이 잘 안 되면 버튼을 눌러 보세요</p>
+    <!-- 영상이 나오는 동안 — 지금 보는 영상 이름 · 얼마나 봤는지 · 전체 길이 -->
+    <div class="prog" id="prog" hidden>
+      <p class="prog__time"><b id="progNow">0초</b> / <span id="progDur">0초</span></p>
+    </div>
   </div>
 
   <div class="dpad" id="dpad">
@@ -218,7 +230,7 @@ ch.onmessage = async (e) => {
       frameW = m.w; frameH = m.h;
     } catch {}
   } else if (m.t === "hand") state = m;
-  else if (m.t === "ui") { ui = m; uiAt = performance.now(); layout(); }
+  else if (m.t === "ui") { ui = m; uiAt = performance.now(); layout(); showFilm(m.film); }
 };
 
 // 작품 쪽에 '여기 화면이 있다'고 알린다 — 그래야 그림을 보내기 시작한다
@@ -273,8 +285,8 @@ const COPY = {
   boot:   ["시작하기", "손을 비추거나 ‘시작하기’"],
   grid:   ["파편 고르기", "◀ ▶ 돌리기 · 마음에 들면 ‘고르기’"],
   orb:    ["구슬이 되었어요", "‘확인하러 가기’ · ◀ 다시 고르기"],
-  film:   ["영상 보는 중", "끝나면 저절로 넘어가요"],
-  garden: ["구슬빛 정원", "◀ ▶ 둘러보기 · ▲ ▼ 걷기"],
+  film:   ["영상 보는 중", ""],
+  garden: ["구슬빛 정원", "◀ ▶ 둘러보기 · ▲ ▼ 걷기\n고리가 뜬 구슬이 열려요"],
 };
 const ON = {
   any: ["left", "up", "down", "right"],
@@ -287,12 +299,13 @@ const ON = {
 let shown = "";
 function layout() {
   const sc = ui && performance.now() - uiAt < 1500 ? ui.scene : "any";
-  const key = sc + "|" + (ui && ui.canNext) + "|" + (ui && ui.reading);
+  const key = sc + "|" + (ui && ui.canNext) + "|" + (ui && ui.reading) + "|" + (ui && ui.same);
   if (key === shown) return;
   shown = key;
   const [title, hint] = COPY[sc] || COPY.any;
   $("title").textContent = title;
   $("hint").textContent = hint;
+  $("hint").hidden = !hint;
 
   // 쓸 수 없는 방향은 연회색 (참고 이미지의 비활성 줄)
   const on = ON[sc] || ON.any;
@@ -306,7 +319,7 @@ function layout() {
   $("selText").textContent =
     sc === "boot" ? "시작하기" :
     sc === "orb" ? "확인하러 가기" :
-    sc === "garden" ? (ui && ui.reading ? "닫기" : "구슬 열기") :
+    sc === "garden" ? (ui && ui.reading && ui.same ? "구슬 설명 닫기" : "이 구슬 열기") :
     sc === "grid" ? "고르기" : "선택";
 
   // 장면이 바뀌면 누르고 있던 방향은 놓는다
@@ -314,6 +327,19 @@ function layout() {
 }
 setInterval(layout, 400);
 layout();
+
+/* ── 영상 진행 — 이름은 제목 자리에, 막대와 시간은 그 아래 ── */
+// '12초' · 1분이 넘으면 '1분 05초'
+const mmss = (sec) => { sec = Math.max(0, Math.floor(sec || 0)); const m = Math.floor(sec / 60), r = sec % 60;
+  return m ? m + "분 " + String(r).padStart(2, "0") + "초" : r + "초"; };
+function showFilm(f) {
+  const on = !!(f && ui && ui.scene === "film");
+  $("prog").hidden = !on;
+  if (!on) return;
+  $("title").textContent = f.title;
+  $("progNow").textContent = mmss(f.t);
+  $("progDur").textContent = f.dur ? mmss(f.dur) : "—";
+}
 
 /* ── 카메라 + 손 그리기 ── */
 const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],

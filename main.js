@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112i";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112k";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -1203,8 +1203,9 @@ async function back() {
    (깃허브 웹 업로드는 파일당 25MB 까지라 큰 영상은 못 올린다) */
 const FILM = [
   // cut : 로컬 파일을 이 지점(초)에서 끊고 정원으로 — 문이 닫히고 어두워지는 순간. 끝 1초에 뜨는 것을 안 보이게
-  { file: "film1.mp4", yt: "-xtSbOMBKkA", start: 0,  end: 26, cut: 28.5 },   // 유튜브로 틀 땐 26초에서 멈춘다
-  { file: "film2.mp4", yt: "-xtSbOMBKkA", start: 26, end: null }, // 26초부터 끝까지
+  // title : 아이패드 화면(monitor.html)에 '지금 보는 영상'으로 뜨는 이름 — 바꾸고 싶으면 여기만 고치면 된다
+  { title: "영상 1 · 당신이 모르는 사이", file: "film1.mp4", yt: "-xtSbOMBKkA", start: 0,  end: 26, cut: 28.5 },   // 유튜브로 틀 땐 26초에서 멈춘다
+  { title: "영상 2 · 당신이 모르는 사이", file: "film2.mp4", yt: "-xtSbOMBKkA", start: 26, end: null }, // 26초부터 끝까지
 ];
 const USE_YOUTUBE = true;            // 로컬 파일이 없을 때 유튜브로 대신 틀지
 const FADE_OUT = 0.55;               // 검정으로 덮는 시간(초)
@@ -2415,6 +2416,25 @@ if (monitorCh) {
   };
 }
 
+/* 지금 나오는 영상 — 이름 · 지난 시간 · 전체 길이(초). 아이패드 화면에 진행 막대로 뜬다 */
+function filmInfo() {
+  const seg = FILM[filmSegment];
+  if (!seg) return null;
+  let t = 0, dur = 0;
+  if (seg.local) {
+    t = filmEl.currentTime || 0;
+    dur = isFinite(filmEl.duration) ? filmEl.duration : 0;
+    if (seg.cut && dur) dur = Math.min(dur, seg.cut);      // 앞 영상은 cut 에서 끊고 정원으로 간다
+  } else if (ytPlayer && ytPlayer.getCurrentTime) {
+    try {
+      const yt = ytPlayer.getCurrentTime(), whole = ytPlayer.getDuration();
+      t = Math.max(0, yt - (seg.start || 0));
+      dur = (seg.end != null ? seg.end : whole) - (seg.start || 0);
+    } catch {}
+  }
+  return { title: seg.title || "영상 " + (filmSegment + 1), t: Math.min(t, dur || t), dur };
+}
+
 /* ── 아이패드 조작판 ──
    손 인식이 잘 안 될 때 관람객이 아이패드 화면의 버튼으로도 같은 걸 할 수 있게.
    ◀▶ : 아카이브 돌리기 / 정원에서 돌아보기 · ▲▼ : 정원에서 걷기 · 선택 : 고르기·확인·구슬 열기
@@ -2474,6 +2494,8 @@ setInterval(() => {
     scene: !ready ? "boot" : current,
     canNext: !!(g && g.canNext()),
     reading: !!(g && g.reading()),
+    same: !!(g && g.same && g.same()),   // 지금 누르면 열린 구슬 설명을 닫는지 (아니면 고리가 뜬 다른 구슬을 연다)
+    film: current === "film" ? filmInfo() : null,
     locked,
   });
 }, 250);
