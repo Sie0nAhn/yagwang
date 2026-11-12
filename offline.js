@@ -20,6 +20,31 @@ function show(text, { warn = false, hideAfter = 0 } = {}) {
   if (hideAfter) setTimeout(() => { statusEl.hidden = true; }, hideAfter);
 }
 
+/* 저장할 때 파일 내용 표(hash)를 붙여 둔다 — 다음 버전에서 같은 파일인지 알아보려고 */
+function stamp(res, f) {
+  const headers = new Headers(res.headers);
+  headers.set("x-yk-size", String(f.size));
+  if (f.hash) headers.set("x-yk-hash", f.hash);
+  return new Response(res.body, { status: 200, statusText: "OK", headers });
+}
+function sameFile(res, f) {
+  const hash = res.headers.get("x-yk-hash");
+  if (hash && f.hash) return hash === f.hash;
+  // 표가 없는 예전 저장분 — 영상·라이브러리·그림은 크기가 같으면 같은 파일로 본다 (페이지·스크립트는 다시 받는다)
+  const big = /\.(mp4|wasm|task|png|woff2?|mjs)$|^vendor\//.test(f.url);
+  const size = Number(res.headers.get("x-yk-size") || res.headers.get("content-length"));
+  return big && size === f.size;
+}
+
+/* 손 인식이 다 뜬 뒤에 저장을 시작한다 — 약한 와이파이를 손 모델과 나눠 쓰지 않게 (늦어도 20초 뒤) */
+function handReady() {
+  if (window.__ykHandReady) return Promise.resolve();
+  return new Promise((r) => {
+    window.addEventListener("yk:hand-ready", r, { once: true });
+    setTimeout(r, 20000);
+  });
+}
+
 async function run() {
   if (!("serviceWorker" in navigator) || !window.caches) return;
   if (!ON) {
@@ -32,6 +57,7 @@ async function run() {
   navigator.serviceWorker.register("sw.js").catch((e) => console.warn("[오프라인] 등록 실패", e));
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
+  await handReady();
   let list;
   try {
     const r = await fetch("offline-files.json", { cache: "no-store" });
@@ -50,8 +76,18 @@ async function run() {
   const total = list.files.reduce((s, f) => s + f.size, 0);
   let done = 0;
   const todo = [];
+  // 예전 버전 저장분 — 내용이 같은 파일은 다시 받지 않고 옮겨 온다.
+  // (예전엔 무엇 하나만 고쳐도 영상까지 207MB 를 통째로 다시 받아서, 와이파이가 약하면 끝나지 않았다)
+  const olds = [];
+  for (const n of await caches.keys()) if (n.startsWith("yagwang-") && n !== name) olds.push(await caches.open(n));
   for (const f of list.files) {
-    if (await cache.match(f.url)) done += f.size;
+    if (await cache.match(f.url)) { done += f.size; continue; }
+    let moved = false;
+    for (const old of olds) {
+      const hit = await old.match(f.url);
+      if (hit && sameFile(hit, f)) { await cache.put(f.url, hit); moved = true; break; }
+    }
+    if (moved) done += f.size;
     else todo.push(f);
   }
 
@@ -62,17 +98,21 @@ async function run() {
       for (const f of todo) {
         const res = await fetch(f.url, { headers: { "x-yk-precache": "1" }, cache: "no-cache" });
         if (!res.ok || res.status !== 200) throw new Error(f.url + " " + res.status);
-        await cache.put(f.url, res);
+        await cache.put(f.url, stamp(res, f));
         done += f.size;
         show(`오프라인 저장 중 · ${pct()}%`);
       }
     } catch (e) {
       console.warn("[오프라인] 저장 실패", e);
-      show("오프라인 저장이 중간에 끊겼어요 · 다시 열면 이어서 저장합니다", { warn: true });
+      show("오프라인 저장이 중간에 끊겼어요 · 30초 뒤 이어서 저장해요", { warn: true, hideAfter: 8000 });
+      setTimeout(run, 30000);         // 와이파이가 돌아오면 받은 데까지 두고 이어서
       return;
     }
     show("오프라인 준비 완료 · 이제 인터넷 없이도 열립니다", { hideAfter: 6000 });
   }
+
+  // 다 저장했다는 표시 — sw.js 는 이 표시가 있는 저장분을 먼저 쓴다
+  await cache.put(new URL("__yk_complete", location.href).href, new Response("1"));
 
   // 예전 버전 저장분은 지운다
   for (const n of await caches.keys()) {

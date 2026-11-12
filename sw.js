@@ -7,6 +7,8 @@
    영상은 브라우저가 조각(Range)으로 나눠 달라고 하므로 저장된 파일을 잘라서 준다.
    ============================================================ */
 
+const COMPLETE = new URL("__yk_complete", self.location.href).href;   // offline.js 가 다 저장하면 남기는 표시
+
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
@@ -21,11 +23,22 @@ self.addEventListener("fetch", (event) => {
 });
 
 async function answer(req) {
-  let hit;
+  let hit = null;
   try {
-    hit = req.mode === "navigate"
-      ? await caches.match(req, { ignoreSearch: true })           // 페이지는 ?뒤 꼬리표가 달라도 같은 것으로
-      : await caches.match(req, { ignoreMethod: true, ignoreVary: true });
+    const opts = req.mode === "navigate"
+      ? { ignoreSearch: true }                                     // 페이지는 ?뒤 꼬리표가 달라도 같은 것으로
+      : { ignoreMethod: true, ignoreVary: true };
+    // 다 저장된 것 중 가장 새것부터 찾는다 — 예전 버전 페이지가 먼저 걸려 고친 게 안 보이는 일이 없게.
+    // 저장이 덜 된 새 버전은 뒤로 미룬다 (새 페이지만 있고 새 스크립트가 없으면 인터넷 없이 깨진다)
+    const done = [], partial = [];
+    for (const n of (await caches.keys()).filter((n) => n.startsWith("yagwang-"))) {
+      const c = await caches.open(n);
+      ((await c.match(COMPLETE)) ? done : partial).push(c);
+    }
+    for (const c of [...done.reverse(), ...partial]) {
+      hit = await c.match(req, opts);
+      if (hit) break;
+    }
   } catch { hit = null; }
   if (!hit) return fetch(req);
 

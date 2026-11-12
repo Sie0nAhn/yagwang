@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112b";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112d";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -88,10 +88,11 @@ const FOLLOW = {
 
 /* 손 인식 — 잠깐 놓치거나 떨려도 끊기지 않게 */
 const HAND = {
-  lostGrace: 320,  // 이 시간(ms) 동안 손이 안 잡혀도 마지막 손을 그대로 둔다 (한두 프레임 놓침에 커서·게이지가 끊기지 않게)
+  lostGrace: 650,  // 이 시간(ms) 동안 손이 안 잡혀도 마지막 손을 그대로 둔다 (한두 프레임 놓침에 커서·게이지가 끊기지 않게)
   pinchIn: 70,     // 이만큼(ms) 계속 꼬집어야 누르기 시작 — 스치듯 오인되는 것을 막는다
   pinchOut: 170,   // 이만큼(ms) 계속 펴야 놓은 것으로 — 한 프레임 흔들림에 게이지가 끊기지 않게
   detect: 0.4,     // 손 찾기 기준 (낮을수록 어두운 전시장에서도 잘 잡힌다)
+  keep: 0.25,      // 이미 잡은 손을 계속 따라가는 기준 — 찾기보다 낮게, 손이 어둡거나 흐려져도 놓치지 않게
   // 커서 떨림 거르기 (One Euro 필터) — 가만히 있을 땐 단단하게, 빨리 움직일 땐 바로 따라온다
   calm: 1.0,       // 멈춰 있을 때 걸러 내는 정도 (Hz, 낮을수록 단단)
   agile: 3.0,      // 빨리 움직일수록 얼마나 바로 따라올지
@@ -2083,8 +2084,11 @@ async function soundReady() {
     if (!filmEl.getAttribute("src")) filmEl.setAttribute("src", FILM[0].file);
     filmEl.muted = false;
     filmEl.volume = 0;
-    await filmEl.play();
+    // 와이파이가 약하면 영상이 받아질 때까지 play() 가 끝나지 않아 로딩 화면이 100% 에서 멈췄다 — 2.5초만 기다린다
+    const tried = filmEl.play();
+    const ok = await Promise.race([tried.then(() => true), new Promise((r) => setTimeout(() => r(false), 2500))]);
     filmEl.pause();
+    if (!ok) { tried.then(() => filmEl.pause(), () => {}); return false; }
     try { filmEl.currentTime = 0; } catch {}
     return true;
   } catch {
@@ -2199,9 +2203,39 @@ const camIsPortrait = () => camVideo.videoHeight > camVideo.videoWidth;
 function camRotation() { return camIsPortrait() ? camRot.portrait : camRot.landscape; }
 
 /* 새 카메라 프레임마다 한 번 — 돌릴 필요가 없으면 비디오를 그대로 쓴다 */
+/* ── 어두운 손 밝히기 ──
+   손 뒤가 밝으면(모니터·창문) 카메라가 밝은 쪽에 노출을 맞춰서 손이 검게 뭉개진다.
+   그러면 손 모델이 손을 잡았다 놓쳤다 한다. 0.5초마다 화면 밝기를 재서, 어두우면
+   손 인식에 넘기기 전에 그림을 밝혀 준다 ('screen' 으로 겹쳐 그리기 — 밝은 곳은 덜, 어두운 곳은 많이 밝아진다). */
+const LIGHT = {
+  dark: 125,      // 평균 밝기(0~255)가 이보다 어두우면 밝히기 시작한다
+  full: 60,       // 이만큼 어두우면 가장 세게 (겹쳐 그리기 두 번)
+  every: 500,     // 밝기를 재는 간격(ms)
+};
+const meterCanvas = document.createElement("canvas");
+meterCanvas.width = 32; meterCanvas.height = 24;
+const meterCtx = meterCanvas.getContext("2d", { willReadFrequently: true });
+let lightBoost = 0, lightTarget = 0, lightAt = 0;
+function measureLight() {
+  const now = performance.now();
+  if (now - lightAt < LIGHT.every) return;
+  lightAt = now;
+  try {
+    meterCtx.drawImage(camVideo, 0, 0, 32, 24);
+    const d = meterCtx.getImageData(0, 0, 32, 24).data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+    const mean = sum / (d.length / 4);
+    lightTarget = gsap.utils.clamp(0, 2, ((LIGHT.dark - mean) / (LIGHT.dark - LIGHT.full)) * 2);
+  } catch {}
+}
+
 function refreshCamSource() {
+  measureLight();
+  lightBoost += (lightTarget - lightBoost) * 0.15;     // 천천히 바뀌게 — 갑자기 번쩍이면 손 모델이 흔들린다
   const r = camRotation();
-  if (!r) { camSrc = camVideo; sharedHand.video = camVideo; return camSrc; }
+  const boost = lightBoost > 0.05;
+  if (!r && !boost) { camSrc = camVideo; sharedHand.video = camVideo; return camSrc; }
   const vw = camVideo.videoWidth, vh = camVideo.videoHeight;
   const swap = r % 180 !== 0;
   const w = swap ? vh : vw, h = swap ? vw : vh;
@@ -2210,7 +2244,20 @@ function refreshCamSource() {
   rotCanvas.videoWidth = w; rotCanvas.videoHeight = h; rotCanvas.readyState = 4;
   rotCtx.setTransform(1, 0, 0, 1, w / 2, h / 2);
   rotCtx.rotate((r * Math.PI) / 180);
+  rotCtx.globalCompositeOperation = "source-over";
+  rotCtx.globalAlpha = 1;
   rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
+  if (boost) {
+    rotCtx.globalCompositeOperation = "screen";
+    rotCtx.globalAlpha = Math.min(1, lightBoost);
+    rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
+    if (lightBoost > 1) {
+      rotCtx.globalAlpha = lightBoost - 1;
+      rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
+    }
+    rotCtx.globalCompositeOperation = "source-over";
+    rotCtx.globalAlpha = 1;
+  }
   rotCtx.setTransform(1, 0, 0, 1, 0, 0);
   camSrc = rotCanvas; sharedHand.video = rotCanvas;
   return camSrc;
@@ -2284,21 +2331,75 @@ function sendMonitor(lms, pinch) {
   }, "image/jpeg", 0.65);
 }
 
+let camStarting = null;
 async function startCamera() {
   if (camStream) return true;
-  try {
-    camStream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 640, height: 480, facingMode: "user", frameRate: { ideal: 30 } },
-      audio: false,
-    });
-    camVideo.srcObject = camStream;
-    await camVideo.play();
-    return true;
-  } catch (e) {
-    camStream = null;
-    return false;
-  }
+  if (camStarting) return camStarting;
+  camStarting = (async () => {
+    try {
+      // 허용 창이 다른 화면에 떠서 아무도 못 누르면 영영 기다린다 — 12초 넘으면 접고 다시 해 본다
+      const ask = navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: "user", frameRate: { ideal: 30 } },
+        audio: false,
+      });
+      const stream = await Promise.race([
+        ask,
+        new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 12000)),
+      ]).catch((e) => {
+        // 늦게라도 열리면 — 그때 카메라가 없으면 그걸 쓰고, 있으면 닫는다
+        ask.then((late) => {
+          if (camStream) late.getTracks().forEach((t) => t.stop());
+          else { camStream = late; camVideo.srcObject = late; camVideo.play().catch(() => {}); camFrameAt = performance.now(); }
+        }, () => {});
+        throw e;
+      });
+      if (camStream) { stream.getTracks().forEach((t) => t.stop()); return true; }   // 그 사이 다른 쪽이 열었다
+      camStream = stream;
+      camVideo.srcObject = stream;
+      stream.getVideoTracks().forEach((t) => t.addEventListener("ended", () => restartCamera("끊김")));
+      await camVideo.play().catch(() => {});
+      camFrameAt = performance.now();
+      return true;
+    } catch (e) {
+      console.warn("[camera] 열기 실패:", e && e.name);
+      camStream = null;
+      return false;
+    } finally {
+      camStarting = null;
+    }
+  })();
+  return camStarting;
 }
+
+/* ── 카메라 지킴이 ──
+   카메라가 중간에 끊기거나(다른 창을 만지거나, 아이패드가 잠깐 카메라를 거둬 가거나)
+   그림이 멈추면 손 인식 상자가 검게 남는다. 2초마다 살펴서 멈췄으면 카메라를 다시 연다.
+   열기에 실패해도 계속 다시 해 본다. */
+let camFrameAt = 0, camLastTime = -1, camRestartAt = 0;
+function restartCamera(why) {
+  const now = performance.now();
+  if (now - camRestartAt < 2500) return;            // 너무 자주 다시 열지 않게
+  camRestartAt = now;
+  console.warn("[camera] 다시 여는 중:", why);
+  if (camStream) camStream.getTracks().forEach((t) => t.stop());
+  camStream = null;
+  camVideo.srcObject = null;
+  startCamera();
+}
+setInterval(() => {
+  if (document.hidden) return;                       // 안 보이는 동안은 브라우저가 멈춰 두는 게 정상
+  const now = performance.now();
+  if (!camStream) { if (camEverAsked) restartCamera("없음"); return; }
+  const track = camStream.getVideoTracks()[0];
+  if (!track || track.readyState === "ended") return restartCamera("끝남");
+  if (camVideo.paused) camVideo.play().catch(() => {});
+  if (camVideo.currentTime !== camLastTime) { camLastTime = camVideo.currentTime; camFrameAt = now; return; }
+  if (now - camFrameAt > 4000) restartCamera("멈춤");
+}, 2000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) { camFrameAt = performance.now(); if (camVideo.paused) camVideo.play().catch(() => {}); }
+});
+let camEverAsked = false;
 
 let handLandmarker = null;
 let handActive = false;
@@ -2318,36 +2419,62 @@ const CONNECTIONS = [
 ];
 const TIPS = [4, 8, 12, 16, 20];
 
-async function initHands() {
-  try {
-    camStatus.textContent = "인식 준비 중";
-
-    const vision = await FilesetResolver.forVisionTasks(
-      new URL("vendor/mediapipe/wasm", location.href).href
-    );
-    handLandmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath:
-          new URL("vendor/mediapipe/hand_landmarker.task", location.href).href,
-        delegate: "GPU",
-      },
-      runningMode: "VIDEO",
-      numHands: 1,
-      minHandDetectionConfidence: HAND.detect,
-      minHandPresenceConfidence: HAND.detect,
-      minTrackingConfidence: HAND.detect,
-    });
-
-    camStatus.textContent = "카메라를 허용해 주세요";
-    await startCamera();
-
-    camStatus.classList.add("is-hidden");
-    gsap.ticker.add(trackTick);       // 그리기(drawTiles) 다음에 돈다 — 순서가 중요하다
-  } catch (err) {
-    console.warn("[hand] 초기화 실패:", err);
-    camStatus.classList.remove("is-hidden");
-    camStatus.innerHTML = "카메라를 쓸 수 없습니다<br />마우스를 움직이고 길게 누르세요";
+/* 카메라와 손 모델을 따로따로, 동시에 준비한다.
+   예전엔 손 모델을 다 받은 뒤에야 카메라를 켜서, 와이파이가 느리면 손 인식 상자가 한참 검게 남았다.
+   이제 카메라는 바로 켜서 보여 주고, 손 모델은 받아지는 대로 붙는다. 실패하면 계속 다시 해 본다. */
+async function loadHandModel() {
+  let attempt = 0;
+  while (!handLandmarker) {
+    try {
+      const vision = await FilesetResolver.forVisionTasks(
+        new URL("vendor/mediapipe/wasm", location.href).href
+      );
+      const opts = (delegate) => ({
+        baseOptions: {
+          modelAssetPath: new URL("vendor/mediapipe/hand_landmarker.task", location.href).href,
+          delegate,
+        },
+        runningMode: "VIDEO",
+        numHands: 1,
+        minHandDetectionConfidence: HAND.detect,
+        minHandPresenceConfidence: HAND.keep,
+        minTrackingConfidence: HAND.keep,
+      });
+      // GPU 가 안 되면 CPU 로 (느리지만 멈추지는 않는다)
+      try { handLandmarker = await HandLandmarker.createFromOptions(vision, opts("GPU")); }
+      catch (e) { console.warn("[hand] GPU 실패 → CPU", e); handLandmarker = await HandLandmarker.createFromOptions(vision, opts("CPU")); }
+    } catch (err) {
+      attempt++;
+      console.warn("[hand] 손 모델 받기 실패, 다시 시도", attempt, err);
+      if (camStream) setCamStatus("손 인식 준비 중 · 다시 받는 중");
+      await new Promise((r) => setTimeout(r, Math.min(10000, 1500 * attempt)));
+    }
   }
+}
+
+function setCamStatus(text) {
+  if (!text) { camStatus.classList.add("is-hidden"); return; }
+  camStatus.classList.remove("is-hidden");
+  camStatus.classList.toggle("is-soft", !!camStream);   // 카메라가 켜져 있으면 화면이 비쳐 보이게
+  camStatus.innerHTML = text;
+}
+
+async function initHands() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setCamStatus("카메라를 쓸 수 없습니다<br />마우스를 움직이고 길게 누르세요");
+    return;
+  }
+  setCamStatus("카메라를 허용해 주세요");
+  gsap.ticker.add(trackTick);         // 그리기(drawTiles) 다음에 돈다 — 순서가 중요하다
+  camEverAsked = true;
+  startCamera().then((ok) => {
+    if (!ok) setCamStatus("카메라를 다시 여는 중<br />사파리 설정에서 카메라를 '허용'으로 두세요");
+    else if (!handLandmarker) setCamStatus("손 인식 준비 중");
+  });
+  await loadHandModel();
+  window.__ykHandReady = true;
+  window.dispatchEvent(new Event("yk:hand-ready"));   // offline.js 가 이걸 기다렸다가 저장을 시작한다
+  if (camStream) setCamStatus(null);
 }
 
 function drawCameraFrame() {
@@ -2367,7 +2494,7 @@ function drawCameraFrame() {
   camCtx.drawImage(camSrc, dx, dy, dw, dh);
   camCtx.restore();
 
-  camCtx.fillStyle = "rgba(0,0,0,0.4)";
+  camCtx.fillStyle = "rgba(0,0,0,0.18)";   // 손이 검게 묻히지 않게 옅게만 덮는다
   camCtx.fillRect(0, 0, cw, ch);
 
   return { dx, dy, dw, dh, cw, ch };
@@ -2540,7 +2667,17 @@ function processHand(lms, now, box) {
    손이 없을 때는 손이 들어오는지만 보면 되므로 절반만 본다. */
 let trackTurn = 0;
 function trackTick() {
-  if (!handLandmarker) return;
+  if (!camStream || camVideo.readyState < 2) return;
+  if (!camStatus.classList.contains("is-hidden") && handLandmarker) setCamStatus(null);   // 카메라가 다시 살아났다
+  if (!handLandmarker) {
+    // 손 모델을 받는 동안에도 카메라 화면은 보여 준다
+    if (current === "grid" && camVideo.currentTime !== lastVideoTime) {
+      lastVideoTime = camVideo.currentTime;
+      refreshCamSource();
+      drawCameraFrame();
+    }
+    return;
+  }
   if (current === "grid" && drawFrame % 2 === 0) return;      // 이번 프레임은 문자 화면 차례
   if (camVideo.readyState >= 2 && camVideo.currentTime !== lastVideoTime) {
     if (current === "garden") {

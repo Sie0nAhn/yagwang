@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>야광(夜光) — 당신이 모르는 사이</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" media="print" onload="this.media='all'" />
 <!-- 인터넷 없이도 돌아가게 — 라이브러리·글꼴·손 인식 모델은 vendor/ 에 둔다 -->
 <link rel="stylesheet" href="vendor/fonts/roboto-mono.css" />
 <!-- 아이패드 홈 화면 앱 — 사파리 → 공유 → '홈 화면에 추가' 하면 전체 화면으로 열린다 -->
@@ -14,10 +14,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <meta name="apple-mobile-web-app-title" content="야광" />
 <link rel="apple-touch-icon" href="assets/icon-180.png" />
-<!-- 영문 — TT Autonomous Mono (Adobe Fonts) -->
-<link rel="stylesheet" href="https://use.typekit.net/pgv0czs.css" />
+<!-- 영문 — TT Autonomous Mono (Adobe Fonts)
+     인터넷 글꼴은 화면을 붙잡지 않게 늦게 붙인다 (media=print → all). 와이파이가 약해도 바로 뜨고, 글꼴은 받아지면 바뀐다 -->
+<link rel="stylesheet" href="https://use.typekit.net/pgv0czs.css" media="print" onload="this.media='all'" />
 <!-- ?v= : 고칠 때마다 올린다 — 브라우저가 예전 파일을 쥐고 있지 않게 -->
-<link rel="stylesheet" href="style.css?v=20261112b" />
+<link rel="stylesheet" href="style.css?v=20261112d" />
 <script src="vendor/gsap.min.js"></script>
 </head>
 <body>
@@ -231,7 +232,7 @@
   </div>
 </div>
 
-<script type="module" src="main.js?v=20261112b"></script>
-<script type="module" src="offline.js?v=20261112b"></script>
+<script type="module" src="main.js?v=20261112d"></script>
+<script type="module" src="offline.js?v=20261112d"></script>
 </body>
 </html>

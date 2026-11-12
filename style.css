@@ -1022,6 +1022,8 @@ body.is-garden { cursor: auto; }
   background: #0a0c0f;
   transition: opacity 400ms ease;
 }
+/* 카메라는 켜졌고 손 모델만 받는 중 — 카메라 화면 위에 글씨만 옅게 */
+.camera-status.is-soft { background: rgba(10, 12, 15, .45); align-items: end; padding-bottom: 10px; color: #fff; }
 .camera-status.is-hidden { opacity: 0; }
 
 .camera-tag {

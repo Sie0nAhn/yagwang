@@ -52,9 +52,11 @@ h = hashlib.sha1()
 out = []
 for url, path in files:
     data = open(path, "rb").read()
+    fh = hashlib.sha1(data)
     h.update(url.encode())
-    h.update(hashlib.sha1(data).digest())
-    out.append({"url": url, "size": len(data)})
+    h.update(fh.digest())
+    # hash — 내용이 같은 파일은 새 버전에서도 다시 받지 않고 기기에 있던 걸 옮겨 쓴다 (offline.js)
+    out.append({"url": url, "size": len(data), "hash": fh.hexdigest()[:12]})
 
 manifest = {"version": h.hexdigest()[:10], "files": out}
 with open("offline-files.json", "w", encoding="utf-8") as f:

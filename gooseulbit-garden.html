@@ -4828,7 +4828,7 @@ const MP=new URL("vendor/mediapipe",location.href).href;  /* 오프라인용으�
 const MODEL=MP+"/hand_landmarker.task";
 const H={
   detect:.4,      /* 손 찾기 기준 — 낮을수록 어두운 곳에서도 잘 잡힌다 */
-  lostGrace:320,  /* 이 시간(ms) 동안 손이 안 잡혀도 마지막 손을 그대로 둔다 */
+  lostGrace:650,  /* 이 시간(ms) 동안 손이 안 잡혀도 마지막 손을 그대로 둔다 */
   pinchOn:.28,    /* 엄지-검지가 손 크기의 이 비율보다 가까우면 꼬집은 것 — 완전히 붙이지 않아도 되게 */
   pinchOff:.45,   /* 이보다 벌어지면 편 것 */
   pinchIn:70,     /* 이만큼(ms) 계속 꼬집어야 인정 — 스치는 오인 방지 */
@@ -4920,7 +4920,7 @@ function V(cv,fake){
     dw=vw*s;dh=vh*s;dx=(W-dw)/2;dy=(Hh-dh)/2;
     g.save();g.translate(W,0);g.scale(-1,1);g.drawImage(cam,dx,dy,dw,dh);g.restore()}
   else if(!fake)return;
-  g.fillStyle="rgba(0,0,0,0.4)";g.fillRect(0,0,W,Hh);
+  g.fillStyle="rgba(0,0,0,0.18)";g.fillRect(0,0,W,Hh);
   if(!hand||(!x.tracked&&!fake))return;
   const P=lm=>({x:W-(dx+lm.x*dw),y:dy+lm.y*dh}),k=W/600;
   /* 엄지-검지 — 모으면 마젠타로 이어진다 (지금 '집었다'고 읽히는지 바로 보이게) */
