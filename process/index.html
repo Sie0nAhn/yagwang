@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>야광(夜光) — 프롬프트 북</title>
+<meta name="description" content="《야광(夜光) — 당신이 모르는 사이》 AI 영상 제작 과정. 미드저니 시안부터 ComfyUI 노드와 프롬프트, 에펙 편집까지." />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link rel="stylesheet" href="../vendor/fonts/roboto-mono.css" />
+<!-- 영문 — TT Autonomous Mono (Adobe Fonts) -->
+<link rel="stylesheet" href="https://use.typekit.net/pgv0czs.css" />
+<link rel="icon" href="../assets/icon-192.png" />
+<style>
+/* 오르빗 (JAMO TYPEFACE · SIL OFL 1.1) — 본 사이트와 같은 글꼴 */
+@font-face { font-family: "Orbit"; src: url("../assets/fonts/Orbit-Regular.woff2") format("woff2"); font-display: swap; }
+
+:root {
+  --font-kr: "Orbit", "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+  --font-mono: "tt-autonomous-mono", "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bg: #000;
+  --panel: #0b0a0e;
+  --panel-2: #121019;
+  --fg: #fff;
+  --fg-2: rgba(255,255,255,.84);
+  --dim: rgba(255,255,255,.6);
+  --line: rgba(255,255,255,.18);
+  --line-soft: rgba(255,255,255,.08);
+  --acc: #ff2bd6;
+  --tint: #9a5aff;
+  --amber: #ffb36b;
+  --side: 232px;
+  --pad: 40px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 24px; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; color: var(--fg); font-family: var(--font-kr); font-size: 16px; line-height: 1.65;
+  -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-x: hidden;
+  background: radial-gradient(900px 500px at 100% 0, rgba(154,90,255,.16), transparent 70%) no-repeat, var(--bg);
+}
+a { color: inherit; }
+::selection { background: var(--acc); color: #000; }
+.mono { font-family: var(--font-mono); }
+img, video { max-width: 100%; }
+
+
+/* 타이틀 로고 — 본 사이트 로딩 화면과 같은 SVG (야광 + 夜光 도장 / 당신이 모르는 사이) */
+.logo { display: block; width: 100%; height: auto; overflow: visible; }
+.logo__line { fill: #fff; }
+.logo__seal { fill: var(--tint); filter: drop-shadow(0 0 7px rgba(154,90,255,.75)); }
+.side__logo { display: block; width: 184px; margin-top: 14px; }
+.side__sub { font-size: 15px; color: var(--fg-2); margin-top: 10px; }
+.hero__logo { width: 600px; max-width: 100%; margin: 22px 0 0; font-size: 0; }
+.hero__tag { margin: 22px 0 0; font-size: 14px; letter-spacing: .17em; color: #9a9a9a; white-space: nowrap; }
+
+/* ── 레이아웃: 왼쪽 목차 + 본문 ── */
+.layout { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); min-height: 100vh; }
+.side { position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--line-soft); padding: 28px 18px 24px 24px; display: flex; flex-direction: column; gap: 22px; scrollbar-width: none; }
+.side::-webkit-scrollbar { display: none; }
+.side__brand { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; color: var(--dim); line-height: 1.6; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav__label { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); letter-spacing: .1em; margin: 10px 0 4px 10px; }
+.nav a { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: var(--fg-2); font-size: 14px; padding: 7px 10px; border-radius: 8px; line-height: 1.3; }
+.nav a .mono { font-size: 10.5px; color: var(--dim); min-width: 18px; }
+.nav a small { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--dim); white-space: nowrap; }
+.nav a:hover { background: rgba(255,255,255,.05); color: var(--fg); }
+.nav a.is-on { background: rgba(255,43,214,.12); color: var(--fg); }
+.nav a.is-on .mono { color: var(--acc); }
+.side__foot { margin-top: auto; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+.side__foot a { color: var(--fg-2); text-decoration: none; }
+.side__foot a:hover { color: var(--acc); }
+
+main { min-width: 0; padding: 0 var(--pad) 80px; max-width: 1120px; }
+section.sec { padding-top: 64px; }
+.sec__head { display: flex; gap: 20px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 18px; margin-bottom: 28px; }
+.sec__no { font-family: var(--font-mono); font-size: 11px; color: var(--dim); letter-spacing: .08em; white-space: nowrap; width: 120px; flex-shrink: 0; }
+.sec__title { font-size: 30px; line-height: 1.2; letter-spacing: -.03em; margin: 0; font-weight: 400; }
+.sec__desc { color: var(--fg-2); margin: 10px 0 0; max-width: 720px; font-size: 15.5px; }
+
+/* ── 개요 ── */
+.hero { padding-top: 56px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; color: var(--tint); display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 12px var(--acc); }
+.hero__lede { max-width: 640px; color: var(--fg-2); font-size: 17px; line-height: 1.8; margin: 24px 0 0; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); border-top: 1px solid var(--line); margin: 40px 0 0; }
+.stat { padding: 16px 16px 0 0; border-right: 1px solid var(--line-soft); }
+.stat + .stat { padding-left: 16px; }
+.stat:last-child { border-right: 0; }
+.stat dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; color: var(--dim); }
+.stat dd { margin: 6px 0 0; font-size: 28px; letter-spacing: -.02em; white-space: nowrap; }
+.stat dd small { font-size: 13px; color: var(--dim); margin-left: 4px; }
+
+/* ── 작업 순서 ── */
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.flow__step { padding: 20px 18px 22px; border-right: 1px solid var(--line); }
+.flow__step:last-child { border-right: 0; }
+.flow__no { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+.flow__name { font-size: 18px; margin: 8px 0 2px; letter-spacing: -.02em; }
+.flow__tool { font-family: var(--font-mono); font-size: 11.5px; color: var(--tint); }
+.flow__step.is-hot .flow__tool { color: var(--acc); }
+.flow__desc { font-size: 13.5px; color: var(--fg-2); margin: 10px 0 0; line-height: 1.6; }
+
+/* ── 가로 스크롤 공통 ── */
+.rail { display: flex; gap: 14px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; padding: 2px 2px 14px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.28) transparent; -webkit-overflow-scrolling: touch; cursor: grab; }
+.rail.is-drag { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+.rail > * { scroll-snap-align: start; flex-shrink: 0; }
+.rail::-webkit-scrollbar { height: 6px; }
+.rail::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 3px; }
+.rail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.rail-nav { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ── 캐릭터 ── */
+.char-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-bottom: 28px; }
+.fig { margin: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); display: flex; flex-direction: column; }
+.fig img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; background: #050407; }
+.fig.is-contain img { object-fit: contain; }
+.fig figcaption { padding: 12px 14px 14px; font-size: 14px; color: var(--fg-2); line-height: 1.6; }
+.fig figcaption b { display: block; color: var(--fg); font-weight: 400; font-size: 15px; margin-bottom: 2px; }
+.sheet { width: 640px; }
+.sheet img { aspect-ratio: 16/9; object-fit: contain; }
+.traits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+/* 정렬: 같은 줄 카드의 이미지 높이·제목·태그 위치를 맞춤 */
+.fig figcaption { flex: 1; display: flex; flex-direction: column; }
+.fig figcaption .traits { margin-top: auto; padding-top: 14px; }
+.mj-card__body { flex: 1; }
+.mj-card__then { margin-top: auto; }
+@supports (grid-template-rows: subgrid) {
+  .phases > .phase { display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 0; }
+  .phases .phase__quote { margin: 0 !important; align-self: start; }
+  .tips > .tip { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 8px; align-content: start; }
+  .tip__ex { align-self: start; }
+}
+.tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; border: 1px solid var(--line); border-radius: 4px; padding: 2px 7px; color: var(--dim); white-space: nowrap; }
+
+/* ── 미드저니 ── */
+.mj-card { width: 520px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--panel); display: flex; flex-direction: column; }
+.mj-card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+.mj-card__body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+.mj-card__top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.mj-card__name { font-size: 19px; letter-spacing: -.02em; }
+.mj-card__then { font-size: 13.5px; color: var(--fg-2); border-top: 1px solid var(--line-soft); padding-top: 10px; }
+.mj-card__then b { color: var(--acc); font-weight: 400; }
+.mj-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 8px; margin-top: 10px; }
+.mj-grid a { display: block; border-radius: 8px; overflow: hidden; border: 1px solid var(--line-soft); text-decoration: none; background: var(--panel); }
+.mj-grid img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+.mj-grid span { display: block; font-size: 11.5px; color: var(--fg-2); padding: 5px 8px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub-label { font-family: var(--font-mono); font-size: 11px; color: var(--dim); letter-spacing: .06em; }
+
+/* ── 프롬프트 ── */
+.phases { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+.phase { border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; background: var(--panel); display: flex; flex-direction: column; }
+.phase__when { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+.phase__name { font-size: 18px; margin: 6px 0 4px; letter-spacing: -.02em; }
+.phase__note { font-size: 13.5px; color: var(--fg-2); margin: 0 0 14px; }
+.phase__quote { margin: auto 0 0; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; color: var(--fg-2); border-left: 2px solid var(--tint); padding: 2px 0 2px 12px; white-space: pre-wrap; }
+.phase__src { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); margin-top: 10px; }
+.tips { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.tip { border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; background: var(--panel); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tip__top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.tip__no { font-family: var(--font-mono); font-size: 11px; color: var(--tint); }
+.tip__count { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); white-space: nowrap; }
+.tip__title { font-size: 17px; letter-spacing: -.02em; margin: 0; font-weight: 400; }
+.tip__body { font-size: 14px; color: var(--fg-2); margin: 0; }
+.tip__ex { margin: 4px 0 0; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7; color: var(--fg-2); background: var(--panel-2); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.usage { display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; margin-top: 14px; }
+.box { border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+.bar { display: grid; grid-template-columns: 140px 1fr 36px; gap: 12px; align-items: center; font-size: 14px; padding: 5px 0; }
+.bar__track { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+.bar__fill { height: 100%; border-radius: 3px; background: var(--tint); }
+.bar__fill.is-acc { background: var(--acc); }
+.bar__n { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); text-align: right; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; color: var(--fg-2); margin-top: 12px; }
+.legend i { display: inline-block; width: 16px; height: 11px; border-radius: 3px; border: 1.5px solid; margin-right: 7px; vertical-align: -1px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; color: var(--fg-2); text-decoration: none; background: transparent; font-family: var(--font-kr); cursor: pointer; }
+.chip:hover { border-color: var(--fg-2); color: var(--fg); }
+.chip.is-on { border-color: var(--acc); color: var(--fg); box-shadow: inset 0 0 0 1px var(--acc); }
+span.chip { cursor: default; }
+
+/* ── 생성 기록 ── */
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.search { flex: 0 1 280px; min-width: 200px; background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; color: var(--fg); font-family: var(--font-kr); font-size: 14px; }
+.search:focus { outline: none; border-color: var(--acc); }
+.count { font-family: var(--font-mono); font-size: 11.5px; color: var(--dim); margin: 10px 0 0; }
+.chapter { padding-top: 48px; }
+.chapter[hidden] { display: none; }
+.chapter__head { display: grid; grid-template-columns: 64px 1fr auto; gap: 18px; align-items: start; border-top: 1px solid var(--line); padding-top: 18px; margin-bottom: 20px; }
+.chapter__no { font-family: var(--font-mono); font-size: 34px; line-height: 1; color: var(--tint); letter-spacing: -.04em; }
+.chapter__name { margin: 0; font-size: 26px; letter-spacing: -.03em; font-weight: 400; line-height: 1.2; }
+.chapter__name small { font-size: 15px; color: var(--dim); margin-left: 8px; letter-spacing: 0; }
+.chapter__desc { color: var(--fg-2); font-size: 14.5px; margin: 8px 0 0; max-width: 640px; }
+.chapter__meta { font-family: var(--font-mono); font-size: 11px; color: var(--dim); text-align: right; line-height: 1.7; white-space: nowrap; }
+.chapter__meta b { color: var(--acc); font-weight: 400; }
+
+.card { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--panel); margin-bottom: 14px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; }
+.card[hidden] { display: none; }
+.card.is-final { border-color: rgba(255,43,214,.55); }
+.card__media { position: relative; background: #050407; }
+.card__screen { position: relative; aspect-ratio: 16/10; background: #050407; overflow: hidden; }
+.card__screen video, .card__screen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+.card__play { position: absolute; left: 10px; bottom: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.6); color: var(--fg); font-family: var(--font-mono); font-size: 11px; border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.card__body { padding: 18px 20px 18px; min-width: 0; display: flex; flex-direction: column; gap: 12px; border-left: 1px solid var(--line); align-self: stretch; }
+.card__top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.card__code { font-family: var(--font-mono); font-size: 22px; letter-spacing: -.02em; }
+.card__code small { font-family: var(--font-kr); font-size: 13px; color: var(--dim); margin-left: 8px; letter-spacing: 0; }
+.meta { font-family: var(--font-mono); font-size: 11.5px; color: var(--dim); line-height: 1.6; }
+.meta b { color: var(--fg-2); font-weight: 400; }
+.badge { font-family: var(--font-mono); font-size: 10.5px; border-radius: 999px; padding: 3px 9px; white-space: nowrap; border: 1px solid var(--line); color: var(--dim); }
+.badge.is-final { border-color: var(--acc); color: var(--fg); background: rgba(255,43,214,.14); }
+
+.prompt { border: 1px solid var(--line-soft); border-radius: 12px; background: var(--panel-2); }
+.prompt__bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-bottom: 1px solid var(--line-soft); }
+.prompt__node { font-family: var(--font-mono); font-size: 11px; color: var(--fg-2); display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prompt__node::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--acc); flex-shrink: 0; }
+.prompt__node[data-kind="image"]::before { background: var(--tint); }
+.prompt__node[data-kind="text"]::before { background: #fff; }
+.btns { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.btn { border: 1px solid var(--line); background: transparent; color: var(--fg-2); font-family: var(--font-mono); font-size: 11px; border-radius: 999px; padding: 4px 11px; cursor: pointer; white-space: nowrap; }
+.btn:hover { color: var(--fg); border-color: var(--fg-2); }
+.btn.is-done { color: var(--acc); border-color: var(--acc); }
+.prompt__text { margin: 0; padding: 12px 14px 14px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.75; color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; position: relative; }
+.prompt__text.is-ko { font-family: var(--font-kr); font-size: 14.5px; }
+.prompt__text.is-clamped { max-height: 13.2em; overflow: hidden; }
+.prompt__text.is-clamped::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: linear-gradient(transparent, var(--panel-2)); }
+.prompt__foot { display: flex; gap: 6px; padding: 0 14px 12px; }
+.kw { color: var(--acc); }
+.kw-t { color: var(--amber); }
+.kw-i { color: var(--tint); }
+
+/* 접어 둔 부가 정보 */
+.extras { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.extras > details[open] { flex-basis: 100%; order: 2; }
+.extras summary { list-style: none; cursor: pointer; font-family: var(--font-mono); font-size: 11px; color: var(--fg-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; display: inline-block; }
+.extras summary::-webkit-details-marker { display: none; }
+.extras summary::before { content: "+ "; color: var(--dim); }
+.extras details[open] > summary { border-color: var(--fg-2); color: var(--fg); }
+.extras details[open] > summary::before { content: "− "; }
+.extras .panel { margin-top: 10px; display: grid; gap: 10px; }
+
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.frame { display: block; text-decoration: none; border: 1px solid var(--line-soft); border-radius: 8px; overflow: hidden; background: #050407; }
+.frame img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: cover; }
+.frame span { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--dim); padding: 4px 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.frame.is-off { opacity: .45; }
+
+/* 노드 그래프 — 노드는 HTML 상자(상하·좌우 여백 동일), 연결선은 SVG */
+.graph { border: 1px solid var(--line-soft); border-radius: 12px; overflow-x: auto; padding: 16px; background: radial-gradient(circle, rgba(255,255,255,.07) 1px, transparent 1.2px) 0 0 / 16px 16px, #07060a; }
+.graph__canvas { position: relative; }
+.graph__canvas svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.node { position: absolute; width: 208px; height: 58px; padding: 0 14px; border-radius: 9px; border: 1px solid rgba(255,255,255,.35); background: #0d0b12; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.node__t { display: flex; align-items: center; gap: 8px; font-size: 12.5px; line-height: 1.2; min-width: 0; }
+.node__t::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; color: rgba(255,255,255,.5); }
+.node__t span, .node__s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.node__s { font-family: var(--font-mono); font-size: 10px; line-height: 1.2; color: rgba(255,255,255,.5); padding-left: 14px; }
+.node[data-k="video"] { border-color: var(--acc); box-shadow: 0 0 0 1px var(--acc) inset; }
+.node[data-k="video"] .node__t::before { color: var(--acc); }
+.node[data-k="image"] { border-color: var(--tint); }
+.node[data-k="image"] .node__t::before { color: var(--tint); }
+.node[data-k="text"] { border-color: #fff; }
+.node[data-k="text"] .node__t::before { color: #fff; }
+.node.is-off { opacity: .42; border-style: dashed; box-shadow: none; }
+
+.ptable { display: grid; gap: 8px; }
+.pnode { border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.pnode__h { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.pnode dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 0; font-family: var(--font-mono); font-size: 11.5px; }
+.pnode dt { color: var(--dim); }
+.pnode dd { margin: 0; color: var(--fg-2); overflow-wrap: anywhere; }
+
+/* 재시도 묶음 */
+.series { border: 1px solid var(--line); border-radius: 18px; padding: 16px 0 6px 16px; margin-bottom: 14px; background: rgba(255,255,255,.015); }
+.series[hidden] { display: none; }
+.series .rail-head { padding-right: 16px; flex-wrap: wrap; }
+.series__title { font-size: 19px; letter-spacing: -.02em; }
+.series__title .mono { font-size: 11.5px; color: var(--dim); margin-left: 8px; letter-spacing: 0; }
+.steps { display: flex; gap: 5px; flex-wrap: wrap; }
+.step { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--line); background: transparent; color: var(--fg-2); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
+.step.is-final { border-color: var(--acc); color: var(--fg); }
+.series .rail { padding-right: 16px; }
+.rail > .card { width: 420px; margin: 0; display: flex; flex-direction: column; align-self: stretch; align-items: stretch; }
+.rail > .card .card__body { border-left: 0; border-top: 1px solid var(--line); padding: 16px; flex: 1; }
+.card__change { padding: 14px 16px; border-bottom: 1px solid var(--line); min-height: 220px; background: rgba(255,43,214,.05); display: grid; align-content: start; gap: 10px; font-size: 13.5px; line-height: 1.7; margin: 0; }
+.card__change dt { font-family: var(--font-mono); font-size: 10px; color: var(--acc); letter-spacing: .08em; margin-bottom: 2px; }
+.card__change dd { margin: 0; color: var(--fg); }
+.card__change.is-first { background: transparent; color: var(--dim); }
+.card__change .stepno { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); }
+
+.empty { display: none; padding: 60px 0; text-align: center; color: var(--dim); }
+footer { margin-top: 96px; padding: 24px 0 0; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; font-family: var(--font-mono); font-size: 11.5px; color: var(--dim); line-height: 1.8; }
+
+
+/* ── 가독성 — 태블릿(약 1280×720)에서 읽기 편한 크기 ── */
+body { font-size: 17px; line-height: 1.72; }
+.nav a { font-size: 15px; padding: 8px 10px; }
+.nav a .mono, .nav a small { font-size: 11px; }
+.nav__label { font-size: 11px; }
+.side__brand { font-size: 12px; }
+.eyebrow { font-size: 12.5px; }
+.hero__lede { font-size: 18px; line-height: 1.85; }
+.stat dt { font-size: 12px; }
+.sec__no { font-size: 12px; }
+.sec__title { font-size: 32px; }
+.sec__desc { font-size: 16.5px; line-height: 1.8; }
+.sub-label { font-size: 12px; }
+.tag { font-size: 11.5px; }
+.flow__name { font-size: 19px; }
+.flow__tool { font-size: 12.5px; }
+.flow__desc { font-size: 14.5px; line-height: 1.7; }
+.fig figcaption { font-size: 15px; line-height: 1.7; }
+.fig figcaption b { font-size: 16px; }
+.mj-card__name { font-size: 20px; }
+.mj-card__then { font-size: 14.5px; }
+.mj-grid span { font-size: 13px; }
+.phase__name { font-size: 19px; }
+.phase__note { font-size: 15px; line-height: 1.7; }
+.phase__quote { font-size: 13px; line-height: 1.8; }
+.phase__src, .tip__count { font-size: 12px; }
+.tip__no { font-size: 12px; }
+.tip__title { font-size: 18.5px; }
+.tip__body { font-size: 15px; line-height: 1.7; }
+.tip__ex { font-size: 12.5px; line-height: 1.8; }
+.bar { font-size: 15px; }
+.legend { font-size: 14px; }
+.chapter__name { font-size: 28px; }
+.chapter__name small { font-size: 16px; }
+.chapter__desc { font-size: 16px; line-height: 1.75; }
+.chapter__meta { font-size: 12px; }
+.count { font-size: 12.5px; }
+.search { font-size: 15px; padding: 10px 18px; }
+.chip { font-size: 14px; padding: 6px 14px; }
+.card__code { font-size: 24px; }
+.card__code small { font-size: 14px; }
+.meta { font-size: 12.5px; line-height: 1.7; }
+.badge { font-size: 11.5px; padding: 4px 10px; }
+.prompt__node { font-size: 12px; }
+.prompt__text { font-size: 13.5px; line-height: 1.85; padding: 14px 16px 16px; }
+.prompt__text.is-ko { font-size: 15.5px; }
+.prompt__text.is-clamped { max-height: 14.8em; }
+.prompt__foot { padding: 0 16px 14px; }
+.btn { font-size: 12px; padding: 6px 13px; min-height: 32px; }
+.step { font-size: 12px; padding: 5px 11px; min-height: 30px; }
+.extras summary { font-size: 12px; padding: 7px 14px; }
+.frame span { font-size: 11px; }
+.card__play { font-size: 12px; padding: 6px 12px; }
+.series__title { font-size: 20px; }
+.series__title .mono { font-size: 12px; }
+.rail > .card { width: 448px; }
+.card__change { font-size: 15px; line-height: 1.78; min-height: 250px; padding: 16px 18px; }
+.card__change dt { font-size: 11px; }
+.card__change .stepno { font-size: 11.5px; }
+.node__t { font-size: 13px; }
+.node__s { font-size: 11px; }
+.pnode, .pnode dl { font-size: 12.5px; }
+footer { font-size: 12.5px; }
+
+
+/* ── 한 화면 단위 정리 — 아이패드 가로(약 1180×820)·15.6" 태블릿(1280×720) ── */
+.hero { padding-top: 40px; }
+.hero__lede { margin-top: 18px; }
+.stats { margin-top: 28px; }
+section.sec { padding-top: 56px; }
+.sec__head { margin-bottom: 22px; }
+.chapter { padding-top: 40px; }
+.chapter__head { margin-bottom: 16px; }
+
+/* 일반 카드 — 영상 | 프롬프트, 한 화면 안에 */
+.card { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.card__body { gap: 10px; }
+.prompt__text.is-clamped { max-height: 12.95em; }
+
+/* 재시도 카드 — 세로로 길어지지 않게 가로형: 왼쪽 영상+바뀐 점, 오른쪽 프롬프트 */
+.rail > .card { width: min(780px, 88%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "media body" "change body"; grid-template-rows: auto 1fr; align-items: stretch; }
+.rail > .card .card__media { grid-area: media; border-bottom: 1px solid var(--line); }
+.rail > .card .card__change { grid-area: change; min-height: 0; border-bottom: 0; font-size: 14.5px; line-height: 1.75; }
+.rail > .card .card__body { grid-area: body; border-top: 0; border-left: 1px solid var(--line); }
+.rail > .card .prompt__text.is-clamped { max-height: 11.1em; }
+
+/* 캐릭터 · 미드저니 */
+.fig img { aspect-ratio: 16/10; }
+.sheet { width: 600px; }
+.mj-card { width: 480px; }
+.mj-card .prompt__text.is-clamped { max-height: 7.4em; }
+
+.flow__step { padding: 18px 16px 20px; }
+.flow__desc { font-size: 14px; }
+.card__media { align-self: center; }
+
+/* 작품 설명 */
+.about { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 32px; margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--line); }
+.about__text p { margin: 0; color: var(--fg-2); font-size: 16.5px; line-height: 1.85; }
+.about__text p + p { margin-top: 12px; }
+.about__text .about__lead { color: var(--fg); font-size: 19px; line-height: 1.75; letter-spacing: -.01em; }
+.about__info { margin: 0; display: grid; gap: 0; align-content: start; }
+.about__info div { display: grid; grid-template-columns: 76px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.about__info div:first-child { padding-top: 2px; }
+.about__info dt { font-family: var(--font-mono); font-size: 12px; color: var(--dim); padding-top: 2px; }
+.about__info dd { margin: 0; font-size: 15px; color: var(--fg); }
+.story { list-style: none; margin: 24px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.story li { padding: 14px 14px 16px; border-right: 1px solid var(--line); font-size: 13.5px; color: var(--dim); line-height: 1.55; }
+.story li:last-child { border-right: 0; }
+.story li .mono { display: block; font-size: 11.5px; color: var(--dim); }
+.story li b { display: block; font-weight: 400; color: var(--fg); font-size: 16px; margin: 4px 0 4px; }
+.story li.is-on { background: rgba(255,43,214,.07); }
+.story li.is-on .mono { color: var(--acc); }
+.hero__lede { font-size: 16px !important; color: var(--fg-2); margin-top: 22px !important; max-width: 760px; }
+
+/* ── 좁은 화면 (세로 태블릿·폰) ── */
+@media (max-width: 960px) {
+  :root { --pad: 18px; }
+  .layout { grid-template-columns: 1fr; }
+  .side { position: sticky; top: 0; z-index: 20; height: auto; flex-direction: row; align-items: center; padding: 10px 14px; gap: 12px; border-right: 0; border-bottom: 1px solid var(--line-soft); background: #000; overflow: hidden; }
+  .side__brand, .side__foot, .nav__label { display: none; }
+  .nav { flex-direction: row; overflow-x: auto; gap: 4px; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { white-space: nowrap; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; font-size: 13px; }
+  .nav a small { display: none; }
+  .hero__logo { width: 100%; }
+  .hero__tag { white-space: normal; font-size: 12px; }
+  .side__logo { width: 150px; margin: 0; flex-shrink: 0; }
+  .side__sub { display: none; }
+  .flow, .phases, .tips, .usage, .char-row, .about { grid-template-columns: 1fr; }
+  .story { grid-template-columns: 1fr 1fr; }
+  .story li { border-bottom: 1px solid var(--line); }
+  .flow__step { border-right: 0; border-bottom: 1px solid var(--line); }
+  .mj-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .card { grid-template-columns: 1fr; }
+  .card__body { border-left: 0; border-top: 1px solid var(--line); }
+  .sec__head { flex-direction: column; gap: 8px; }
+  .chapter__head { grid-template-columns: 1fr; gap: 6px; }
+  .chapter__meta { text-align: left; }
+  .stats { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .stat:nth-child(2) { border-right: 0; } .stat:nth-child(3) { padding-left: 0; } .stat { padding-bottom: 14px; }
+  .rail > .card, .mj-card { width: 84vw; }
+  .rail > .card { grid-template-columns: 1fr; grid-template-areas: "change" "media" "body"; }
+  .rail > .card .card__body { border-left: 0; border-top: 1px solid var(--line); }
+  .rail > .card .card__change { border-bottom: 1px solid var(--line); }
+  .sheet { width: 88vw; }
+  .card__change { min-height: 0; }
+  .bar { grid-template-columns: 110px 1fr 32px; }
+}
+
+/* ── 첫 화면: 최종 컷을 배경으로 깔고 로고를 크게 ── */
+.hero { padding-top: 0 !important; }
+.hero__stage { position: relative; margin: 0 calc(-1 * var(--pad)); width: calc(100vw - var(--side)); height: 100vh; height: 100svh; min-height: 560px; overflow: hidden; isolation: isolate; background: #000; }
+.hero__bg, .hero__bg video { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero__bg video { object-fit: cover; opacity: 0; transform: scale(1.06); transition: opacity 1.6s ease, transform 9s linear; }
+.hero__bg video.is-on { opacity: 1; transform: scale(1); }
+.hero__bg::after { content: ""; position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 26%, rgba(0,0,0,0) 46%, rgba(8,2,18,.82) 78%, #000 100%),
+    linear-gradient(90deg, rgba(10,3,24,.55) 0%, rgba(10,3,24,0) 60%),
+    radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.6) 100%); }
+.hero__inner { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; padding: 40px var(--pad) 36px; }
+.hero__inner .eyebrow { color: #e9dcff; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+.hero__inner .hero__logo { margin-top: auto; width: min(100%, 980px); filter: drop-shadow(0 4px 30px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(154,90,255,.35)); }
+.hero__inner .hero__tag { color: rgba(255,255,255,.78); margin-top: 20px; text-shadow: 0 1px 10px rgba(0,0,0,.7); }
+.hero__foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin-top: 44px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.18); }
+.hero__intro { margin: 0; font-size: 17px; color: rgba(255,255,255,.88); }
+.hero__cue { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; color: rgba(255,255,255,.75); text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+.hero__cue span { width: 1px; height: 26px; background: linear-gradient(var(--acc), transparent); animation: cue 1.8s ease-in-out infinite; transform-origin: top; }
+@keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+.hero .about { margin-top: 56px; }
+@media (prefers-reduced-motion: reduce) { .hero__bg video { transition: opacity .3s; transform: none !important; } .hero__cue span { animation: none; } }
+@media (max-width: 960px) {
+  .hero__stage { width: 100vw; height: 78svh; min-height: 460px; }
+  .hero__inner { padding: 24px var(--pad) 24px; }
+  .hero__intro { font-size: 15px; }
+  .hero__cue { display: none; }
+}
+
+/* FLUX / GPT 구분 */
+.pick { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-top: 14px; }
+.pick__item { border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; background: var(--panel); display: flex; flex-direction: column; gap: 10px; }
+.pick__head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.pick__name { font-family: var(--font-mono); font-size: 14px; color: var(--fg); letter-spacing: .04em; }
+.pick__when { font-size: 13px; color: var(--tint); border: 1px solid rgba(154,90,255,.45); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.pick__desc { margin: 0; font-size: 15px; line-height: 1.7; color: var(--fg-2); }
+.pick__list { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.pick__list li { font-size: 13px; color: var(--fg); background: var(--panel-2); border-radius: 6px; padding: 4px 10px; }
+.pick__cuts { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line-soft); font-family: var(--font-mono); font-size: 12px; color: var(--dim); }
+@media (max-width: 960px) { .pick { grid-template-columns: 1fr; } }
+
+.nav__gap { height: 8px; }
+/* ── 방명록: 감각 색 메모가 흐르는 줄 ── */
+#guestbook { --gb-font: "Pretendard Variable", Pretendard, sans-serif; --gb-w: 190px; }
+.gb { display: flex; flex-direction: column; }
+/* 쓰기: 왼쪽 색 메모 한 장 + 오른쪽 세 단계 */
+.gb__form { --c: #b9a2ef; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: stretch; }
+.gb__paper { position: relative; aspect-ratio: 1 / 1.25; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 72%, #fff) 0%, var(--c) 45%); box-shadow: 0 30px 60px -30px var(--c); transition: background .35s, box-shadow .35s; }
+.gb__paper textarea { position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; font: inherit; font-family: var(--gb-font); font-weight: 800; font-size: 21px; line-height: 1.25; letter-spacing: -.035em; color: #000; background: transparent; border: 0; padding: 16px 16px 34px; resize: none; outline: none; word-break: keep-all; }
+.gb__paper textarea::placeholder { color: rgba(0,0,0,.38); }
+.gb__paper .gb__count { position: absolute; left: 16px; bottom: 12px; font-family: var(--font-mono); font-size: 10.5px; color: rgba(0,0,0,.5); }
+.gb__ctrl { display: flex; flex-direction: column; justify-content: space-between; gap: 22px; padding: 4px 0; }
+.gb__field { display: flex; flex-direction: column; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+.gb__label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; color: var(--dim); }
+.gb__senses { display: flex; gap: 8px; flex-wrap: wrap; }
+.gb__sense { width: 30px; height: 38px; border: 0; padding: 0; cursor: pointer; background: var(--c); opacity: .35; transform-origin: bottom; transition: opacity .2s, transform .3s cubic-bezier(.2,.8,.2,1); }
+.gb__sense:hover { opacity: .75; }
+.gb__sense[aria-checked="true"] { opacity: 1; transform: translateY(-6px); }
+.gb__sense-name { font-family: var(--gb-font); font-weight: 700; font-size: 16px; color: var(--c); transition: color .3s; }
+.gb__field input { font: inherit; font-size: 16px; color: var(--fg); background: transparent; border: 0; padding: 2px 0 6px; outline: none; }
+.gb__field input::placeholder { color: rgba(255,255,255,.35); }
+.gb__field--send { flex-direction: row; align-items: center; gap: 16px; }
+.gb__send { font: inherit; font-family: var(--gb-font); font-weight: 700; font-size: 15px; color: rgba(255,255,255,.45); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 11px 22px; cursor: pointer; transition: color .2s, background .25s, border-color .2s; }
+.gb__form.is-ready .gb__send { color: #000; background: var(--c); border-color: var(--c); }
+.gb__status { margin: 0; font-size: 13px; color: var(--fg-2); }
+/* 요약 줄 */
+.gb__summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 48px 0 18px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .04em; color: var(--dim); }
+.gb__summary b { font-weight: 400; color: var(--fg); margin-right: 2px; }
+.gb__toggle { white-space: nowrap; flex-shrink: 0; font: inherit; color: var(--fg-2); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.gb__toggle:hover { color: var(--fg); border-color: var(--fg-2); }
+#guestbook.is-empty .gb__toggle { display: none; }
+/* 흐르는 줄: 양 끝은 어둠 속으로 사라지게 */
+.gb__board { position: relative; }
+.gb__flow { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 6px 0 10px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+.gb__lane { overflow: visible; }
+.gb__track { display: flex; gap: 14px; width: max-content; animation: gbFlow var(--dur, 60s) linear infinite; }
+.gb__lane.is-rev .gb__track { animation-direction: reverse; }
+.gb__flow:hover .gb__track { animation-play-state: paused; }
+@keyframes gbFlow { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 7px)); } }
+.gb__grid { display: none; grid-template-columns: repeat(auto-fill, minmax(var(--gb-w), 1fr)); gap: 14px; }
+.gb__board.is-all .gb__flow { display: none; }
+.gb__board.is-all .gb__grid { display: grid; }
+.gb__empty { margin: 0; padding: 40px 0; text-align: center; color: var(--dim); display: none; }
+#guestbook.is-empty .gb__empty { display: block; }
+#guestbook.is-empty .gb__flow, #guestbook.is-empty .gb__grid { display: none; }
+/* 메모 한 장 */
+.gb__note { flex-shrink: 0; box-sizing: border-box; width: var(--gb-w); aspect-ratio: 1 / 1.25; display: flex; flex-direction: column; padding: 12px 13px 11px; color: #000; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 72%, #fff) 0%, var(--c) 45%); transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s; }
+.gb__grid .gb__note { width: auto; }
+.gb__note:hover { transform: translateY(-5px); box-shadow: 0 24px 40px -20px var(--c); }
+.gb__note-top { display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .03em; color: rgba(0,0,0,.55); margin-bottom: 10px; }
+.gb__note-top span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gb__note p { margin: 0; font-family: var(--gb-font); font-weight: 800; letter-spacing: -.04em; line-height: 1.2; word-break: keep-all; overflow-wrap: anywhere; white-space: pre-wrap; }
+.gb__note.s-xl p { font-size: 26px; line-height: 1.12; } .gb__note.s-l p { font-size: 19px; } .gb__note.s-m p { font-size: 14.5px; line-height: 1.3; } .gb__note.s-s p { font-size: 12px; line-height: 1.4; letter-spacing: -.03em; }
+.gb__note-by { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,.5); font-family: var(--font-mono); font-size: 9.5px; color: rgba(0,0,0,.65); }
+.gb__note-by span:first-child { font-family: var(--gb-font); font-weight: 700; font-size: 10.5px; color: rgba(0,0,0,.8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb__note.is-new { animation: gbIn 1.2s cubic-bezier(.2,.8,.2,1); }
+@keyframes gbIn { from { opacity: 0; transform: translateY(20px) scale(.94); } }
+@media (max-width: 960px) {
+  #guestbook { --gb-w: 150px; }
+  .gb__form { grid-template-columns: 1fr; gap: 20px; }
+  .gb__paper { aspect-ratio: auto; height: 190px; }
+  .gb__summary { margin-top: 36px; }
+  .gb__summary .gb__where, .gb__summary .gb__dot { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="side">
+    <div>
+      <div class="side__brand">감각자원관리공단<br />제작 기록부</div>
+      <a class="side__logo" href="#top"><svg class="logo logo--side" viewBox="0 0 995 164" fill="none" aria-label="야광(夜光) 당신이 모르는 사이" role="img">
+        <defs><clipPath id="clip-side"><rect width="50.7536" height="92.4441" fill="white" transform="translate(435.611 60.9587)"/></clipPath></defs>
+        <g transform="translate(-231.5 0)"><g class="logo__line logo__line--1">
+          <path d="M340.274 48.814L380.152 26.7L375.439 62.0462C374.17 66.7591 371.451 70.9281 369.457 74.1909C366.92 78.5412 363.294 83.6165 361.663 85.973L358.582 83.9791C359.488 81.6226 362.207 72.922 362.751 66.7591L365.107 42.6511C365.107 41.9261 332.299 62.2275 332.299 62.2275C328.673 63.3151 325.773 63.4963 328.673 58.421L334.474 47.9077L340.274 48.814ZM417.13 69.8406C418.398 72.0157 416.042 76.366 415.861 77.0911L383.415 103.737C384.684 104.099 385.771 104.462 387.402 104.824C391.209 108.812 398.822 119.325 399.185 123.857C399.003 129.476 395.922 134.37 391.028 139.446C381.602 149.052 378.339 151.046 365.47 160.11C359.307 164.46 354.231 162.647 350.425 159.203C347.706 155.397 342.812 147.602 342.631 143.796C342.449 139.264 343.718 135.276 344.443 130.745C347.343 126.576 349.7 123.494 357.313 115.881L403.897 79.4475C407.523 76.5473 399.91 79.4475 399.91 79.4475L390.846 85.973C390.846 85.973 384.865 93.0422 385.409 84.3416C385.409 84.3416 361.301 96.6675 352.6 101.018C346.256 104.281 338.28 107.725 330.305 112.256C327.223 113.887 325.411 114.613 317.797 119.688L323.598 100.293L330.123 101.743C334.111 99.9302 337.736 98.6614 340.999 97.03L342.268 85.4292C342.812 80.3538 342.993 79.4475 339.912 80.7163L333.93 83.0727L332.661 77.6349C339.912 73.2845 343.537 70.2031 349.519 64.2214C355.681 58.2397 356.769 66.3966 356.769 66.3966L355.138 90.3233C366.557 84.3416 380.152 78.7224 385.952 72.7408L389.578 24.5248C389.94 20.8995 390.303 19.6307 387.946 20.7183L380.514 24.3435L378.339 20.537C380.877 18.5431 391.753 10.0238 398.097 3.4983C402.447 -4.47726 404.441 3.67957 404.441 3.67957C404.441 3.67957 400.635 56.0646 400.272 69.478L410.785 66.3966C415.679 66.5778 415.679 66.9403 417.13 69.8406ZM384.502 125.67C384.865 122.951 379.064 117.15 377.614 115.881C374.352 114.794 372.539 113.162 370.545 115.338C366.195 117.694 358.4 124.038 354.956 130.02C353.506 132.558 354.594 135.639 354.594 138.358C356.225 141.439 359.488 146.334 361.844 149.415C363.838 150.503 364.745 150.865 368.551 149.234C375.077 144.158 380.877 137.995 382.327 135.82C384.684 132.558 385.409 129.476 384.502 125.67Z" fill="white"/>
+          <path d="M323.054 89.9607C324.867 93.9485 317.254 99.0239 310.728 105.731L307.828 103.737C307.828 103.737 311.091 100.111 311.091 97.3925C311.091 95.2173 309.278 92.1359 308.191 92.1359C307.284 92.1359 305.653 93.2234 304.203 94.311C303.297 117.331 302.571 136.908 302.753 137.452C302.753 140.533 306.015 144.521 306.015 144.521L293.69 161.378C293.69 161.378 287.708 167.36 288.07 158.478L293.146 24.1623C293.327 20.8995 293.327 20.537 290.971 21.6246L282.089 27.2437L279.551 22.1684C279.551 22.1684 293.871 10.5675 300.759 3.31701C304.384 -3.75224 307.828 3.49827 307.828 3.49827C307.828 3.49827 306.922 26.8812 305.834 53.8894C306.922 52.9831 308.009 52.0768 308.916 51.1704C312.903 47.3639 316.347 50.9892 316.529 51.533C317.435 52.6205 321.785 56.2458 323.054 58.7835C324.686 63.1338 317.254 67.8466 310.728 74.9159L307.828 72.7407C307.828 72.7407 311.091 68.9342 311.091 66.5778C311.091 64.4026 309.278 61.1399 308.191 61.1399C307.466 61.1399 306.378 61.865 305.472 62.59C305.109 70.203 304.747 78.3599 304.384 86.1542C305.834 84.8854 307.466 83.4352 309.097 81.9851C313.085 78.3599 316.347 81.8039 316.529 82.3477C317.435 83.4352 321.967 87.423 323.054 89.9607ZM283.539 72.0157C283.901 78.5411 282.814 82.7102 278.826 87.9668L260.156 112.256C251.637 123.313 245.836 115.881 244.024 113.525L231.516 84.7041L234.779 76.9098L263.419 39.9321L272.482 32.3191L276.832 36.6694L267.95 44.2824L265.413 48.4515L273.751 48.814C277.92 53.7081 283.358 66.2153 283.539 72.0157ZM271.757 83.4352C272.119 81.6226 271.213 74.7346 270.307 72.5595C270.307 72.5595 267.406 62.0462 262.512 59.5085C259.612 58.6022 257.437 60.4148 256.893 60.9586L245.836 75.4597C244.93 77.2723 243.298 77.2723 244.205 79.9913C246.38 86.5167 253.268 102.468 256.168 103.374C258.162 103.012 258.887 102.105 259.975 101.199C265.05 94.6736 271.032 86.3355 271.757 83.4352Z" fill="white"/>
+        </g>
+        <g class="logo__seal">
+          <g clip-path="url(#clip-side)"> <rect width="50.7536" height="92.4441" transform="translate(435.611 60.9587)" fill="black" fill-opacity="0.5"/> <path d="M483.831 63.5227V60.9587H438.145V63.5227H435.611V150.839H438.145V153.403H483.831V150.839H486.365V63.5227H483.831ZM443.232 71.2348H463.542V68.6708H461.008V66.1069H466.075V68.6708H468.609V71.2348H478.764V76.3627H476.23V73.7988H443.232V71.2348ZM443.232 86.6388H445.766V84.0748H448.3V81.5109H450.833V78.9469H453.367V76.3829H458.435V78.9469H455.901V81.5109H453.367V107.191H448.3V86.6388H445.766V89.2027H443.232V86.6388ZM448.3 122.595V117.467H445.766V114.903H448.3V117.467H450.833V120.031H453.367V125.159H450.833V122.595H448.3ZM458.454 135.435V140.563H455.921V143.127H453.387V145.691H448.32V148.255H445.786V150.819H440.719V148.255H443.252V145.691H448.32V143.127H450.853V140.563H453.387V132.851H458.454V135.415V135.435ZM481.298 145.691V148.255H478.764V150.819H468.609V148.255H466.075V132.851H471.143V148.255H476.21V145.691H478.744V143.127H481.278V145.691H481.298ZM481.298 132.871H478.764V130.307H443.232V127.743H458.454V109.775H463.522V127.743H478.744V130.307H481.278V132.871H481.298ZM468.609 125.159V120.031H471.143V117.467H473.677V114.903H476.21V120.031H473.677V122.595H471.143V125.159H468.609ZM481.298 104.607H476.23V102.043H473.697V99.4788H471.163V96.9148H466.095V99.4788H463.562V102.043H461.028V104.607H455.961V102.043H458.494V99.4788H461.028V96.9148H463.562V94.3509H466.095V91.7869H463.562V86.659H461.028V89.2229H455.961V86.659H458.494V84.095H461.028V81.531H463.562V78.9671H466.095V76.4031H471.163V78.9671H468.629V81.531H478.784V86.659H476.25V89.2229H473.716V91.7869H471.183V94.3509H473.716V96.9148H476.25V99.4788H478.784V102.043H481.318V104.607H481.298ZM468.609 89.2027H471.143V86.6388H473.677V84.0748H463.522V86.6388H466.056V91.7667H468.589V89.2027H468.609Z" fill="#9A5AFF"/> </g>
+        </g>
+        </g><g transform="translate(295 -160.5)"><g class="logo__line logo__line--2">
+          <path d="M700 179.903C700 179.903 694.779 299.156 695.432 300.462C695.269 303.235 698.368 306.824 698.368 306.824L687.275 321.996C687.275 321.996 681.892 327.379 682.218 319.385L686.949 198.501C687.112 195.565 686.786 194.912 684.828 196.217L676.834 201.274L674.55 196.707C674.55 196.707 687.438 186.266 693.637 179.74C696.9 173.378 700 179.903 700 179.903ZM675.203 241.569C675.529 247.442 674.877 251.357 670.961 255.925L654.158 275.828C646.002 285.453 641.271 279.091 639.639 276.97L628.383 253.152L631.482 245.974L657.095 212.694L665.415 205.842L669.33 209.758L661.336 216.609L659.053 220.361L666.557 220.688C670.146 225.092 675.04 236.349 675.203 241.569ZM664.762 251.847C665.089 250.379 664.436 244.016 663.294 242.059C663.294 242.059 660.684 232.597 656.442 230.313C653.832 229.497 651.874 231.128 651.385 231.618L641.271 244.669C640.618 246.3 638.987 246.137 639.966 248.747C641.597 254.62 647.796 267.182 650.733 267.997C652.364 267.671 653.18 266.692 654.158 265.877C658.4 260.004 663.947 254.294 664.762 251.847Z" fill="white"/>
+          <path d="M625.936 242.711C627.404 246.626 620.715 250.868 614.843 257.23L612.232 255.273C612.232 255.273 615.169 251.847 615.169 249.4C615.169 247.605 613.537 244.832 612.559 244.832C611.743 244.832 610.601 245.648 609.622 246.463C608.48 273.87 607.501 299.809 607.665 300.462C607.665 303.235 610.601 306.824 610.601 306.824L599.508 321.996C599.508 321.996 594.124 327.379 594.45 319.385L596.408 263.429L581.073 284.964C581.073 284.964 581.4 269.302 581.4 263.266C581.4 255.11 576.669 251.031 574.058 248.584L571.285 250.215C570.143 253.478 568.512 255.11 567.043 257.23C566.065 259.188 556.766 269.955 554.808 271.423L538.331 287.9L534.906 284.474C534.906 284.474 545.999 273.055 551.382 265.55C553.34 262.777 558.56 251.52 559.05 249.4L565.901 220.688C566.717 217.099 558.071 225.255 558.071 225.255L556.929 219.219L582.705 201.764C582.705 201.764 575.69 232.923 573.406 242.874C575.853 241.406 578.463 239.122 579.605 240.101C585.315 245.974 591.025 249.237 592.003 253.641C592.656 256.251 592.656 258.862 592.33 262.124C593.635 260.982 595.103 259.677 596.734 258.535L599.018 198.501C599.181 195.565 599.181 195.238 597.061 196.217L589.067 201.274L586.783 196.707C586.783 196.707 599.671 186.266 605.87 179.74C609.133 173.378 612.232 179.903 612.232 179.903C612.232 179.903 611.09 208.942 609.948 238.47C611.09 237.491 612.232 236.675 613.374 235.859C616.963 232.433 619.737 235.696 619.9 236.186C620.715 236.675 624.794 240.427 625.936 242.711Z" fill="white"/>
+          <path d="M498.213 220.851C492.666 223.298 470.806 241.895 462.486 243.037C456.286 238.796 453.35 235.859 449.272 230.476C448.619 227.376 447.477 225.092 447.967 223.298C449.435 213.673 450.25 203.885 450.414 202.09C450.25 200.785 449.598 199.806 448.782 200.622L442.257 205.027L440.788 200.459C443.072 198.664 454.166 188.713 456.45 185.287C461.017 178.272 461.833 185.613 461.833 185.613C461.833 185.613 459.06 213.183 457.918 218.73C459.712 222.645 462.649 229.171 469.337 231.128C477.657 227.703 484.346 223.135 489.077 218.893C492.177 216.283 493.971 214.652 495.276 212.857C500.497 206.332 501.312 215.304 498.213 220.851ZM513.221 237.98C518.442 239.122 504.738 250.379 499.028 252.989L497.071 253.315C499.028 251.031 497.886 249.726 498.213 249.4C490.382 252.662 471.784 260.656 464.606 264.082C458.734 266.855 450.25 270.444 443.072 274.36C440.299 275.828 438.994 276.48 432.469 281.048L437.363 263.593L443.072 264.898C454.981 260.982 470.316 254.457 483.041 248.584C491.198 244.832 500.17 240.59 504.901 238.143C507.838 237.001 510.448 237.654 513.221 237.98ZM500.986 299.483C495.439 301.93 475.047 320.038 466.401 321.506C459.875 316.775 457.265 313.676 453.187 308.455C452.534 305.356 451.392 303.235 451.882 301.277C453.513 290.673 454.329 287.084 454.329 287.084C454.655 285.616 453.35 285.616 452.697 286.432L446.172 290.347L444.704 285.942C446.988 283.985 458.081 274.36 460.365 271.097C464.933 264.408 465.748 271.097 465.748 271.097C465.748 271.097 462.812 291.652 461.833 296.709C463.628 300.625 466.238 305.682 473.09 307.313C482.715 304.54 486.63 301.44 491.524 296.709C494.46 293.773 496.744 292.305 498.213 290.51C502.944 284.311 504.412 293.12 500.986 299.483Z" fill="white"/>
+          <path d="M420.886 233.902L422.354 243.364C419.744 246.137 417.786 247.768 413.381 251.194C404.409 258.046 392.5 268.324 392.5 268.324C392.5 268.324 387.932 270.934 384.833 272.402C380.428 271.913 373.576 262.614 368.845 257.394C365.909 254.294 366.724 254.457 367.214 251.031L370.64 243.364L363.298 247.442L363.951 238.796C367.703 238.633 369.498 237.654 371.129 236.838C375.697 234.718 381.08 230.639 385.648 227.703C392.826 223.135 405.061 219.383 402.778 215.957C402.778 215.957 396.578 205.19 393.805 202.906C392.663 202.09 392.989 203.395 391.847 203.885L369.498 218.404C367.54 220.525 363.135 221.83 365.419 216.773L369.171 208.616C369.171 208.616 372.434 208.616 373.087 208.289C378.47 205.353 386.953 200.785 390.216 197.359C390.216 197.359 393.805 194.586 395.763 192.955C400.82 188.713 414.197 209.594 414.197 209.594C414.36 210.9 413.871 213.184 412.892 214.978L418.439 213.347L416.97 220.688C406.53 223.298 404.898 224.44 399.352 227.05C392.663 230.313 383.691 236.023 380.754 239.449C373.739 247.279 376.839 246.137 378.796 249.889C382.549 253.805 385.322 259.351 388.911 260.167C392.011 260.983 394.131 258.209 396.742 256.578C401.309 253.478 406.367 248.584 412.566 243.527C414.523 242.385 415.992 239.775 420.886 233.902ZM431.653 272.239C436.71 273.055 422.843 284.8 417.297 287.248L415.665 286.758C415.665 286.758 417.46 283.332 417.134 282.68C416.807 282.19 411.098 285.127 407.182 286.921C397.394 291.163 392.011 294.099 382.385 298.504C374.229 302.256 368.356 303.887 361.178 307.803C358.404 309.434 356.936 309.924 350.248 314.818L355.468 297.851L361.178 298.504C372.924 294.099 388.748 288.553 401.472 282.843C409.629 279.254 418.602 274.849 423.333 272.239C426.269 271.26 428.879 271.75 431.653 272.239Z" fill="white"/>
+          <path d="M337.033 196.38L334.586 245.321C334.423 247.605 336.87 249.4 336.87 249.4L326.756 257.72C325.777 258.535 321.862 261.798 322.188 254.62L322.351 251.031C314.684 253.804 302.448 261.472 298.207 262.94L291.518 267.997C291.518 267.997 285.972 272.891 286.461 264.898L289.071 222.808C288.908 221.503 288.419 220.851 287.277 221.503L280.751 225.745L279.772 221.014C279.772 221.014 293.802 207.637 296.086 203.721C300.98 196.87 301.47 204.048 301.47 204.048L300.98 211.389C310.605 206.495 329.366 196.054 331.65 193.933C337.36 188.223 337.033 196.38 337.033 196.38ZM350.084 272.565C355.142 273.381 341.275 284.963 335.728 287.574L333.771 287.247C333.771 287.247 335.891 283.658 335.565 282.843C335.239 282.353 328.877 285.779 324.635 287.737C315.336 291.978 308.158 295.078 300.817 298.504C295.107 301.114 286.787 304.05 279.609 307.966C276.836 309.597 275.368 310.086 268.679 314.654L273.9 298.014L279.609 298.667C286.787 295.73 295.597 292.794 304.243 289.368L305.385 277.296C305.874 272.891 306.038 271.097 303.264 272.565L298.696 275.012L297.554 270.607C304.243 267.018 306.69 263.919 311.91 258.535C317.62 253.967 318.11 260.33 318.11 260.33L316.478 284.637C317.62 284.148 318.762 283.495 319.904 283.006C327.898 279.254 337.033 275.012 341.764 272.565C344.701 271.586 347.311 272.076 350.084 272.565ZM324.635 210.247C324.798 207.8 324.961 206.495 323.493 206.821L300.817 218.404L299.023 253.804C309.137 251.847 318.11 244.669 322.841 240.753C323.167 235.37 324.635 210.247 324.635 210.247Z" fill="white"/>
+          <path d="M236.717 179.903C236.717 179.903 231.497 299.156 232.149 300.462C231.986 303.235 235.086 306.824 235.086 306.824L223.992 321.996C223.992 321.996 218.609 327.379 218.935 319.385L223.666 198.501C223.829 195.565 223.503 194.912 221.545 196.217L213.552 201.274L211.268 196.707C211.268 196.707 224.156 186.266 230.355 179.74C233.618 173.378 236.717 179.903 236.717 179.903ZM211.92 241.569C212.247 247.442 211.594 251.357 207.679 255.925L190.876 275.828C182.719 285.453 177.988 279.091 176.357 276.97L165.1 253.152L168.2 245.974L193.812 212.694L202.132 205.842L206.047 209.758L198.054 216.609L195.77 220.361L203.274 220.688C206.863 225.092 211.757 236.349 211.92 241.569ZM201.48 251.847C201.806 250.379 201.153 244.016 200.011 242.059C200.011 242.059 197.401 232.597 193.16 230.313C190.549 229.497 188.592 231.128 188.102 231.618L177.988 244.669C177.335 246.3 175.704 246.137 176.683 248.747C178.314 254.62 184.513 267.182 187.45 267.997C189.081 267.671 189.897 266.692 190.876 265.877C195.117 260.004 200.664 254.294 201.48 251.847Z" fill="white"/>
+          <path d="M157.106 180.067C157.106 180.067 152.539 261.798 153.028 263.103C153.028 265.876 156.128 269.465 156.128 269.465L144.871 284.637C144.871 284.637 139.488 290.184 139.814 282.027L143.729 198.664C143.892 195.891 143.892 195.238 141.935 196.38L133.452 201.601L131.331 196.87C131.331 196.87 145.197 186.266 151.234 179.903C155.312 173.052 157.106 180.067 157.106 180.067ZM137.856 248.584L138.835 249.889L121.216 271.586L122.032 251.357C122.358 244.832 119.096 242.222 116.812 240.427C115.996 240.59 115.017 240.753 113.875 241.243C112.733 246.953 110.449 251.357 108.818 254.131C107.839 255.925 101.477 263.593 96.5827 269.465C92.0149 274.686 83.0424 284.474 83.0424 284.474L79.7797 281.374C79.7797 281.374 86.4683 273.218 91.8518 265.713C93.8094 262.777 100.009 251.684 100.661 248.258L106.371 217.588C107.023 214.325 98.2141 221.83 98.2141 221.83L97.0721 216.12L122.848 198.827L115.18 235.207C115.18 235.207 118.769 232.433 121.216 231.128C125.458 233.738 131.005 237.98 133.778 241.732L133.452 250.705L137.856 248.584ZM152.212 301.603C146.666 304.05 128.721 320.364 120.401 321.669C114.038 316.775 110.776 313.512 106.697 308.292C106.045 305.355 104.903 303.561 105.392 301.277L108.329 287.084C108.492 285.453 107.187 285.616 106.371 286.432L100.009 290.021L99.0298 285.779C99.0298 285.779 111.591 276.97 114.038 273.054C118.769 265.876 118.932 274.849 118.932 274.849C118.932 274.849 116.812 291.652 115.833 296.709C117.301 300.625 118.769 307.15 125.784 308.945C136.062 305.845 137.53 304.377 143.403 299.646C145.85 297.525 147.645 296.057 150.092 292.794C154.823 286.595 154.007 296.709 152.212 301.603Z" fill="white"/>
+          <path d="M80.4323 236.186C81.5742 238.143 79.7797 242.385 79.7797 242.385C79.7797 242.385 66.7288 253.968 58.8982 261.309C56.1249 263.756 52.6991 267.182 50.5783 269.302C52.0465 269.629 53.3516 270.281 54.983 270.771C58.572 274.523 65.2606 283.985 65.5868 288.063C65.4237 292.957 62.8135 297.525 58.4088 302.093C49.7626 310.739 46.9893 312.534 35.4066 320.69C29.8599 324.606 25.129 322.974 21.8662 319.875C19.4192 316.612 14.8513 309.434 14.6882 306.008C14.5251 301.93 15.8302 298.341 16.4827 294.262C18.9298 290.51 20.7243 287.411 28.2285 280.722L67.2182 246.137C70.6441 243.037 66.4025 242.548 64.608 242.874L56.6143 252.01C56.6143 252.01 51.2308 256.741 51.5571 248.91L51.7202 243.853C41.4426 253.152 23.3344 270.771 16.6458 271.586C12.4043 267.997 9.14155 261.309 3.75804 256.088C3.75804 253.478 1.96354 251.684 2.45295 249.4C3.26864 244.995 4.41059 242.222 7.02078 237.164C10.2835 230.802 12.5674 227.376 16.6458 222.808C17.9509 221.666 23.987 216.283 23.987 216.283C15.3408 221.014 0.658448 228.518 0.00590109 227.539C-0.157236 225.908 3.1055 220.035 4.41059 218.404L8.65215 219.219C17.6247 214.162 20.398 213.347 29.5336 206.984C30.5125 206.495 32.7964 204.374 34.4277 203.558C37.3642 201.111 41.1163 201.764 43.074 202.253C42.4214 204.537 40.7901 210.247 36.3854 212.368C34.2646 213.673 34.4277 213.51 32.7964 214.162C30.5125 216.609 21.0505 224.766 17.6247 232.923C15.3407 238.306 13.5462 243.037 14.1988 244.342C15.5039 247.279 18.2772 256.741 23.8239 257.067C34.9172 254.131 47.805 237.164 52.6991 231.781L55.4724 198.501C55.6355 195.565 55.4724 195.075 53.3516 196.054L47.805 200.785L45.3579 196.543C47.3155 194.749 57.1037 185.613 62.9767 179.577C67.0551 172.725 68.8496 179.74 68.8496 179.74L64.9343 237.001L74.3962 233.902C79.1272 234.065 79.2903 233.412 80.4323 236.186ZM52.3728 289.694C52.6991 287.411 47.805 282.19 46.3367 280.559C43.074 279.743 41.7689 278.275 39.6481 280.069C35.7328 282.19 29.8599 288.553 26.434 293.773C25.4552 296.22 25.6184 298.504 25.6184 300.788C26.7603 303.561 29.8599 308.129 31.9807 311.065C33.9383 312.044 34.754 312.37 38.1799 310.902C44.0528 306.334 49.2732 300.788 50.5783 298.83C52.5359 295.894 53.1885 293.12 52.3728 289.694Z" fill="white"/>
+        </g>
+      </g></svg></a>
+      <div class="side__sub">프롬프트 북</div>
+    </div>
+    <nav class="nav" id="nav" aria-label="목차"></nav>
+    <div class="side__foot"><a href="../">작품 보기 ↗</a></div>
+  </aside>
+
+  <main>
+    <section class="hero" id="top">
+      <div class="hero__stage">
+        <div class="hero__bg" aria-hidden="true">
+          <video muted playsinline preload="auto" src="../film2.mp4#t=0,95"></video>
+        </div>
+        <div class="hero__inner">
+      <div class="eyebrow">제작 기록 · AI PROMPT BOOK</div>
+      <h1 class="hero__logo"><svg class="logo logo--hero" viewBox="0 0 995 164" fill="none" aria-label="야광(夜光) 당신이 모르는 사이" role="img">
+        <defs><clipPath id="clip-hero"><rect width="50.7536" height="92.4441" fill="white" transform="translate(435.611 60.9587)"/></clipPath></defs>
+        <g transform="translate(-231.5 0)"><g class="logo__line logo__line--1">
+          <path d="M340.274 48.814L380.152 26.7L375.439 62.0462C374.17 66.7591 371.451 70.9281 369.457 74.1909C366.92 78.5412 363.294 83.6165 361.663 85.973L358.582 83.9791C359.488 81.6226 362.207 72.922 362.751 66.7591L365.107 42.6511C365.107 41.9261 332.299 62.2275 332.299 62.2275C328.673 63.3151 325.773 63.4963 328.673 58.421L334.474 47.9077L340.274 48.814ZM417.13 69.8406C418.398 72.0157 416.042 76.366 415.861 77.0911L383.415 103.737C384.684 104.099 385.771 104.462 387.402 104.824C391.209 108.812 398.822 119.325 399.185 123.857C399.003 129.476 395.922 134.37 391.028 139.446C381.602 149.052 378.339 151.046 365.47 160.11C359.307 164.46 354.231 162.647 350.425 159.203C347.706 155.397 342.812 147.602 342.631 143.796C342.449 139.264 343.718 135.276 344.443 130.745C347.343 126.576 349.7 123.494 357.313 115.881L403.897 79.4475C407.523 76.5473 399.91 79.4475 399.91 79.4475L390.846 85.973C390.846 85.973 384.865 93.0422 385.409 84.3416C385.409 84.3416 361.301 96.6675 352.6 101.018C346.256 104.281 338.28 107.725 330.305 112.256C327.223 113.887 325.411 114.613 317.797 119.688L323.598 100.293L330.123 101.743C334.111 99.9302 337.736 98.6614 340.999 97.03L342.268 85.4292C342.812 80.3538 342.993 79.4475 339.912 80.7163L333.93 83.0727L332.661 77.6349C339.912 73.2845 343.537 70.2031 349.519 64.2214C355.681 58.2397 356.769 66.3966 356.769 66.3966L355.138 90.3233C366.557 84.3416 380.152 78.7224 385.952 72.7408L389.578 24.5248C389.94 20.8995 390.303 19.6307 387.946 20.7183L380.514 24.3435L378.339 20.537C380.877 18.5431 391.753 10.0238 398.097 3.4983C402.447 -4.47726 404.441 3.67957 404.441 3.67957C404.441 3.67957 400.635 56.0646 400.272 69.478L410.785 66.3966C415.679 66.5778 415.679 66.9403 417.13 69.8406ZM384.502 125.67C384.865 122.951 379.064 117.15 377.614 115.881C374.352 114.794 372.539 113.162 370.545 115.338C366.195 117.694 358.4 124.038 354.956 130.02C353.506 132.558 354.594 135.639 354.594 138.358C356.225 141.439 359.488 146.334 361.844 149.415C363.838 150.503 364.745 150.865 368.551 149.234C375.077 144.158 380.877 137.995 382.327 135.82C384.684 132.558 385.409 129.476 384.502 125.67Z" fill="white"/>
+          <path d="M323.054 89.9607C324.867 93.9485 317.254 99.0239 310.728 105.731L307.828 103.737C307.828 103.737 311.091 100.111 311.091 97.3925C311.091 95.2173 309.278 92.1359 308.191 92.1359C307.284 92.1359 305.653 93.2234 304.203 94.311C303.297 117.331 302.571 136.908 302.753 137.452C302.753 140.533 306.015 144.521 306.015 144.521L293.69 161.378C293.69 161.378 287.708 167.36 288.07 158.478L293.146 24.1623C293.327 20.8995 293.327 20.537 290.971 21.6246L282.089 27.2437L279.551 22.1684C279.551 22.1684 293.871 10.5675 300.759 3.31701C304.384 -3.75224 307.828 3.49827 307.828 3.49827C307.828 3.49827 306.922 26.8812 305.834 53.8894C306.922 52.9831 308.009 52.0768 308.916 51.1704C312.903 47.3639 316.347 50.9892 316.529 51.533C317.435 52.6205 321.785 56.2458 323.054 58.7835C324.686 63.1338 317.254 67.8466 310.728 74.9159L307.828 72.7407C307.828 72.7407 311.091 68.9342 311.091 66.5778C311.091 64.4026 309.278 61.1399 308.191 61.1399C307.466 61.1399 306.378 61.865 305.472 62.59C305.109 70.203 304.747 78.3599 304.384 86.1542C305.834 84.8854 307.466 83.4352 309.097 81.9851C313.085 78.3599 316.347 81.8039 316.529 82.3477C317.435 83.4352 321.967 87.423 323.054 89.9607ZM283.539 72.0157C283.901 78.5411 282.814 82.7102 278.826 87.9668L260.156 112.256C251.637 123.313 245.836 115.881 244.024 113.525L231.516 84.7041L234.779 76.9098L263.419 39.9321L272.482 32.3191L276.832 36.6694L267.95 44.2824L265.413 48.4515L273.751 48.814C277.92 53.7081 283.358 66.2153 283.539 72.0157ZM271.757 83.4352C272.119 81.6226 271.213 74.7346 270.307 72.5595C270.307 72.5595 267.406 62.0462 262.512 59.5085C259.612 58.6022 257.437 60.4148 256.893 60.9586L245.836 75.4597C244.93 77.2723 243.298 77.2723 244.205 79.9913C246.38 86.5167 253.268 102.468 256.168 103.374C258.162 103.012 258.887 102.105 259.975 101.199C265.05 94.6736 271.032 86.3355 271.757 83.4352Z" fill="white"/>
+        </g>
+        <g class="logo__seal">
+          <g clip-path="url(#clip-hero)"> <rect width="50.7536" height="92.4441" transform="translate(435.611 60.9587)" fill="black" fill-opacity="0.5"/> <path d="M483.831 63.5227V60.9587H438.145V63.5227H435.611V150.839H438.145V153.403H483.831V150.839H486.365V63.5227H483.831ZM443.232 71.2348H463.542V68.6708H461.008V66.1069H466.075V68.6708H468.609V71.2348H478.764V76.3627H476.23V73.7988H443.232V71.2348ZM443.232 86.6388H445.766V84.0748H448.3V81.5109H450.833V78.9469H453.367V76.3829H458.435V78.9469H455.901V81.5109H453.367V107.191H448.3V86.6388H445.766V89.2027H443.232V86.6388ZM448.3 122.595V117.467H445.766V114.903H448.3V117.467H450.833V120.031H453.367V125.159H450.833V122.595H448.3ZM458.454 135.435V140.563H455.921V143.127H453.387V145.691H448.32V148.255H445.786V150.819H440.719V148.255H443.252V145.691H448.32V143.127H450.853V140.563H453.387V132.851H458.454V135.415V135.435ZM481.298 145.691V148.255H478.764V150.819H468.609V148.255H466.075V132.851H471.143V148.255H476.21V145.691H478.744V143.127H481.278V145.691H481.298ZM481.298 132.871H478.764V130.307H443.232V127.743H458.454V109.775H463.522V127.743H478.744V130.307H481.278V132.871H481.298ZM468.609 125.159V120.031H471.143V117.467H473.677V114.903H476.21V120.031H473.677V122.595H471.143V125.159H468.609ZM481.298 104.607H476.23V102.043H473.697V99.4788H471.163V96.9148H466.095V99.4788H463.562V102.043H461.028V104.607H455.961V102.043H458.494V99.4788H461.028V96.9148H463.562V94.3509H466.095V91.7869H463.562V86.659H461.028V89.2229H455.961V86.659H458.494V84.095H461.028V81.531H463.562V78.9671H466.095V76.4031H471.163V78.9671H468.629V81.531H478.784V86.659H476.25V89.2229H473.716V91.7869H471.183V94.3509H473.716V96.9148H476.25V99.4788H478.784V102.043H481.318V104.607H481.298ZM468.609 89.2027H471.143V86.6388H473.677V84.0748H463.522V86.6388H466.056V91.7667H468.589V89.2027H468.609Z" fill="#9A5AFF"/> </g>
+        </g>
+        </g><g transform="translate(295 -160.5)"><g class="logo__line logo__line--2">
+          <path d="M700 179.903C700 179.903 694.779 299.156 695.432 300.462C695.269 303.235 698.368 306.824 698.368 306.824L687.275 321.996C687.275 321.996 681.892 327.379 682.218 319.385L686.949 198.501C687.112 195.565 686.786 194.912 684.828 196.217L676.834 201.274L674.55 196.707C674.55 196.707 687.438 186.266 693.637 179.74C696.9 173.378 700 179.903 700 179.903ZM675.203 241.569C675.529 247.442 674.877 251.357 670.961 255.925L654.158 275.828C646.002 285.453 641.271 279.091 639.639 276.97L628.383 253.152L631.482 245.974L657.095 212.694L665.415 205.842L669.33 209.758L661.336 216.609L659.053 220.361L666.557 220.688C670.146 225.092 675.04 236.349 675.203 241.569ZM664.762 251.847C665.089 250.379 664.436 244.016 663.294 242.059C663.294 242.059 660.684 232.597 656.442 230.313C653.832 229.497 651.874 231.128 651.385 231.618L641.271 244.669C640.618 246.3 638.987 246.137 639.966 248.747C641.597 254.62 647.796 267.182 650.733 267.997C652.364 267.671 653.18 266.692 654.158 265.877C658.4 260.004 663.947 254.294 664.762 251.847Z" fill="white"/>
+          <path d="M625.936 242.711C627.404 246.626 620.715 250.868 614.843 257.23L612.232 255.273C612.232 255.273 615.169 251.847 615.169 249.4C615.169 247.605 613.537 244.832 612.559 244.832C611.743 244.832 610.601 245.648 609.622 246.463C608.48 273.87 607.501 299.809 607.665 300.462C607.665 303.235 610.601 306.824 610.601 306.824L599.508 321.996C599.508 321.996 594.124 327.379 594.45 319.385L596.408 263.429L581.073 284.964C581.073 284.964 581.4 269.302 581.4 263.266C581.4 255.11 576.669 251.031 574.058 248.584L571.285 250.215C570.143 253.478 568.512 255.11 567.043 257.23C566.065 259.188 556.766 269.955 554.808 271.423L538.331 287.9L534.906 284.474C534.906 284.474 545.999 273.055 551.382 265.55C553.34 262.777 558.56 251.52 559.05 249.4L565.901 220.688C566.717 217.099 558.071 225.255 558.071 225.255L556.929 219.219L582.705 201.764C582.705 201.764 575.69 232.923 573.406 242.874C575.853 241.406 578.463 239.122 579.605 240.101C585.315 245.974 591.025 249.237 592.003 253.641C592.656 256.251 592.656 258.862 592.33 262.124C593.635 260.982 595.103 259.677 596.734 258.535L599.018 198.501C599.181 195.565 599.181 195.238 597.061 196.217L589.067 201.274L586.783 196.707C586.783 196.707 599.671 186.266 605.87 179.74C609.133 173.378 612.232 179.903 612.232 179.903C612.232 179.903 611.09 208.942 609.948 238.47C611.09 237.491 612.232 236.675 613.374 235.859C616.963 232.433 619.737 235.696 619.9 236.186C620.715 236.675 624.794 240.427 625.936 242.711Z" fill="white"/>
+          <path d="M498.213 220.851C492.666 223.298 470.806 241.895 462.486 243.037C456.286 238.796 453.35 235.859 449.272 230.476C448.619 227.376 447.477 225.092 447.967 223.298C449.435 213.673 450.25 203.885 450.414 202.09C450.25 200.785 449.598 199.806 448.782 200.622L442.257 205.027L440.788 200.459C443.072 198.664 454.166 188.713 456.45 185.287C461.017 178.272 461.833 185.613 461.833 185.613C461.833 185.613 459.06 213.183 457.918 218.73C459.712 222.645 462.649 229.171 469.337 231.128C477.657 227.703 484.346 223.135 489.077 218.893C492.177 216.283 493.971 214.652 495.276 212.857C500.497 206.332 501.312 215.304 498.213 220.851ZM513.221 237.98C518.442 239.122 504.738 250.379 499.028 252.989L497.071 253.315C499.028 251.031 497.886 249.726 498.213 249.4C490.382 252.662 471.784 260.656 464.606 264.082C458.734 266.855 450.25 270.444 443.072 274.36C440.299 275.828 438.994 276.48 432.469 281.048L437.363 263.593L443.072 264.898C454.981 260.982 470.316 254.457 483.041 248.584C491.198 244.832 500.17 240.59 504.901 238.143C507.838 237.001 510.448 237.654 513.221 237.98ZM500.986 299.483C495.439 301.93 475.047 320.038 466.401 321.506C459.875 316.775 457.265 313.676 453.187 308.455C452.534 305.356 451.392 303.235 451.882 301.277C453.513 290.673 454.329 287.084 454.329 287.084C454.655 285.616 453.35 285.616 452.697 286.432L446.172 290.347L444.704 285.942C446.988 283.985 458.081 274.36 460.365 271.097C464.933 264.408 465.748 271.097 465.748 271.097C465.748 271.097 462.812 291.652 461.833 296.709C463.628 300.625 466.238 305.682 473.09 307.313C482.715 304.54 486.63 301.44 491.524 296.709C494.46 293.773 496.744 292.305 498.213 290.51C502.944 284.311 504.412 293.12 500.986 299.483Z" fill="white"/>
+          <path d="M420.886 233.902L422.354 243.364C419.744 246.137 417.786 247.768 413.381 251.194C404.409 258.046 392.5 268.324 392.5 268.324C392.5 268.324 387.932 270.934 384.833 272.402C380.428 271.913 373.576 262.614 368.845 257.394C365.909 254.294 366.724 254.457 367.214 251.031L370.64 243.364L363.298 247.442L363.951 238.796C367.703 238.633 369.498 237.654 371.129 236.838C375.697 234.718 381.08 230.639 385.648 227.703C392.826 223.135 405.061 219.383 402.778 215.957C402.778 215.957 396.578 205.19 393.805 202.906C392.663 202.09 392.989 203.395 391.847 203.885L369.498 218.404C367.54 220.525 363.135 221.83 365.419 216.773L369.171 208.616C369.171 208.616 372.434 208.616 373.087 208.289C378.47 205.353 386.953 200.785 390.216 197.359C390.216 197.359 393.805 194.586 395.763 192.955C400.82 188.713 414.197 209.594 414.197 209.594C414.36 210.9 413.871 213.184 412.892 214.978L418.439 213.347L416.97 220.688C406.53 223.298 404.898 224.44 399.352 227.05C392.663 230.313 383.691 236.023 380.754 239.449C373.739 247.279 376.839 246.137 378.796 249.889C382.549 253.805 385.322 259.351 388.911 260.167C392.011 260.983 394.131 258.209 396.742 256.578C401.309 253.478 406.367 248.584 412.566 243.527C414.523 242.385 415.992 239.775 420.886 233.902ZM431.653 272.239C436.71 273.055 422.843 284.8 417.297 287.248L415.665 286.758C415.665 286.758 417.46 283.332 417.134 282.68C416.807 282.19 411.098 285.127 407.182 286.921C397.394 291.163 392.011 294.099 382.385 298.504C374.229 302.256 368.356 303.887 361.178 307.803C358.404 309.434 356.936 309.924 350.248 314.818L355.468 297.851L361.178 298.504C372.924 294.099 388.748 288.553 401.472 282.843C409.629 279.254 418.602 274.849 423.333 272.239C426.269 271.26 428.879 271.75 431.653 272.239Z" fill="white"/>
+          <path d="M337.033 196.38L334.586 245.321C334.423 247.605 336.87 249.4 336.87 249.4L326.756 257.72C325.777 258.535 321.862 261.798 322.188 254.62L322.351 251.031C314.684 253.804 302.448 261.472 298.207 262.94L291.518 267.997C291.518 267.997 285.972 272.891 286.461 264.898L289.071 222.808C288.908 221.503 288.419 220.851 287.277 221.503L280.751 225.745L279.772 221.014C279.772 221.014 293.802 207.637 296.086 203.721C300.98 196.87 301.47 204.048 301.47 204.048L300.98 211.389C310.605 206.495 329.366 196.054 331.65 193.933C337.36 188.223 337.033 196.38 337.033 196.38ZM350.084 272.565C355.142 273.381 341.275 284.963 335.728 287.574L333.771 287.247C333.771 287.247 335.891 283.658 335.565 282.843C335.239 282.353 328.877 285.779 324.635 287.737C315.336 291.978 308.158 295.078 300.817 298.504C295.107 301.114 286.787 304.05 279.609 307.966C276.836 309.597 275.368 310.086 268.679 314.654L273.9 298.014L279.609 298.667C286.787 295.73 295.597 292.794 304.243 289.368L305.385 277.296C305.874 272.891 306.038 271.097 303.264 272.565L298.696 275.012L297.554 270.607C304.243 267.018 306.69 263.919 311.91 258.535C317.62 253.967 318.11 260.33 318.11 260.33L316.478 284.637C317.62 284.148 318.762 283.495 319.904 283.006C327.898 279.254 337.033 275.012 341.764 272.565C344.701 271.586 347.311 272.076 350.084 272.565ZM324.635 210.247C324.798 207.8 324.961 206.495 323.493 206.821L300.817 218.404L299.023 253.804C309.137 251.847 318.11 244.669 322.841 240.753C323.167 235.37 324.635 210.247 324.635 210.247Z" fill="white"/>
+          <path d="M236.717 179.903C236.717 179.903 231.497 299.156 232.149 300.462C231.986 303.235 235.086 306.824 235.086 306.824L223.992 321.996C223.992 321.996 218.609 327.379 218.935 319.385L223.666 198.501C223.829 195.565 223.503 194.912 221.545 196.217L213.552 201.274L211.268 196.707C211.268 196.707 224.156 186.266 230.355 179.74C233.618 173.378 236.717 179.903 236.717 179.903ZM211.92 241.569C212.247 247.442 211.594 251.357 207.679 255.925L190.876 275.828C182.719 285.453 177.988 279.091 176.357 276.97L165.1 253.152L168.2 245.974L193.812 212.694L202.132 205.842L206.047 209.758L198.054 216.609L195.77 220.361L203.274 220.688C206.863 225.092 211.757 236.349 211.92 241.569ZM201.48 251.847C201.806 250.379 201.153 244.016 200.011 242.059C200.011 242.059 197.401 232.597 193.16 230.313C190.549 229.497 188.592 231.128 188.102 231.618L177.988 244.669C177.335 246.3 175.704 246.137 176.683 248.747C178.314 254.62 184.513 267.182 187.45 267.997C189.081 267.671 189.897 266.692 190.876 265.877C195.117 260.004 200.664 254.294 201.48 251.847Z" fill="white"/>
+          <path d="M157.106 180.067C157.106 180.067 152.539 261.798 153.028 263.103C153.028 265.876 156.128 269.465 156.128 269.465L144.871 284.637C144.871 284.637 139.488 290.184 139.814 282.027L143.729 198.664C143.892 195.891 143.892 195.238 141.935 196.38L133.452 201.601L131.331 196.87C131.331 196.87 145.197 186.266 151.234 179.903C155.312 173.052 157.106 180.067 157.106 180.067ZM137.856 248.584L138.835 249.889L121.216 271.586L122.032 251.357C122.358 244.832 119.096 242.222 116.812 240.427C115.996 240.59 115.017 240.753 113.875 241.243C112.733 246.953 110.449 251.357 108.818 254.131C107.839 255.925 101.477 263.593 96.5827 269.465C92.0149 274.686 83.0424 284.474 83.0424 284.474L79.7797 281.374C79.7797 281.374 86.4683 273.218 91.8518 265.713C93.8094 262.777 100.009 251.684 100.661 248.258L106.371 217.588C107.023 214.325 98.2141 221.83 98.2141 221.83L97.0721 216.12L122.848 198.827L115.18 235.207C115.18 235.207 118.769 232.433 121.216 231.128C125.458 233.738 131.005 237.98 133.778 241.732L133.452 250.705L137.856 248.584ZM152.212 301.603C146.666 304.05 128.721 320.364 120.401 321.669C114.038 316.775 110.776 313.512 106.697 308.292C106.045 305.355 104.903 303.561 105.392 301.277L108.329 287.084C108.492 285.453 107.187 285.616 106.371 286.432L100.009 290.021L99.0298 285.779C99.0298 285.779 111.591 276.97 114.038 273.054C118.769 265.876 118.932 274.849 118.932 274.849C118.932 274.849 116.812 291.652 115.833 296.709C117.301 300.625 118.769 307.15 125.784 308.945C136.062 305.845 137.53 304.377 143.403 299.646C145.85 297.525 147.645 296.057 150.092 292.794C154.823 286.595 154.007 296.709 152.212 301.603Z" fill="white"/>
+          <path d="M80.4323 236.186C81.5742 238.143 79.7797 242.385 79.7797 242.385C79.7797 242.385 66.7288 253.968 58.8982 261.309C56.1249 263.756 52.6991 267.182 50.5783 269.302C52.0465 269.629 53.3516 270.281 54.983 270.771C58.572 274.523 65.2606 283.985 65.5868 288.063C65.4237 292.957 62.8135 297.525 58.4088 302.093C49.7626 310.739 46.9893 312.534 35.4066 320.69C29.8599 324.606 25.129 322.974 21.8662 319.875C19.4192 316.612 14.8513 309.434 14.6882 306.008C14.5251 301.93 15.8302 298.341 16.4827 294.262C18.9298 290.51 20.7243 287.411 28.2285 280.722L67.2182 246.137C70.6441 243.037 66.4025 242.548 64.608 242.874L56.6143 252.01C56.6143 252.01 51.2308 256.741 51.5571 248.91L51.7202 243.853C41.4426 253.152 23.3344 270.771 16.6458 271.586C12.4043 267.997 9.14155 261.309 3.75804 256.088C3.75804 253.478 1.96354 251.684 2.45295 249.4C3.26864 244.995 4.41059 242.222 7.02078 237.164C10.2835 230.802 12.5674 227.376 16.6458 222.808C17.9509 221.666 23.987 216.283 23.987 216.283C15.3408 221.014 0.658448 228.518 0.00590109 227.539C-0.157236 225.908 3.1055 220.035 4.41059 218.404L8.65215 219.219C17.6247 214.162 20.398 213.347 29.5336 206.984C30.5125 206.495 32.7964 204.374 34.4277 203.558C37.3642 201.111 41.1163 201.764 43.074 202.253C42.4214 204.537 40.7901 210.247 36.3854 212.368C34.2646 213.673 34.4277 213.51 32.7964 214.162C30.5125 216.609 21.0505 224.766 17.6247 232.923C15.3407 238.306 13.5462 243.037 14.1988 244.342C15.5039 247.279 18.2772 256.741 23.8239 257.067C34.9172 254.131 47.805 237.164 52.6991 231.781L55.4724 198.501C55.6355 195.565 55.4724 195.075 53.3516 196.054L47.805 200.785L45.3579 196.543C47.3155 194.749 57.1037 185.613 62.9767 179.577C67.0551 172.725 68.8496 179.74 68.8496 179.74L64.9343 237.001L74.3962 233.902C79.1272 234.065 79.2903 233.412 80.4323 236.186ZM52.3728 289.694C52.6991 287.411 47.805 282.19 46.3367 280.559C43.074 279.743 41.7689 278.275 39.6481 280.069C35.7328 282.19 29.8599 288.553 26.434 293.773C25.4552 296.22 25.6184 298.504 25.6184 300.788C26.7603 303.561 29.8599 308.129 31.9807 311.065C33.9383 312.044 34.754 312.37 38.1799 310.902C44.0528 306.334 49.2732 300.788 50.5783 298.83C52.5359 295.894 53.1885 293.12 52.3728 289.694Z" fill="white"/>
+        </g>
+      </g></svg></h1>
+      <p class="hero__tag">Yagwang: Without Your Knowing — Prompt Book</p>
+          <div class="hero__foot">
+            <p class="hero__intro">AI 영상을 만든 과정과 프롬프트를 모았어요.</p>
+            <a class="hero__cue" href="#about">아래로<span></span></a>
+          </div>
+        </div>
+      </div>
+      <div class="about" id="about">
+        <div class="about__text">
+          <p class="about__lead">새벽 공기, 오후 4시의 햇살, 비 온 뒤의 흙냄새.<br />우리는 매일 수많은 감각을 무심코 지나칩니다.</p>
+          <p>〈야광〉은 잊힌 감각이 어딘가에 보관되어 있다는 상상에서 시작합니다. 관객은 자신의 감각을 빛나는 구슬로 돌려받고, 정원에서 다른 이들의 기억과 만납니다.</p>
+        </div>
+        <dl class="about__info">
+          <div><dt>구성</dt><dd>영상 3편 · 웹 2개 · 약 8분</dd></div>
+          <div><dt>제작</dt><dd>안시언</dd></div>
+        </dl>
+      </div>
+      <dl class="stats" id="stats"></dl>
+    </section>
+
+    <section class="sec" id="flow">
+      <div class="sec__head"><div class="sec__no">01 — WORKFLOW</div><div>
+        <h2 class="sec__title">작업 순서</h2>
+        <p class="sec__desc">이미지를 먼저 만들고, 첫 프레임과 마지막 프레임 사이를 Seedance로 채웠어요.</p></div></div>
+      <div class="flow">
+        <div class="flow__step"><div class="flow__no">STEP 01</div><div class="flow__name">이미지 시안</div><div class="flow__tool">Midjourney v7</div><p class="flow__desc">무드보드 ‘영상캡스톤’을 걸고 도시, 문, 야광귀 시안을 만들었어요.</p></div>
+        <div class="flow__step"><div class="flow__no">STEP 02</div><div class="flow__name">수정</div><div class="flow__tool">GPT 2.5</div><p class="flow__desc">고른 시안을 점토·펠트 질감의 공단 장면으로 다듬었어요.</p></div>
+        <div class="flow__step"><div class="flow__no">STEP 03</div><div class="flow__name">프레임 편집</div><div class="flow__tool">FLUX · GPT Image 2</div><p class="flow__desc">이미지를 작게 고칠 땐 FLUX, 크게 바꿀 땐 GPT를 썼어요. 아래에 나눠 정리했어요.</p></div>
+        <div class="flow__step is-hot"><div class="flow__no">STEP 04</div><div class="flow__name">영상 생성</div><div class="flow__tool">Seedance 2.0 · 2.5</div><p class="flow__desc">첫·끝 프레임과 참조 이미지를 넣고 카메라와 움직임을 프롬프트로 연출했어요.</p></div>
+        <div class="flow__step"><div class="flow__no">STEP 05</div><div class="flow__name">편집</div><div class="flow__tool">After Effects</div><p class="flow__desc">컷을 잇고 색을 맞춘 뒤 사운드를 입혔어요.</p></div>
+      </div>
+      <div class="pick">
+        <div class="pick__item">
+          <div class="pick__head"><span class="pick__name">FLUX</span><span class="pick__when">이미지 작은 수정</span></div>
+          <p class="pick__desc">영상에 넣을 첫·끝 프레임 이미지를 고칠 때 썼어요. 물결 하나, 구슬 빛처럼 장면은 그대로 두고 일부만 고칠 때예요. 바꿀 자리를 색으로 칠해 넣으면 나머지는 거의 건드리지 않아요.</p>
+          <ul class="pick__list"><li>연못에 물결 더하기</li><li>구슬에 빛 켜기</li><li>떠오르는 구슬의 첫·끝 프레임</li></ul>
+          <div class="pick__cuts">C10–C15 · C22 · C25–C30</div>
+        </div>
+        <div class="pick__item">
+          <div class="pick__head"><span class="pick__name">GPT Image 2 · GPT 2.5</span><span class="pick__when">이미지 큰 수정</span></div>
+          <p class="pick__desc">이미지를 고칠 때 썼어요. 구도, 배경, 화면 속 이미지처럼 장면이 확실히 달라져야 할 때예요. 미드저니 시안을 공단 장면으로 바꾼 것도 GPT 2.5예요.</p>
+          <ul class="pick__list"><li>미드저니 시안을 점토·펠트 질감으로</li><li>카메라 무빙의 시작·끝 장면</li><li>단말기 화면 속 인물</li></ul>
+          <div class="pick__cuts">C21 · C22 · C34 · C36–C38</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="character">
+      <div class="sec__head"><div class="sec__no">02 — CHARACTER</div><div>
+        <h2 class="sec__title">야광귀 캐릭터</h2>
+        <p class="sec__desc">설화 속 야광귀의 특징은 살리고, 무서운 느낌보다 친근함이 들도록 다시 그렸어요. 정면·측면·뒷면 시트를 만들어 영상 내내 같은 모습이 나오게 했어요.</p></div></div>
+      <div class="char-row">
+        <figure class="fig is-contain"><img src="media/char/origin.jpg" alt="기존 야광귀" loading="lazy" style="background:#fff" />
+          <figcaption><b>기존 야광귀</b>붉은 피부와 머리카락, 머리 위 뿔 두 개, 빛나는 눈, 헐렁한 옷.<div class="traits"><span class="tag">이미지 · 한국콘텐츠진흥원</span></div></figcaption></figure>
+        <figure class="fig"><img src="media/char/first.jpg" alt="재해석한 야광귀 첫 시안" loading="lazy" />
+          <figcaption><b>재해석 — 첫 시안</b>뿔은 분홍 고깔로, 붉은 얼굴은 둥근 가면처럼 단순하게 바꾸고 손에 빛나는 구슬을 쥐여 줬어요.<div class="traits"><span class="tag">MIDJOURNEY V7</span></div></figcaption></figure>
+        <figure class="fig"><img src="media/char/revised.jpg" alt="소매와 질감을 고친 야광귀" loading="lazy" />
+          <figcaption><b>재해석 — 수정</b>몸을 니트 질감의 청록 로브로 바꾸고 소매와 손목 디테일을 더했어요.<div class="traits"><span class="tag">소매 · 질감 디테일</span></div></figcaption></figure>
+      </div>
+      <div class="rail-head"><span class="sub-label">캐릭터 시트 — DESIGN SHEET: THE CELESTIAL FOSTERER</span>
+        <div class="rail-nav"><button class="btn" type="button" data-rail="-1" aria-label="이전">←</button><button class="btn" type="button" data-rail="1" aria-label="다음">→</button></div></div>
+      <div class="rail">
+        <figure class="fig sheet"><a href="media/char/sheet1.jpg" target="_blank" rel="noopener"><img src="media/char/sheet1.jpg" alt="야광귀 디자인 시트 1" loading="lazy" /></a>
+          <figcaption><b>디자인 시트 1</b>정면·오른쪽·뒷면·왼쪽과 얼굴, 구슬 디테일을 한 장에 정리했어요.</figcaption></figure>
+        <figure class="fig sheet"><a href="media/char/sheet2.jpg" target="_blank" rel="noopener"><img src="media/char/sheet2.jpg" alt="야광귀 디자인 시트 2" loading="lazy" /></a>
+          <figcaption><b>디자인 시트 2 — 수정</b>니트 로브로 바꾼 뒤 소매와 손목 부분을 따로 확대했어요.</figcaption></figure>
+        <figure class="fig sheet"><a href="media/char/parts.jpg" target="_blank" rel="noopener"><img src="media/char/parts.jpg" alt="야광귀 파츠 시트" loading="lazy" /></a>
+          <figcaption><b>파츠 시트</b>몸, 고깔, 얼굴 가면, 장갑과 신발을 부품별로 나눠 형태를 고정했어요.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="sec" id="mj">
+      <div class="sec__head"><div class="sec__no">03 — MIDJOURNEY</div><div>
+        <h2 class="sec__title">미드저니 시안</h2>
+        <p class="sec__desc">chaos 5 · ar 16:9 · v7 · stylize 150에 무드보드 ‘영상캡스톤’으로 톤을 맞췄어요. 여기서 고른 이미지를 GPT 2.5로 다듬어 ComfyUI에 넣었어요.</p></div></div>
+      <div class="rail-head"><span class="sub-label">대표 시안</span>
+        <div class="rail-nav"><button class="btn" type="button" data-rail="-1" aria-label="이전">←</button><button class="btn" type="button" data-rail="1" aria-label="다음">→</button></div></div>
+      <div class="rail" id="mjList"></div>
+      <div class="sub-label" style="margin-top:20px">그 밖의 시안</div>
+      <div class="mj-grid" id="mjGrid"></div>
+    </section>
+
+    <section class="sec" id="prompt">
+      <div class="sec__head"><div class="sec__no">04 — PROMPT</div><div>
+        <h2 class="sec__title">프롬프트 쓰는 법</h2>
+        <p class="sec__desc">처음엔 짧은 지시로 시작했고, 장면을 정확히 통제하려고 점점 카메라·시간·고정할 것을 나눠 쓰게 됐어요.</p></div></div>
+      <div class="phases" id="phases"></div>
+      <div class="sub-label" style="margin:28px 0 10px">자주 쓴 순서와 표현 — 숫자는 그 방식을 쓴 영상 프롬프트 수 (전체 40)</div>
+      <div class="tips" id="tipsList"></div>
+      <div class="usage">
+        <div class="box"><div class="sub-label">영상 모델 · 생성 횟수</div><div id="modelBars" style="margin-top:8px"></div></div>
+        <div class="box"><div class="sub-label">노드 그래프 보는 법</div>
+          <div class="legend">
+            <span><i style="border-color:var(--acc)"></i>영상 생성</span><span><i style="border-color:var(--tint)"></i>이미지 편집</span>
+            <span><i style="border-color:#fff"></i>텍스트</span><span><i style="border-color:rgba(255,255,255,.35)"></i>불러오기 · 저장</span>
+            <span><i style="border-color:rgba(255,255,255,.35);border-style:dashed"></i>꺼둔 노드</span>
+          </div>
+          <p style="color:var(--fg-2);font-size:13.5px;margin:12px 0 0">꺼둔 노드에는 이전 프롬프트와 첫 프레임을 만든 이미지 편집 단계를 남겨 두었어요.</p></div>
+      </div>
+    </section>
+
+    <section class="sec" id="archive">
+      <div class="sec__head"><div class="sec__no">05 — SCENES</div><div>
+        <h2 class="sec__title">장면별 생성 기록</h2>
+        <p class="sec__desc">영상 순서대로 정리하고 컷마다 번호(C1~)를 붙였어요. 같은 장면을 여러 번 만든 경우 한 줄로 묶어 옆으로 넘겨 볼 수 있고, 시도마다 바꾼 점과 그 이유를 적었어요. 처음 한국어로 쓴 프롬프트는 영어로 정리하고 원문은 버튼으로 남겼어요.</p></div></div>
+      <div class="tools">
+        <div class="filters" id="filters"></div>
+        <input class="search" id="search" type="search" placeholder="검색 — C12, orb, camera" aria-label="프롬프트 검색" />
+      </div>
+      <p class="count" id="count"></p>
+      <div id="chaptersEl"></div>
+      <p class="empty" id="empty">찾는 프롬프트가 없어요.</p>
+    </section>
+
+    <section class="sec" id="guestbook">
+      <div class="sec__head"><div class="sec__no">06 — GUESTBOOK</div><div>
+        <h2 class="sec__title">방명록</h2>
+        <p class="sec__desc">작품을 보고 남은 생각을 메모로 남겨 주세요. 남긴 메모는 다른 관객의 메모와 함께 천천히 흘러가요.</p></div></div>
+      <div class="gb">
+        <form class="gb__form" autocomplete="off">
+          <div class="gb__paper"><textarea id="gb-msg" maxlength="140" placeholder="작품을 보고 남은 생각을 적어주세요" aria-label="남길 말"></textarea><span class="gb__count">0 / 140</span></div>
+          <div class="gb__ctrl">
+            <div class="gb__field"><span class="gb__label">01 — 어떤 감각이 남았나요?</span>
+              <div class="gb__senses" role="radiogroup" aria-label="감각"></div>
+              <span class="gb__sense-name"></span></div>
+            <div class="gb__field"><span class="gb__label">02 — 이름</span>
+              <input id="gb-name" maxlength="16" placeholder="비워 두면 익명의 관객" aria-label="이름" /></div>
+            <div class="gb__field gb__field--send"><button class="gb__send" type="submit">메모 남기기 →</button><p class="gb__status" role="status"></p></div>
+          </div>
+        </form>
+        <div class="gb__summary"><span><b class="gb__num">0</b>개의 메모<span class="gb__dot"> · </span><span class="gb__where">불러오는 중…</span></span><button type="button" class="gb__toggle">모두 펼쳐 보기</button></div>
+        <div class="gb__board">
+          <div class="gb__flow" aria-hidden="true"></div>
+          <div class="gb__grid"></div>
+          <p class="gb__empty">아직 남겨진 메모가 없어요. 첫 메모를 남겨 주세요.</p>
+        </div>
+      </div>
+    </section>
+    <footer>
+      <div>《야광(夜光) — 당신이 모르는 사이》<br />기획 · 연출 · AI 영상 · 웹 인터랙션 · 사운드 — 안시언</div>
+      <div>서울과학기술대학교 시각디자인학과 2026 졸업전시<br />생성형 AI를 활용해 제작했어요.</div>
+    </footer>
+  </main>
+</div>
+
+<script src="data.js?v=20261112b"></script>
+<script src="guestbook-config.js"></script>
+<script src="guestbook.js?v=19" defer></script>
+<script>
+(() => {
+const D = window.PROCESS, E = D.entries;
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDate = d => d.slice(5).replace('-', '.');
+const tc = t => { t = Math.max(0, t); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`; };
+// 컷 번호 — 영상 순서(목차 순서)대로 C1, C2 …
+E.forEach((e, i) => e.code = 'C' + (i + 1));
+const byFile = {}, byId = {}; E.forEach(e => { byFile[e.file] = e; byId[e.id] = e; });
+const groupName = {}; D.groups.forEach(g => groupName[g.id] = g.name);
+const cut = f => byFile[f] ? byFile[f].code : f;
+const fill = t => String(t).replace(/\{\{([^}]+)\}\}/g, (_, f) => cut(f));
+
+function highlight(t) {
+  return esc(t)
+    .replace(/(@Image\d)/g, '<span class="kw-i">$1</span>')
+    .replace(/(\[?\b\d+(?:\.\d+)?\s*(?:s)?\s*[–-]\s*\d+(?:\.\d+)?s\]?(?:\s*\(\d+[–-]\d+s\))?:?)/g, '<span class="kw-t">$1</span>')
+    .replace(/(^|\n)([A-Z](?:[A-Z0-9 —\-]|&amp;){2,}(?:\s*\([^)\n]*\))?(?:\s—\s[A-Z ]+)?:)/g, '$1<span class="kw">$2</span>')
+    .replace(/(^|\n)(Shot \d[^:]*:)/g, '$1<span class="kw">$2</span>');
+}
+
+/* ---------- 통계 ---------- */
+const dates = E.map(e => e.date).sort();
+$('#stats').innerHTML = [['ComfyUI 생성', E.length, '컷'], ['최종 사용', E.filter(e => e.final).length, '컷'], ['프롬프트', E.reduce((a, e) => a + e.prompts.length, 0), '개']]
+  .map(([k, v, u]) => `<div class="stat"><dt>${k}</dt><dd>${v}<small>${u}</small></dd></div>`).join('');
+
+/* ---------- 미드저니 ---------- */
+const MJ = [
+  { name: '문', date: '2026.04.01', img: 'media/mj-door.jpg', then: '영상 1의 문 장면({{문.mp4}}, {{문닫힌다.mp4}})의 바탕이 됐어요.',
+    prompt: 'Static low-angle shot of a single building facade at night, no signage, no number, one door slightly open warm amber light seeping through the crack. Edward Hopper night lighting. Brutalist concrete texture. Camera completely still. Slight breeze moves nothing. Deep silence. The door is the only source of warmth in an otherwise cold dark frame. Shallow focus on the door. Cinematic 35mm grain.',
+    params: ['chaos 5', 'ar 16:9', 'v 7', 'stylize 150', 'moodboard 영상캡스톤'] },
+  { name: '2087 서울', date: '2026.04.26', img: 'media/mj/8315bb854301.jpg', then: '영상 1 도시 장면의 바탕이에요.',
+    prompt: 'A future city in 1990s Shanghai style, nightime, cyber-punk style, future buildings, neon lights, spaceships in the air, real world, photograph. aerial top-down view of futuristic Seoul 2087, brutalist skyscrapers with neon signage in Korean and Chinese characters, crowds of expressionless pedestrians, autonomous vehicles, overcast sky, teal and dark indigo cinematic color grade, Tarkovsky Solaris visual language, hyperrealistic, film grain, anamorphic lens',
+    params: ['변형', '이미지 참조 1', 'chaos 5', 'ar 16:9', 'v 7', 'stylize 150', 'moodboard 영상캡스톤'] },
+  { name: '야광귀', date: '2026.03.18', img: 'media/mj/89d76102137a.jpg', then: '분홍 고깔을 쓴 야광귀 캐릭터의 출발점이에요.',
+    prompt: 'a gentle dark spirit being sitting quietly in a dreamlike nocturnal garden, soft charcoal-grey rounded form, glowing amber crown like a fading lantern, two small gentle dot eyes, calm neutral expression, surrounded by softly glowing orbs floating in deep blue night air, painterly illustration style, gouache texture, muted neon dreamcore palette, indigo night sky, soft bioluminescent ambient light, Chiho Aoshima meets Studio Ghibli aesthetic',
+    params: ['변형', '이미지 참조 24', 'chaos 5', 'ar 16:9', 'v 7', 'stylize 150'] },
+];
+$('#mjList').innerHTML = MJ.map(m => `<article class="mj-card"><img src="${m.img}" alt="미드저니 시안 — ${esc(m.name)}" loading="lazy" />
+  <div class="mj-card__body"><div class="mj-card__top"><span class="mj-card__name">${esc(m.name)}</span><span class="tag">MIDJOURNEY V7 · ${m.date}</span></div>
+  <div class="prompt"><div class="prompt__bar"><span class="prompt__node" data-kind="image">Prompt</span><div class="btns"><button class="btn" data-copy="${esc(m.prompt)}">복사</button></div></div>
+  <p class="prompt__text is-clamped">${esc(m.prompt)}</p><div class="prompt__foot"><button class="btn prompt__more" type="button">전체 보기</button></div></div>
+  <div class="traits">${m.params.map(p => `<span class="tag">${esc(p)}</span>`).join('')}</div>
+  <div class="mj-card__then">→ <b>GPT 2.5</b>로 다듬어 ComfyUI로. ${esc(fill(m.then))}</div></div></article>`).join('');
+const MJG = [['e8ac4f58d1a3', '무한 서가와 구슬'], ['e1c0c6a83ec9', '야광귀 얼굴 시안'], ['1742a2c7a92e', '야광귀 얼굴 시안'], ['0dc76b010c62', '야광귀 얼굴 시안'],
+  ['34a01363a270', '문 — 다른 버전'], ['4f4c4e5fc660', '드론 하강 — 서울'], ['df4f8bef5ce4', '80년대 TV 화면'], ['bb2a89c144ce', '구슬을 드는 검은 손'],
+  ['26e424865ed3', '투명 구슬 클로즈업'], ['cca70185a7ed', '풀이 자라는 실내'], ['c72446a4ee2f', '비유클리드 계단'], ['be4535fb4d94', '비유클리드 계단'],
+  ['3c981ff402d6', '공단 내부 시안'], ['d83c9ec9058b', '공단 내부 시안'], ['6c0e68d0c8ce', '공단 내부 시안'], ['ad3ca8800201', '단말기 시안']];
+$('#mjGrid').innerHTML = MJG.map(([h, n]) => `<a href="media/mj/${h}.jpg" target="_blank" rel="noopener"><img src="media/mj/${h}.jpg" alt="${esc(n)}" loading="lazy" /><span>${esc(n)}</span></a>`).join('');
+
+/* ---------- 프롬프트 변화 · 팁 ---------- */
+const mainPrompt = e => (e.prompts.find(p => !p.bypass) || e.prompts[0] || { text: '' }).text;
+const PH = [
+  { when: '짧은 지시', name: '한 줄로 지시하기', note: '원하는 결과만 짧게 적고, 모델이 장면을 어떻게 해석하는지 먼저 확인했어요.', f: '깜빡2.mp4', lines: 3 },
+  { when: '장면 묘사', name: '장면을 묘사하기', note: '움직여야 할 것과 움직이면 안 되는 것, 카메라 위치를 함께 적었어요.', f: '구슬업.mp4', lines: 1, cut: 300 },
+  { when: '항목별 연출', name: '항목으로 나눠 연출하기', note: 'SUBJECT, CAMERA, 초 단위 구간, @Image1 고정을 콘티처럼 나눠 썼어요.', f: '처음.mp4', lines: 3, cut: 380 },
+];
+$('#phases').innerHTML = PH.map((p, i) => {
+  const e = byFile[p.f]; let t = mainPrompt(e).split('\n').map(l => l.trim()).filter(Boolean).slice(0, p.lines).join('\n');
+  if (p.cut && t.length > p.cut) t = t.slice(0, p.cut).trim() + ' …';
+  return `<div class="phase"><div class="phase__when">PHASE ${i + 1}</div><div class="phase__name">${p.name}</div><p class="phase__note">${p.note}</p>
+    <p class="phase__quote">${highlight(t)}</p><div class="phase__src"><a href="#${e.id}">${e.code}</a> · ${esc(e.model)} · ${fmtDate(e.date)}</div></div>`;
+}).join('');
+const TIPS = [
+  { t: '첫 줄에 스타일과 카메라부터 정해요', b: '장면 분위기와 카메라 상태를 맨 앞에 두면 다시 만들어도 톤이 유지돼요. 구슬 장면은 여섯 번 모두 같은 첫 줄로 시작했어요.', c: '카메라 고정 22 · 스타일 첫 줄 11',
+    ex: 'Stylized claymation fantasy courtyard at lavender dusk, translucent frosted-glass staircases, mossy stone architecture, a still reflecting pool. Locked-off static camera, no camera movement, one continuous shot.' },
+  { t: '요소마다 대문자 머리말로 나눠요', b: '인물, 카메라, 구슬 빛, 물을 따로 적어 두면 한 요소만 고쳐서 다시 만들 수 있어요.', c: '29',
+    ex: 'SUBJECT & ACTION: A small character walks steadily rightward…\nCAMERA: Side tracking shot, camera trucks left to right…\nHELD ORB LIGHT (brightness only, never scale): …\nWATER SURFACE: …' },
+  { t: '동작 순서는 초 단위로 끊어요', b: '한 컷 안에 동작이 여러 개면 구간을 나눠 순서와 길이를 정했어요.', c: '14',
+    ex: '0–2s: The character slowly stands up beside the reflecting pool…\n2–5s: The character climbs past the small foreground steps…\n5–8s: As soon as the character vanishes, the camera shoots straight upward at high speed.' },
+  { t: '하지 말아야 할 것도 함께 적어요', b: '원하지 않는 변화를 금지 목록으로 정리해 장면이 흐트러지지 않게 했어요.', c: 'never 28 · no cuts 28',
+    ex: 'Object permanence: every orb stays visible for the entire video. No orb fades, vanishes, disappears, shrinks, teleports or merges into another. The number of orbs never changes.' },
+  { t: '빛은 밝기만, 크기는 그대로', b: '구슬이 빛날 때 크기가 변하지 않도록 밝기만 바뀐다고 명시했어요.', c: '7',
+    ex: 'HELD ORB LIGHT (brightness only, never scale): The held orb keeps a fixed, unchanging size — only internal brightness changes.' },
+  { t: '이미지로 고정할 범위를 정해요', b: '단말기 장면은 @Image1이 화면 밖 전부를 붙잡고, 화면 안만 움직이게 했어요.', c: '5',
+    ex: '@Image1 controls everything outside the screen and must be preserved exactly… @Image1 does not influence what appears inside the screen.' },
+  { t: '이어지는 컷은 앞 컷 끝에서 시작해요', b: '앞 컷의 마지막 프레임을 다음 컷의 첫 프레임으로 쓰고, 동작이 이미 진행 중이라고 적었어요.', c: '계단 장면',
+    ex: 'CONTINUITY FROM PREVIOUS SHOT: This shot picks up exactly where the previous one left off — the character is already in motion at the first frame, mid-stride…' },
+  { t: '이미지 편집은 색으로 위치를 알려줘요', b: '빛낼 구슬이나 물결 자리를 빨강·초록으로 칠한 이미지를 함께 넣고, 그 색은 칠하지 말라고 적었어요.', c: 'FLUX · GPT 편집',
+    ex: 'Image 1 is the original scene to edit. Image 2 is only a location guide: the red and green dots mark which orbs to light up. Do NOT paint any red or green color…' },
+  { t: '속도는 형용사를 겹쳐 적어요', b: '느린 장면은 비슷한 말을 여러 번 겹쳐 분명하게, 빨라지는 장면은 speed ramp처럼 구체적으로 적었어요.', c: '33',
+    ex: 'Slow, calm, graceful pacing — nothing happens fast.\n…visibly accelerates as it ascends — rising faster and faster in a distinct speed ramp…' },
+  { t: '연출이 맞으면 글은 두고 다시 만들어요', b: '프롬프트가 의도에 맞을 땐 문장은 그대로 두고 시드나 길이만 바꿔 가장 좋은 결과를 골랐어요.', c: '5',
+    ex: '{{계단.mp4}} → {{계단1.mp4}}  시드만 변경\n{{구슬계단.mp4}} → {{계단구슬!.mp4}}  5초 → 7초\n{{여명.mp4}} → {{마지막3.mp4}}  10초 → 14초' },
+];
+$('#tipsList').innerHTML = TIPS.map((t, i) => `<article class="tip"><div class="tip__top"><span class="tip__no">TIP ${String(i + 1).padStart(2, '0')}</span><span class="tip__count">${esc(t.c)}</span></div>
+  <h3 class="tip__title">${esc(t.t)}</h3><p class="tip__body">${esc(t.b)}</p><p class="tip__ex">${highlight(fill(t.ex))}</p></article>`).join('');
+const mc = {}; E.forEach(e => { const k = e.model || '기타'; mc[k] = (mc[k] || 0) + 1; });
+const mx = Math.max(...Object.values(mc));
+const secs = E.filter(e => !e.isImage).reduce((a, e) => a + (+e.duration || 0), 0);
+$('#modelBars').innerHTML = Object.entries(mc).sort((a, b) => b[1] - a[1]).map(([k, v], i) =>
+  `<div class="bar"><span>${esc(k)}</span><span class="bar__track"><span class="bar__fill ${i === 0 ? 'is-acc' : ''}" style="width:${v / mx * 100}%"></span></span><span class="bar__n">${v}</span></div>`).join('')
+  + `<div class="bar"><span style="color:var(--dim)">생성한 영상 길이</span><span></span><span class="bar__n">${secs}s</span></div>`;
+
+/* ---------- 에펙 이펙트 이름 ---------- */
+const FX = { 'ADBE HUE SATURATION': '색조/채도', 'ADBE SelectiveColor': '선택 색상', 'ADBE Linear Color Key2': '선형 색상 키', 'ADBE Calculations': '계산', 'ADBE Solid Composite': '단색 합성', 'ADBE CM TransFade': 'TransFade' };
+const fxList = fx => [...new Set(fx)].map(f => FX[f] || f.replace('ADBE ', ''));
+/* ---------- 노드 그래프 ---------- */
+function graph(e) {
+  const N = e.nodes, id = {}; N.forEach(n => id[n.id] = n);
+  const L = e.links.filter(l => id[l[0]] && id[l[2]]);
+  const depth = {}; N.forEach(n => depth[n.id] = 0);
+  for (let k = 0; k < N.length; k++) L.forEach(([a,, b]) => { if (depth[b] < depth[a] + 1) depth[b] = depth[a] + 1; });
+  const cols = {}; N.forEach(n => (cols[depth[n.id]] ||= []).push(n));
+  Object.values(cols).forEach(c => c.sort((a, b) => ((a.pos || [0, 0])[1]) - ((b.pos || [0, 0])[1])));
+  const W = 208, H = 58, GX = 52, GY = 12, pos = {}; let rows = 0;
+  Object.entries(cols).forEach(([d, c]) => { rows = Math.max(rows, c.length); c.forEach((n, i) => pos[n.id] = [d * (W + GX), i * (H + GY)]); });
+  const nc = Object.keys(cols).length, vw = nc * W + (nc - 1) * GX, vh = rows * H + (rows - 1) * GY;
+  const sub = n => { const p = n.params || {};
+    if (n.kind === 'video') return [p.model, p.duration && p.duration + 's', p.resolution].filter(Boolean).join(' · ');
+    if (n.kind === 'image') return [p.model || n.label.split(' · ')[0], p.quality].filter(Boolean).join(' · ');
+    if (n.type === 'LoadImage') return p.image || '';
+    if (n.kind === 'text') return n.texts[0] || '';
+    return n.type; };
+  let svg = `<svg width="${vw}" height="${vh}" aria-hidden="true">`;
+  L.forEach(([a,, b]) => { const [x1, y1] = pos[a], [x2, y2] = pos[b], sx = x1 + W, sy = y1 + H / 2, ex = x2, ey = y2 + H / 2, m = (sx + ex) / 2, off = id[a].bypass || id[b].bypass;
+    svg += `<path d="M${sx} ${sy} C${m} ${sy} ${m} ${ey} ${ex} ${ey}" fill="none" stroke="${off ? 'rgba(255,255,255,.18)' : 'rgba(255,255,255,.45)'}" stroke-width="1.2" ${off ? 'stroke-dasharray="3 4"' : ''}/>`; });
+  svg += '</svg>';
+  const boxes = N.map(n => { const [x, y] = pos[n.id];
+    return `<div class="node ${n.bypass ? 'is-off' : ''}" data-k="${n.kind}" style="left:${x}px;top:${y}px" title="${esc(n.label)}"><div class="node__t"><span>${esc(n.label.replace(' → 영상', ''))}</span></div><div class="node__s">${esc(sub(n))}${n.bypass ? ' · 꺼둠' : ''}</div></div>`; }).join('');
+  return `<div class="graph"><div class="graph__canvas" style="width:${vw}px;height:${vh}px">${svg}${boxes}</div></div>`;
+}
+function paramsTable(e) {
+  return `<div class="ptable">${e.nodes.map(n => { const p = Object.entries(n.params || {});
+    return `<div class="pnode"><div class="pnode__h"><span class="tag">#${n.id}</span><span>${esc(n.label)}</span><span class="tag">${esc(n.type)}</span>${n.bypass ? '<span class="tag">꺼둔 노드</span>' : ''}</div>
+      ${p.length ? `<dl>${p.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(typeof v === 'object' ? JSON.stringify(v) : v)}</dd>`).join('')}</dl>` : ''}</div>`; }).join('')}</div>`;
+}
+
+/* ---------- 카드 ---------- */
+function promptBox(e, p, i, clamp) {
+  const long = p.text.length > clamp;
+  return `<div class="prompt"><div class="prompt__bar"><span class="prompt__node" data-kind="${p.kind}">${esc(p.node)}${p.ko ? ' · KO→EN' : ''}</span>
+    <div class="btns"><button class="btn" data-copy-idx="${e.id}:${i}">복사</button></div></div>
+    <p class="prompt__text ${long ? 'is-clamped' : ''}" data-idx="${e.id}:${i}">${highlight(p.text)}</p>
+    ${long || p.ko ? `<div class="prompt__foot">${long ? '<button class="btn prompt__more" type="button">전체 보기</button>' : ''}${p.ko ? '<button class="btn ko-btn" type="button">한국어 원문</button>' : ''}</div>` : ''}</div>`;
+}
+function card(e, inRail) {
+  const media = e.isImage ? `<img src="media/${e.id}.jpg" alt="${e.code}" loading="lazy" />`
+    : `<video data-src="media/${e.id}.mp4" poster="media/${e.id}.jpg" muted loop playsinline preload="none"></video><button class="card__play" type="button">▶ 재생</button>`;
+  const meta = [e.model, e.duration && e.duration + '초', [e.resolution, e.ratio].filter(Boolean).join(' '), fmtDate(e.date)].filter(Boolean).join(' · ');
+  const fin = e.final ? `<span class="badge is-final">최종 · ${esc(e.final.label)} ${tc(e.final.start)}</span>` : e.imported ? `<span class="badge">에펙 미사용</span>` : '';
+  const main = e.prompts.map((p, i) => [p, i]).filter(([p]) => !p.bypass), old = e.prompts.map((p, i) => [p, i]).filter(([p]) => p.bypass);
+  const clamp = inRail ? 360 : 620, sr = e.series;
+  const change = inRail && sr ? (sr.note
+    ? `<dl class="card__change"><span class="stepno">시도 ${sr.idx + 1} / ${sr.n}</span><div><dt>바뀐 점</dt><dd>${esc(fill(sr.note[0]))}</dd></div><div><dt>이유</dt><dd>${esc(fill(sr.note[1]))}</dd></div></dl>`
+    : `<div class="card__change is-first"><span class="stepno">시도 1 / ${sr.n}</span>첫 시도입니다. 이후 시도는 이 버전을 기준으로 수정했습니다.</div>`) : '';
+  const extras = [
+    old.length ? `<details><summary>이전 프롬프트 ${old.length}</summary><div class="panel">${old.map(([p, i]) => promptBox(e, p, i, clamp)).join('')}</div></details>` : '',
+    e.frames.length ? `<details><summary>입력 이미지 ${e.frames.length}</summary><div class="panel"><div class="frames">${e.frames.map((f, k) =>
+      `<a class="frame ${f.run ? '' : 'is-off'}" href="media/frames/${f.h}.jpg" target="_blank" rel="noopener"><img src="media/frames/${f.h}.jpg" alt="${e.code} 입력 이미지 ${k + 1}" loading="lazy" /><span>입력 ${k + 1}${f.run ? '' : ' · 꺼둠'}</span></a>`).join('')}</div></div></details>` : '',
+    `<details data-lazy="graph"><summary>노드 ${e.nodes.length}</summary><div class="panel"></div></details>`,
+    `<details data-lazy="params"><summary>파라미터</summary><div class="panel"></div></details>`,
+    e.final && e.final.fx.length ? `<details><summary>에펙 이펙트</summary><div class="panel"><div class="chips">${fxList(e.final.fx).map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div></div></details>` : '',
+  ].join('');
+  return `<article class="card ${e.final ? 'is-final' : ''}" id="${e.id}" data-final="${e.final ? 1 : 0}" data-model="${esc(e.model)}" data-search="${esc((e.code + ' ' + e.prompts.map(p => p.text + ' ' + (p.ko || '')).join(' ')).toLowerCase())}">
+    ${change}
+    <div class="card__media"><div class="card__screen">${media}</div></div>
+    <div class="card__body">
+      <div class="card__top"><div class="card__code">${e.code}<small>${esc(groupName[e.group])}</small></div>${fin}</div>
+      <div class="meta">${esc(meta)}${e.seed != null ? ` · seed ${e.seed}` : ''}${e.imageModels.length ? ` · 프레임 편집 <b>${esc(e.imageModels.map(m => m === 'FLUX' ? 'FLUX(이미지 작은 수정)' : m === 'GPT Image 2' ? 'GPT Image 2(이미지 큰 수정)' : m).join(', '))}</b>` : ''}</div>
+      ${main.map(([p, i]) => promptBox(e, p, i, clamp)).join('') || '<p class="meta">텍스트 프롬프트 없음</p>'}
+      <div class="extras">${extras}</div>
+    </div></article>`;
+}
+function blocks(items) {
+  const out = []; let i = 0;
+  while (i < items.length) {
+    const s = items[i].series;
+    if (!s) { out.push(card(items[i])); i++; continue; }
+    const grp = []; while (i < items.length && items[i].series && items[i].series.id === s.id) grp.push(items[i++]);
+    const fin = grp.filter(e => e.final);
+    out.push(`<div class="series" data-series="${s.id}"><div class="rail-head">
+      <div class="series__title">${esc(s.title)}<span class="mono">${grp[0].code}–${grp.at(-1).code} · ${grp.length}번 시도${fin.length ? ` · 최종 ${fin.map(e => e.code).join(', ')}` : ''}</span></div>
+      <div style="display:flex;gap:10px;align-items:center"><div class="steps">${grp.map(e => `<button class="step ${e.final ? 'is-final' : ''}" type="button" data-go="${e.id}">${e.code}${e.final ? ' ★' : ''}</button>`).join('')}</div>
+      <div class="rail-nav"><button class="btn" type="button" data-rail="-1" aria-label="이전 시도">←</button><button class="btn" type="button" data-rail="1" aria-label="다음 시도">→</button></div></div></div>
+      <div class="rail">${grp.map(e => card(e, true)).join('')}</div></div>`);
+  }
+  return out.join('');
+}
+
+/* ---------- 장면 (영상 순서) ---------- */
+$('#chaptersEl').innerHTML = D.groups.map((g, i) => {
+  const items = E.filter(e => e.group === g.id), f = items.filter(e => e.final);
+  const where = f.length ? `<b>${esc(f[0].final.label)} ${tc(Math.min(...f.map(e => e.final.start)))}–${tc(Math.max(...f.map(e => e.final.end)))}</b>` : '영상 미사용';
+  return `<section class="chapter" id="ch-${g.id}"><div class="chapter__head"><div class="chapter__no">${String(i + 1).padStart(2, '0')}</div>
+    <div><h3 class="chapter__name">${esc(g.name)}<small>${esc(g.sub)}</small></h3><p class="chapter__desc">${esc(g.desc)}</p></div>
+    <div class="chapter__meta">${where}<br />${items[0].code}–${items.at(-1).code} · 최종 ${f.length}</div></div>${blocks(items)}</section>`;
+}).join('');
+
+/* ---------- 목차 ---------- */
+const NAV = [['top', '00', '개요'], ['flow', '01', '작업 순서'], ['character', '02', '캐릭터'], ['mj', '03', '미드저니'], ['prompt', '04', '프롬프트']];
+const NAV_END = [['guestbook', '06', '방명록']];
+$('#nav').innerHTML = NAV.map(([id, n, t]) => `<a href="#${id}"><span class="mono">${n}</span>${t}</a>`).join('')
+  + `<div class="nav__label">05 — 장면 (영상 순서)</div>`
+  + D.groups.map((g, i) => { const f = E.filter(e => e.group === g.id && e.final);
+      return `<a href="#ch-${g.id}"><span class="mono">${String(i + 1).padStart(2, '0')}</span>${esc(g.name)}<small>${f.length ? esc(f[0].final.label.replace('영상 ', 'V')) : '—'}</small></a>`; }).join('')
+  + `<div class="nav__gap"></div>` + NAV_END.map(([id, n, t]) => `<a href="#${id}"><span class="mono">${n}</span>${t}</a>`).join('');
+const navLinks = $$('#nav a');
+const spy = new IntersectionObserver(es => es.forEach(en => { if (!en.isIntersecting) return;
+  navLinks.forEach(a => a.classList.toggle('is-on', a.getAttribute('href') === '#' + en.target.id));
+  const on = navLinks.find(a => a.classList.contains('is-on')); if (on && innerWidth <= 960) on.scrollIntoView({ block: 'nearest', inline: 'center' }); }),
+  { rootMargin: '-35% 0px -60% 0px' });
+$$('#top, section.sec:not(#archive), .chapter').forEach(s => spy.observe(s));
+
+/* ---------- 필터 · 검색 ---------- */
+const FILTERS = ['전체', '최종 컷', ...Object.keys(mc).sort((a, b) => mc[b] - mc[a])];
+let fModel = '전체', fText = '';
+$('#filters').innerHTML = FILTERS.map(f => `<button class="chip ${f === '전체' ? 'is-on' : ''}" data-f="${esc(f)}" type="button">${esc(f)}</button>`).join('');
+function apply() {
+  let n = 0;
+  $$('.card').forEach(c => { const ok = (fModel === '전체' || (fModel === '최종 컷' ? c.dataset.final === '1' : c.dataset.model === fModel)) && (!fText || c.dataset.search.includes(fText)); c.hidden = !ok; if (ok) n++; });
+  $$('.series').forEach(s => s.hidden = !s.querySelector('.card:not([hidden])'));
+  $$('.chapter').forEach(ch => ch.hidden = !ch.querySelector('.card:not([hidden])'));
+  $('#count').textContent = `${n} / ${E.length}컷 표시`; $('#empty').style.display = n ? 'none' : 'block';
+}
+$('#filters').addEventListener('click', ev => { const b = ev.target.closest('[data-f]'); if (!b) return; fModel = b.dataset.f; $$('#filters .chip').forEach(x => x.classList.toggle('is-on', x === b)); apply(); });
+$('#search').addEventListener('input', ev => { fText = ev.target.value.trim().toLowerCase(); apply(); });
+apply();
+
+/* ---------- 상호작용 ---------- */
+document.addEventListener('toggle', ev => {
+  const d = ev.target; if (!(d instanceof HTMLDetailsElement) || !d.open || !d.dataset.lazy || d.dataset.done) return;
+  const e = byId[d.closest('.card').id]; d.querySelector('.panel').innerHTML = d.dataset.lazy === 'graph' ? graph(e) : paramsTable(e); d.dataset.done = 1;
+}, true);
+document.addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-copy],[data-copy-idx]');
+  if (b) { let t = b.dataset.copy; if (!t) { const [id, i] = b.dataset.copyIdx.split(':'); t = byId[id].prompts[+i].text; }
+    try { await navigator.clipboard.writeText(t); } catch { const ta = document.createElement('textarea'); ta.value = t; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+    b.textContent = '복사됨'; b.classList.add('is-done'); setTimeout(() => { b.textContent = '복사'; b.classList.remove('is-done'); }, 1400); return; }
+  const more = ev.target.closest('.prompt__more');
+  if (more) { const p = more.closest('.prompt').querySelector('.prompt__text'); const c = p.classList.toggle('is-clamped'); more.textContent = c ? '전체 보기' : '접기'; return; }
+  const kb = ev.target.closest('.ko-btn');
+  if (kb) { const p = kb.closest('.prompt').querySelector('.prompt__text'), [id, i] = p.dataset.idx.split(':'), pr = byId[id].prompts[+i], ko = !p.classList.contains('is-ko');
+    p.classList.toggle('is-ko', ko); p.innerHTML = ko ? esc(pr.ko) : highlight(pr.text); kb.textContent = ko ? '영어로 보기' : '한국어 원문'; return; }
+  const go = ev.target.closest('[data-go]');
+  if (go) { const c = document.getElementById(go.dataset.go), r = c.parentElement; r.scrollTo({ left: c.offsetLeft - r.offsetLeft, behavior: 'smooth' }); return; }
+  const rb = ev.target.closest('[data-rail]');
+  if (rb) { const host = rb.closest('.series') || rb.closest('section'), r = host.querySelector('.rail'), first = r.firstElementChild;
+    r.scrollBy({ left: (first.offsetWidth + 14) * +rb.dataset.rail, behavior: 'smooth' }); return; }
+  const play = ev.target.closest('.card__play');
+  if (play) { const v = play.previousElementSibling; load(v); if (v.paused) { v.dataset.user = 'on'; playOne(v); } else { v.dataset.user = 'off'; v.pause(); } }
+});
+// 해시로 들어온 카드가 가로 묶음 안에 있으면 그 위치로 넘겨 준다
+const reveal = () => { const c = location.hash && document.getElementById(location.hash.slice(1)); if (c && c.parentElement.classList.contains('rail')) { const r = c.parentElement; r.scrollLeft = c.offsetLeft - r.offsetLeft; } };
+addEventListener('hashchange', reveal); reveal();
+
+/* 마우스로 끌어서 가로 스크롤 — 터치는 브라우저 기본 스크롤을 그대로 쓴다 */
+$$('.rail').forEach(r => {
+  let x0 = 0, s0 = 0, down = false, moved = false;
+  r.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button !== 0 || e.target.closest('button,a,summary,input,.prompt__text')) return; down = true; moved = false; x0 = e.clientX; s0 = r.scrollLeft; });
+  addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - x0; if (Math.abs(dx) > 4) { moved = true; r.classList.add('is-drag'); } r.scrollLeft = s0 - dx; });
+  addEventListener('pointerup', () => { if (!down) return; down = false; r.classList.remove('is-drag'); });
+  r.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+});
+
+/* 영상 — 화면에 보이는 것 중 최대 2개만 재생해 스크롤을 가볍게 */
+const load = v => { if (!v.src && v.dataset.src) v.src = v.dataset.src; };
+const sync = v => { const b = v.nextElementSibling; if (b) b.textContent = v.paused ? '▶ 재생' : '❚❚ 정지'; };
+const playing = new Set();
+function playOne(v) { load(v); playing.delete(v); playing.add(v); while (playing.size > 2) { const [old] = playing; old.pause(); playing.delete(old); } v.play().catch(() => {}); }
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const io = new IntersectionObserver(es => es.forEach(en => { const v = en.target;
+  if (en.isIntersecting && en.intersectionRatio >= .6) { if (!reduce && v.dataset.user !== 'off') playOne(v); }
+  else if (!v.paused) v.pause(); }), { threshold: [0, .6] });
+$$('video[data-src]').forEach(v => { io.observe(v); v.addEventListener('play', () => sync(v)); v.addEventListener('pause', () => { sync(v); playing.delete(v); }); });
+})();
+
+/* 첫 화면 배경: 영상 2 본편 */
+(() => {
+  const v = document.querySelector('.hero__bg video'); if (!v) return;
+  const on = () => { v.classList.add('is-on'); };
+  v.addEventListener('playing', on, { once: true });
+  // 끝의 로고·크레딧(95초~)은 빼고 본편만 반복
+  const END = 95;
+  const loop = () => { v.currentTime = 0; v.play().catch(() => {}); };
+  v.addEventListener('timeupdate', () => { if (v.currentTime >= END) loop(); });
+  let vis = true;
+  v.addEventListener('pause', () => { if (vis && v.currentTime >= END - .3) loop(); });
+  v.addEventListener('ended', loop);
+  v.play().catch(() => {});
+  new IntersectionObserver(([en]) => { vis = en.isIntersecting; en.isIntersecting ? v.play().catch(() => {}) : v.pause(); }).observe(document.querySelector('.hero__stage'));
+})();
+</script>
+</body>
+</html>

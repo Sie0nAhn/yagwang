@@ -1,0 +1,16 @@
+rules_version = '2';
+// 방명록: 누구나 읽고 새 글만 쓸 수 있어요. 고치거나 지우는 건 Firebase 콘솔에서만 해요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /guestbook/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['name', 'msg', 'sense', 't'])
+        && request.resource.data.msg is string
+        && request.resource.data.msg.size() > 0 && request.resource.data.msg.size() <= 140
+        && request.resource.data.name is string && request.resource.data.name.size() <= 16
+        && request.resource.data.sense is int && request.resource.data.sense >= 0 && request.resource.data.sense <= 8
+        && request.resource.data.t == request.time;
+      allow update, delete: if false;
+    }
+  }
+}
