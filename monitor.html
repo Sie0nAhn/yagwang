@@ -61,12 +61,17 @@
   .pad {
     position: fixed;
     right: max(28px, env(safe-area-inset-right));
-    top: 50%; transform: translateY(-50%);
+    bottom: max(28px, env(safe-area-inset-bottom));   /* 오른쪽 아래 — 아이패드를 어떻게 세워도 */
     width: min(400px, calc(100vw - 40px));
     max-height: calc(100% - 40px);
     display: flex; flex-direction: column; gap: 22px;
   }
   .brand { display: none; }
+  /* 버튼 위 한 줄 — 손이 안 될 때 버튼을 쓰라고 */
+  .tip { margin: 0 4px -8px; display: inline-flex; align-self: flex-start; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px; font-size: 15px; font-weight: 700; color: #fff;
+    background: rgba(154, 90, 255, .55); box-shadow: 0 0 18px rgba(154, 90, 255, .45);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
   .head { padding: 0 4px; text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 0 18px rgba(0,0,0,.55); }
   .head h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.01em; color: #fff; }
@@ -160,18 +165,14 @@
 
   /* 세로로 세운 아이패드 — 조작판을 아래로 */
   @media (max-aspect-ratio: 1/1) {
-    .pad { top: auto; bottom: max(20px, env(safe-area-inset-bottom)); transform: none; left: 50%; right: auto;
-      margin-left: calc(min(380px, calc(100vw - 40px)) / -2); }
     .empty { right: 0; bottom: 50%; }
     .chips { right: 18px; }
     .coach { right: 18px; max-width: calc(100% - 36px); bottom: auto; top: 80px; }
-    .shade { background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.45)); }
   }
 </style>
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="shade"></div>
 
 <div class="empty" id="empty">
   <b id="emptyT">작품 화면을 기다리는 중이에요</b>
@@ -193,6 +194,8 @@
     <h1 id="title">조작하기</h1>
     <p id="hint">손으로 하거나, 아래 버튼을 눌러요.</p>
   </div>
+
+  <p class="tip" id="tip">손으로 잘 안 되면 버튼을 눌러 움직여 보세요</p>
 
   <!-- 시작 · 구슬 화면 -->
   <div class="stack" id="stack" hidden>
@@ -321,6 +324,7 @@ function layout() {
   $("ctrl").hidden = !dpad;
   $("stack").hidden = !(sc === "boot" || sc === "orb");
   $("film").hidden = sc !== "film";
+  $("tip").hidden = sc === "film" || sc === "boot";   // 영상 중엔 누를 버튼이 없다
   $("bNext").hidden = !(sc === "garden" && ui && ui.canNext);
 
   // 아카이브는 좌우만, 정원은 네 방향
