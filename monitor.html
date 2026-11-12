@@ -62,15 +62,19 @@
     position: fixed;
     right: max(28px, env(safe-area-inset-right));
     bottom: max(28px, env(safe-area-inset-bottom));   /* 오른쪽 아래 — 아이패드를 어떻게 세워도 */
-    width: min(440px, calc(100vw - 40px));
+    width: min(640px, calc(100vw - 40px));
     max-height: calc(100% - 40px);
-    display: flex; flex-direction: column; gap: 20px;
-    padding: 24px 24px 30px;
+    /* 왼쪽 글씨 · 오른쪽 버튼 (다음 영상으로는 아래 한 줄 가득) */
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "head ctrl" "tip ctrl" "next next";
+    grid-template-rows: auto 1fr auto;
+    column-gap: 28px; row-gap: 14px;
+    padding: 28px;
     /* 정원 버튼과 같은 유리 — 뒤 카메라가 흐리게 비친다 */
     border-radius: 30px;
     background:
       linear-gradient(165deg, rgba(255,255,255,.17), rgba(255,255,255,.05) 45%, rgba(255,255,255,.11)),
-      rgba(28, 16, 42, .3);
+      rgba(28, 16, 42, .5);
     border: 1px solid rgba(255,255,255,.24);
     box-shadow: 0 10px 26px rgba(12,6,20,.3), inset 0 1px 0 rgba(255,255,255,.45), inset 0 -1px 0 rgba(255,255,255,.08);
     backdrop-filter: blur(24px) saturate(180%);
@@ -78,12 +82,9 @@
   }
   .brand { display: none; }
   /* 버튼 위 한 줄 — 손이 안 될 때 버튼을 쓰라고 */
-  .tip { margin: 0 4px -8px; display: inline-flex; align-self: flex-start; align-items: center; gap: 8px;
-    padding: 8px 14px; border-radius: 999px; font-size: 15px; font-weight: 700; color: #fff;
-    background: rgba(154, 90, 255, .55); box-shadow: 0 0 18px rgba(154, 90, 255, .45);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .tip { grid-area: tip; margin: 0 4px; align-self: start; font-size: 15px; font-weight: 700; line-height: 1.5; color: #e6d6ff; }
 
-  .head { padding: 0 4px; text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 0 18px rgba(0,0,0,.55); }
+  .head { grid-area: head; align-self: end; padding: 0 4px; }
   .head h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.01em; color: #fff; }
   .head p { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: rgba(255,255,255,.88); }
 
@@ -91,73 +92,74 @@
     touch-action: none; cursor: pointer; -webkit-appearance: none; appearance: none; }
   [hidden] { display: none !important; }
 
-  /* 젤리 — 공통 재질 */
+  /* ── 조작부 — 십자(T자) 젤리 버튼 + 분홍 버튼 ──
+     버튼 하나하나는 참고 이미지의 젤리 그대로, 색만 작품에 맞게 (분홍·연보라·하늘보라·자주).
+     오른쪽 큰 버튼은 참고 이미지의 FILTER 처럼 꽉 찬 색 (작품의 마젠타). */
+  .ctrl { grid-area: ctrl; align-self: center; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ctrl > [hidden] { display: none !important; }
+  .ctrl.has-pad { justify-content: center; }
+  /* 버튼은 모두 같은 크기·같은 모양 (80px 둥근 사각) — 크기가 제각각으로 보이지 않게 */
+  .dpad { display: grid; gap: 12px; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); }
+  .dpad .jelly { width: 80px; height: 80px; }
+  /* 가운데 분홍 버튼 — 십자 한가운데 (고르기 · 구슬 열기).
+     시각 보정: 밝은 연보라 젤리는 어두운 판 위에서 실제보다 커 보여서, 진한 분홍은 조금 크게(88px) 둔다 */
+  .dpad .bpill { grid-area: 2 / 2; justify-self: center; align-self: center;
+    width: 88px; height: 88px; padding: 0; border-radius: 32%; font-size: 16px; }
+  .dpad .k-up    { grid-area: 1 / 2; }
+  .dpad .k-left  { grid-area: 2 / 1; }
+  .dpad .k-right { grid-area: 2 / 3; }
+  .dpad .k-down  { grid-area: 3 / 2; }
+
+  /* 젤리 — 연한 몸통 · 가장자리 안쪽으로 하얗게 번지는 빛 · 아래쪽만 살짝 진하게.
+     아이콘은 진한 같은 색, 둘레로 연한 같은 색 빛이 번진다 */
   .jelly {
-    --body: #dcbcff;        /* 몸통 — 연보라 */
-    --core: #c597ff;        /* 가운데 (조금 진하게) */
-    --rim: rgba(255,255,255,.62);   /* 가장자리 안쪽에 번지는 빛 */
-    --drop: rgba(150,80,255,.55);   /* 바깥 그림자 */
-    --ink: #7a14ff;         /* 아이콘 — 선명한 보라 */
-    --ink-glow: rgba(240,220,255,.95);
-    background: radial-gradient(75% 75% at 50% 52%, var(--core) 0%, var(--body) 72%);
+    flex: none; width: 78px; height: 78px;
+    display: grid; place-items: center;
+    border-radius: 32%;
+    background: var(--body);
     box-shadow:
-      inset 0 0 16px 7px var(--rim),
-      inset 0 -5px 10px rgba(80,20,180,.18),
-      0 10px 26px var(--drop);
+      inset 0 0 10px 3px rgba(255, 255, 255, .78),
+      inset 0 -9px 14px -6px var(--deep);
     color: var(--ink);
-    transition: transform .09s ease, box-shadow .12s ease, filter .12s ease;
+    transition: transform .1s ease, box-shadow .15s ease;
   }
-  .jelly svg, .jelly .t { filter: drop-shadow(0 0 3px var(--ink-glow)) drop-shadow(0 0 9px var(--ink-glow)); }
-  .jelly.down { transform: scale(.92); filter: brightness(1.08) saturate(1.2);
-    box-shadow: inset 0 0 20px 9px var(--rim), inset 0 -4px 8px rgba(80,20,180,.2), 0 0 34px rgba(190,120,255,.95), 0 6px 14px var(--drop); }
-  /* 쓸 수 없을 때 — 색이 빠진 연회색 (참고 이미지의 비활성 줄) */
+  .jelly svg { width: 34px; height: 34px; fill: currentColor;
+    filter: drop-shadow(0 0 3px var(--soft)) drop-shadow(0 0 8px var(--soft)); }
+  .jelly svg path { stroke: currentColor; stroke-width: 3.4; stroke-linejoin: round; stroke-linecap: round; }
+  .jelly.down { transform: scale(.92);
+    box-shadow: inset 0 0 14px 5px rgba(255, 255, 255, .9), inset 0 -6px 12px -6px var(--deep); }
+
+  .c-pink   { --body: #ffd6f7; --deep: rgba(255, 120, 210, .5); --ink: #ff4fc3; --soft: #ffadea; }
+  .c-lav    { --body: #e8d8ff; --deep: rgba(168, 118, 255, .5); --ink: #8b3dff; --soft: #c9a8ff; }
+  .c-peri   { --body: #dcdfff; --deep: rgba(120, 128, 255, .5); --ink: #5a5cff; --soft: #aeb2ff; }
+  .c-orchid { --body: #f4d9ff; --deep: rgba(200, 110, 255, .5); --ink: #b63dff; --soft: #e2a8ff; }
+
+  /* 쓸 수 없을 때 — 참고 이미지 아래 줄처럼 색이 빠진 연회색 */
   .jelly.off { pointer-events: none;
-    --ink: #b4bfd6; --ink-glow: transparent;
-    background: #dde3ec;
-    box-shadow: inset 0 3px 6px rgba(120,130,160,.25), inset 0 -2px 4px rgba(255,255,255,.6), 0 6px 16px rgba(0,0,0,.25);
-    opacity: .5; }
+    --body: #d9e1ea; --ink: #b5c9de; --soft: transparent;
+    box-shadow: inset 0 4px 8px -2px rgba(120, 140, 170, .3); }
 
-  .ctrl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 18px; }
+  /* 오른쪽 알약 — 참고 이미지의 FILTER: 꽉 찬 색, 그림자 없이 */
+  .bpill { flex: none; width: 132px; height: 132px; white-space: nowrap; padding: 0 12px; border-radius: 50%;
+    background: #ff3fc8; color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -.01em;
+    transition: transform .1s ease, background .15s ease; }
+  .bpill.down { transform: scale(.96); background: #f02cb6; }
+  .ctrl.wide { width: 260px; }
+  .ctrl.wide .bpill { flex: 1; width: auto; height: 80px; border-radius: 26px; font-size: 18px; }   /* 구슬 화면·시작 — 같은 높이의 긴 버튼 */
+  .ctrl.wide .k-back { width: 80px; height: 80px; }
 
-  /* 십자키 — 네 갈래가 떨어져 있고, 바깥쪽이 더 둥글다 */
-  .dpad { position: relative; width: 228px; height: 228px; display: grid; gap: 8px;
-    grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
-  .dpad button { display: grid; place-items: center; position: relative; }
-  .dpad .k-up    { grid-area: 1 / 2; border-radius: 50% 50% 30% 30%; }
-  .dpad .k-down  { grid-area: 3 / 2; border-radius: 30% 30% 50% 50%; }
-  .dpad .k-left  { grid-area: 2 / 1; border-radius: 50% 30% 30% 50%; }
-  .dpad .k-right { grid-area: 2 / 3; border-radius: 30% 50% 50% 30%; }
-  .dpad .hub { display: none; }
-  .dpad svg { width: 34px; height: 34px; fill: currentColor; }
-  .dpad svg path { stroke: currentColor; stroke-width: 3.6; stroke-linejoin: round; }
-  .dpad .lab { position: absolute; top: calc(100% + 6px); font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap;
-    pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,.7), 0 0 10px rgba(0,0,0,.5); }
-  .dpad .k-up .lab, .dpad .k-down .lab, .dpad .off .lab { display: none; }
-
-  /* 고르기 — 크고 진한 보라 젤리, 글씨는 하얗게 */
-  .abtn { display: grid; justify-items: center; }
-  .k-sel { width: 132px; height: 132px; border-radius: 42% 42% 42% 42%;
-    --body: #9d5cff; --core: #8a3dff; --rim: rgba(230,200,255,.75); --drop: rgba(130,50,255,.65);
-    --ink: #fff; --ink-glow: rgba(255,255,255,.55);
-    font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
-
-  /* 알약 버튼 — 시작·확인·다시 고르기·다음 영상으로 */
-  .pill { display: block; width: 100%; min-height: 70px; padding: 14px 22px; border-radius: 999px;
+  /* 다음 영상으로 — 노란 젤리 알약 */
+  .pill { grid-area: next; display: block; width: 100%; min-height: 80px; padding: 14px 22px; border-radius: 26px;
     font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
-  .pill.main { --body: #9d5cff; --core: #8a3dff; --rim: rgba(230,200,255,.75); --drop: rgba(130,50,255,.65);
-    --ink: #fff; --ink-glow: rgba(255,255,255,.5); }
-  .pill.soft { --body: #e6d4ff; --core: #d6bbff; --ink: #6a12ff; }
-  .pill.warm { --body: #ffd98a; --core: #ffcc5c; --rim: rgba(255,250,225,.75); --drop: rgba(255,170,40,.5);
-    --ink: #c25a00; --ink-glow: rgba(255,240,200,.9); }
-  .stack { display: flex; flex-direction: column; gap: 16px; }
+  .pill.warm { --body: #ffe58c; --deep: rgba(255, 196, 70, .6); color: #f08a00;
+    width: 100%; height: auto; display: block; }
 
-  .film { display: grid; gap: 8px; text-align: center; padding: 8px 4px; font-size: 20px; line-height: 1.5; color: #fff;
-    text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 0 18px rgba(0,0,0,.55); }
-  .film small { color: rgba(255,255,255,.85); font-size: 16px; }
+  .film { grid-area: ctrl; align-self: center; display: grid; gap: 8px; text-align: center; padding: 8px 4px; font-size: 20px; line-height: 1.5; color: #fff; }
+  .film small { color: rgba(255,255,255,.8); font-size: 16px; }
 
   .coach {
-    position: fixed; left: max(18px, env(safe-area-inset-left)); right: 440px; bottom: max(22px, env(safe-area-inset-bottom));
-    margin: 0 auto; width: fit-content; max-width: calc(100% - 460px);
+    position: fixed; left: max(18px, env(safe-area-inset-left)); right: 700px; bottom: max(22px, env(safe-area-inset-bottom));
+    margin: 0 auto; width: fit-content; max-width: calc(100% - 720px);
     display: flex; align-items: center; gap: 14px;
     padding: 16px 24px 16px 16px; border-radius: 18px;
     background: rgba(12, 8, 22, .78); border: 1px solid rgba(255, 79, 216, .55);
@@ -202,16 +204,10 @@
   <div class="brand"><span>YAGWANG · 夜光</span><i id="led"></i></div>
   <div class="head">
     <h1 id="title">조작하기</h1>
-    <p id="hint">손으로 하거나, 아래 버튼을 눌러요.</p>
+    <p id="hint">손으로 하거나, 옆 버튼을 눌러요.</p>
   </div>
 
-  <p class="tip" id="tip">손으로 잘 안 되면 버튼을 눌러 움직여 보세요</p>
-
-  <!-- 시작 · 구슬 화면 -->
-  <div class="stack" id="stack" hidden>
-    <button class="pill jelly main" id="bMain" type="button">시작하기</button>
-    <button class="pill jelly soft" id="bSub" type="button" hidden>다시 고르기</button>
-  </div>
+  <p class="tip" id="tip">손으로 잘 안 되면<br />버튼을 눌러 움직여 보세요</p>
 
   <!-- 영상 -->
   <div class="film" id="film" hidden>
@@ -219,22 +215,22 @@
     <small>영상이 끝나면 저절로 넘어가요.</small>
   </div>
 
-  <!-- 왼쪽 십자키 · 오른쪽 둥근 버튼 -->
+  <!-- 왼쪽 십자(T자) 젤리 버튼 · 오른쪽 분홍 버튼.
+       아카이브는 ◀ ▶ 만 켜지고 ▲ ▼ 는 연회색 · 정원은 넷 다 · 구슬 화면은 '다시 고르기' 하나 -->
   <div class="ctrl" id="ctrl">
     <div class="dpad" id="dpad">
-      <button class="jelly k-up" data-key="up" type="button" aria-label="앞으로">
-        <svg viewBox="0 0 24 24"><path d="M12 6l7 9H5z"/></svg><span class="lab">앞으로</span></button>
-      <button class="jelly k-left" data-key="left" type="button" aria-label="왼쪽">
-        <svg viewBox="0 0 24 24"><path d="M6 12l9-7v14z"/></svg><span class="lab" id="labL">왼쪽</span></button>
-      <button class="jelly k-right" data-key="right" type="button" aria-label="오른쪽">
-        <svg viewBox="0 0 24 24"><path d="M18 12l-9 7V5z"/></svg><span class="lab" id="labR">오른쪽</span></button>
-      <button class="jelly k-down" data-key="down" type="button" aria-label="뒤로">
-        <svg viewBox="0 0 24 24"><path d="M12 18l-7-9h14z"/></svg><span class="lab">뒤로</span></button>
-      <span class="hub"></span>
+      <button class="jelly c-lav k-up" data-key="up" type="button" aria-label="앞으로">
+        <svg viewBox="0 0 24 24"><path d="M12 6l7 9H5z"/></svg></button>
+      <button class="jelly c-pink k-left" data-key="left" type="button" aria-label="왼쪽">
+        <svg viewBox="0 0 24 24"><path d="M6 12l9-7v14z"/></svg></button>
+      <button class="jelly c-orchid k-right" data-key="right" type="button" aria-label="오른쪽">
+        <svg viewBox="0 0 24 24"><path d="M18 12l-9 7V5z"/></svg></button>
+      <button class="jelly c-peri k-down" data-key="down" type="button" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><path d="M12 18l-7-9h14z"/></svg></button>
     </div>
-    <div class="abtn">
-      <button class="jelly k-sel" id="bSel" type="button"><span id="selText" class="t">선택</span></button>
-    </div>
+    <button class="jelly c-lav k-back" id="bSub" type="button" aria-label="다시 고르기">
+      <svg viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4.5 12H15a5 5 0 0 1 0 10h-2" fill="none"/></svg></button>
+    <button class="bpill" id="bSel" type="button"><span id="selText">선택</span></button>
   </div>
 
   <button class="pill jelly warm" id="bNext" type="button" hidden>다음 영상으로 →</button>
@@ -297,7 +293,6 @@ function tap(el, fn) {
   el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
 }
 tap($("bSel"), () => ch.postMessage({ t: "select" }));
-tap($("bMain"), () => ch.postMessage({ t: "select" }));
 tap($("bSub"), () => { ch.postMessage({ t: "pad", keys: ["left"] }); setTimeout(() => ch.postMessage({ t: "pad", keys: [] }), 150); });
 tap($("bNext"), () => ch.postMessage({ t: "next" }));
 
@@ -312,12 +307,12 @@ tap($("bNext"), () => ch.postMessage({ t: "next" }));
 /* ── 장면마다 보이는 버튼 ──
    작품에서 장면을 못 받고 있으면(예전 작품 화면 등) 'any' — 방향 네 개 + 선택을 다 띄운다. */
 const COPY = {
-  any:    ["조작하기", "손으로 하거나, 아래 버튼을 눌러요."],
-  boot:   ["시작하기", "손을 카메라에 비추거나, 아래 버튼을 눌러요."],
+  any:    ["조작하기", "손으로 하거나, 옆 버튼을 눌러요."],
+  boot:   ["시작하기", "손을 카메라에 비추거나, 옆 버튼을 눌러요."],
   grid:   ["파편 고르기", "◀ ▶ 로 고리를 돌리고, 가운데 파편이 마음에 들면 ‘고르기’를 눌러요."],
   orb:    ["구슬이 되었어요", "보관된 감각을 확인하러 가거나, 다시 고를 수 있어요."],
   film:   ["영상", ""],
-  garden: ["구슬빛 정원", "◀ ▶ 로 둘러보고 ▲ ▼ 로 걸어요. 가운데 버튼으로 앞에 보이는 구슬을 열어요."],
+  garden: ["구슬빛 정원", "◀ ▶ 로 둘러보고 ▲ ▼ 로 걸어요. ‘구슬 열기’를 누르면 앞에 보이는 구슬이 열려요."],
 };
 let shown = "";
 function layout() {
@@ -330,23 +325,25 @@ function layout() {
   $("hint").textContent = hint;
   $("hint").hidden = !hint;
 
-  const dpad = sc === "grid" || sc === "garden" || sc === "any";
-  $("ctrl").hidden = !dpad;
-  $("stack").hidden = !(sc === "boot" || sc === "orb");
+  // 장면마다 켜질 버튼 — 아카이브는 좌우만 (위아래는 연회색), 정원은 넷 다, 구슬 화면은 '다시 고르기'
+  const on = { any: ["left","up","down","right"], grid: ["left","right"], garden: ["left","up","down","right"] }[sc];
+  const pad = !!on;
+  $("dpad").hidden = !pad;
+  for (const k of ["left", "up", "down", "right"]) document.querySelector(".k-" + k).classList.toggle("off", pad && !on.includes(k));
+  $("bSub").hidden = sc !== "orb";
+  $("ctrl").classList.toggle("wide", !pad);
+  $("ctrl").classList.toggle("has-pad", pad);
+  // 십자키가 있으면 분홍 버튼을 십자 한가운데로, 없으면(구슬 화면·시작) 옆에 길게
+  (pad ? $("dpad") : $("ctrl")).appendChild($("bSel"));
+  $("ctrl").hidden = sc === "film";
   $("film").hidden = sc !== "film";
   $("tip").hidden = sc === "film" || sc === "boot";   // 영상 중엔 누를 버튼이 없다
   $("bNext").hidden = !(sc === "garden" && ui && ui.canNext);
-
-  // 아카이브는 좌우만, 정원은 네 방향
-  const ud = sc === "garden" || sc === "any";
-  document.querySelector(".k-up").classList.toggle("off", !ud);
-  document.querySelector(".k-down").classList.toggle("off", !ud);
-  $("labL").textContent = sc === "garden" ? "왼쪽 보기" : sc === "grid" ? "돌리기" : "왼쪽";
-  $("labR").textContent = sc === "garden" ? "오른쪽 보기" : sc === "grid" ? "돌리기" : "오른쪽";
-  $("selText").textContent = sc === "garden" ? (ui && ui.reading ? "닫기" : "구슬 열기") : sc === "grid" ? "고르기" : "선택";
-
-  if (sc === "boot") { $("bMain").textContent = "시작하기"; $("bSub").hidden = true; }
-  if (sc === "orb") { $("bMain").textContent = "확인하러 가기"; $("bSub").hidden = false; }
+  $("selText").textContent =
+    sc === "boot" ? "시작하기" :
+    sc === "orb" ? "확인하러 가기" :
+    sc === "garden" ? (ui && ui.reading ? "닫기" : "구슬 열기") :
+    sc === "grid" ? "고르기" : "선택";
 
   // 장면이 바뀌면 누르고 있던 방향은 놓는다
   if (held.size) { held.clear(); document.querySelectorAll("[data-key].down").forEach((b) => b.classList.remove("down")); sendPad(); }

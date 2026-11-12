@@ -1,5 +1,5 @@
 {
- "version": "4b82c7fd67",
+ "version": "faa9af2f24",
  "files": [
   {
    "url": "./",
@@ -33,13 +33,13 @@
   },
   {
    "url": "gooseulbit-garden.html",
-   "size": 906590,
-   "hash": "4646a529026a"
+   "size": 906839,
+   "hash": "625106538554"
   },
   {
    "url": "monitor.html",
-   "size": 23814,
-   "hash": "43a29cbd6b24"
+   "size": 23965,
+   "hash": "b4314d6f4037"
   },
   {
    "url": "manifest.webmanifest",
