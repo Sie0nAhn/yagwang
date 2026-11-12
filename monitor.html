@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>야광 · 손 인식 화면</title>
+<!--
+  아이패드 쪽에 띄워 두는 손 인식 화면.
+  작품(index.html)은 모니터 쪽 사파리 창에, 이 화면은 아이패드 쪽 사파리 창에 연다.
+  카메라는 작품 쪽이 쓰고, 여기로 카메라 그림과 손 좌표를 보내 준다 (BroadcastChannel — 같은 사파리, 일반 창끼리만).
+-->
+<style>
+  :root { --acc: #9a5aff; --pink: #ff2bd6; }
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden;
+    font-family: "Pretendard", -apple-system, system-ui, sans-serif; word-break: keep-all;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .bar {
+    position: fixed; left: 0; right: 0; top: 0;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: max(16px, env(safe-area-inset-top)) 20px 16px;
+    background: linear-gradient(#000c, #0000);
+    font-size: 18px;
+  }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 99px;
+    background: #ffffff14; border: 1px solid #ffffff26; font-weight: 600; }
+  .pill i { width: 10px; height: 10px; border-radius: 50%; background: #666; }
+  .pill.on i { background: #3ee07a; box-shadow: 0 0 10px #3ee07a; }
+  .pill.hand.on { background: #9a5aff33; border-color: #9a5aff; }
+  .pill.hand.on i { background: var(--acc); box-shadow: 0 0 10px var(--acc); }
+  .pill.pinch.on { background: #ff2bd633; border-color: var(--pink); }
+  .pill.pinch.on i { background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+  .scene { margin-left: auto; opacity: .75; }
+  .foot {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 16px 20px max(16px, env(safe-area-inset-bottom));
+    background: linear-gradient(#0000, #000c);
+  }
+  button {
+    font: inherit; font-size: 17px; font-weight: 700; color: #fff;
+    padding: 14px 22px; border-radius: 14px; border: 1px solid #ffffff40; background: #ffffff1a;
+  }
+  button:active { background: #ffffff33; }
+  .note { font-size: 15px; opacity: .6; line-height: 1.45; }
+  .empty {
+    position: fixed; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px;
+    padding: 24px; font-size: 20px; line-height: 1.5;
+  }
+  .empty small { font-size: 15px; opacity: .6; }
+  .empty[hidden] { display: none; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div class="empty" id="empty">
+  <b>작품 화면을 기다리는 중이에요</b>
+  <small>같은 사파리의 다른 창에서 작품(index.html)을 열어 두세요.<br />작품 쪽 카메라가 켜지면 여기 크게 보여요.</small>
+</div>
+
+<div class="bar">
+  <span class="pill" id="link"><i></i><span id="linkText">연결 안 됨</span></span>
+  <span class="pill hand" id="hand"><i></i><span id="handText">손 없음</span></span>
+  <span class="pill pinch" id="pinch"><i></i><span>집기</span></span>
+  <span class="scene" id="scene"></span>
+</div>
+
+<div class="foot">
+  <button id="rot" type="button">카메라 위아래 뒤집기</button>
+  <span class="note" id="rotNote">사람이 거꾸로 보이면 눌러 주세요. 이 기기에 기억돼요.</span>
+</div>
+
+<script>
+const ch = new BroadcastChannel("yk-monitor");
+const cv = document.getElementById("view");
+const g = cv.getContext("2d");
+const $ = (id) => document.getElementById(id);
+
+let frame = null, frameW = 4, frameH = 3;     // 마지막 카메라 그림
+let state = null, lastMsg = 0;
+
+ch.onmessage = async (e) => {
+  const m = e.data || {};
+  lastMsg = performance.now();
+  if (m.t === "frame" && m.blob) {
+    try {
+      const bmp = await createImageBitmap(m.blob);
+      if (frame && frame.close) frame.close();
+      frame = bmp; frameW = m.w; frameH = m.h;
+    } catch {}
+  } else if (m.t === "hand") {
+    state = m;
+  }
+};
+
+// 작품 쪽에 '여기 화면이 있다'고 알린다 — 그래야 그림을 보내기 시작한다
+const hello = () => ch.postMessage({ t: "hello" });
+hello(); setInterval(hello, 1000);
+
+$("rot").addEventListener("click", () => ch.postMessage({ t: "rotate" }));
+
+// 아이패드 화면이 꺼지지 않게
+async function keepAwake() {
+  try { if (navigator.wakeLock) await navigator.wakeLock.request("screen"); } catch {}
+}
+keepAwake();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) keepAwake(); });
+
+const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+
+function draw() {
+  requestAnimationFrame(draw);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  g.clearRect(0, 0, W, H);
+
+  const live = performance.now() - lastMsg < 2000;
+  $("link").classList.toggle("on", live);
+  $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
+  $("empty").hidden = live && !!frame;
+  if (!frame) return;
+
+  // 카메라 그림 전체가 보이게 (잘리지 않게) — 거울처럼 좌우를 뒤집는다
+  const s = Math.min(W / frameW, H / frameH);
+  const dw = frameW * s, dh = frameH * s, dx = (W - dw) / 2, dy = (H - dh) / 2;
+  g.save();
+  g.translate(W, 0); g.scale(-1, 1);
+  g.drawImage(frame, W - dx - dw, dy, dw, dh);
+  g.restore();
+  g.fillStyle = live ? "rgba(0,0,0,.25)" : "rgba(0,0,0,.65)";
+  g.fillRect(dx, dy, dw, dh);
+
+  const st = state || {};
+  const hand = live ? st.hand : null;
+  $("hand").classList.toggle("on", !!hand);
+  $("handText").textContent = hand ? "손 인식됨" : "손 없음";
+  $("pinch").classList.toggle("on", !!(hand && st.pinch));
+  $("scene").textContent = live ? (st.scene || "") : "";
+  if (!hand) return;
+
+  const P = (p) => ({ x: dx + (1 - p[0]) * dw, y: dy + p[1] * dh });
+  const k = dw / 600;
+
+  // 엄지-검지
+  {
+    const a = P(hand[4]), b = P(hand[8]);
+    g.save();
+    g.strokeStyle = st.pinch ? "#ff2bd6" : "rgba(255,255,255,.4)";
+    g.lineWidth = (st.pinch ? 6 : 2) * k;
+    if (!st.pinch) g.setLineDash([6 * k, 6 * k]);
+    else { g.shadowColor = "#ff2bd6"; g.shadowBlur = 18 * k; }
+    g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+    g.restore();
+  }
+  g.strokeStyle = "rgba(255,255,255,.65)"; g.lineWidth = 2.5 * k;
+  for (const [a, b] of CONN) { const p = P(hand[a]), q = P(hand[b]); g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(q.x, q.y); g.stroke(); }
+  g.fillStyle = "rgba(255,255,255,.8)";
+  for (const p0 of hand) { const p = P(p0); g.beginPath(); g.arc(p.x, p.y, 3 * k, 0, Math.PI * 2); g.fill(); }
+  for (const i of [4, 8, 12, 16, 20]) {
+    const p = P(hand[i]), big = i === 8, r = (big ? 10 : 6) * k;
+    g.save(); g.shadowColor = "rgba(154,90,255,.95)"; g.shadowBlur = (big ? 24 : 12) * k;
+    g.fillStyle = big ? "#9a5aff" : "#b48cff"; g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI * 2); g.fill(); g.restore();
+  }
+  // 게이지 — 작품 쪽 커서 고리와 같은 진행률을 검지 끝에
+  if (st.gauge > 0) {
+    const p = P(hand[8]), r = 26 * k;
+    g.lineWidth = 6 * k;
+    g.strokeStyle = "rgba(255,255,255,.2)";
+    g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = "#ff2bd6";
+    g.beginPath(); g.arc(p.x, p.y, r, -Math.PI / 2, -Math.PI / 2 + st.gauge * Math.PI * 2); g.stroke();
+  }
+}
+draw();
+</script>
+</body>
+</html>

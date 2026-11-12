@@ -1,5 +1,5 @@
 {
- "version": "1c2a607a61",
+ "version": "e19677c30d",
  "files": [
   {
    "url": "./",
@@ -10,24 +10,28 @@
    "size": 28861
   },
   {
-   "url": "style.css?v=20261112a",
+   "url": "style.css?v=20261112b",
    "size": 29187
   },
   {
-   "url": "main.js?v=20261112a",
-   "size": 109758
+   "url": "main.js?v=20261112b",
+   "size": 116600
   },
   {
-   "url": "sound.js?v=20261112a",
+   "url": "sound.js?v=20261112b",
    "size": 19531
   },
   {
-   "url": "offline.js?v=20261112a",
+   "url": "offline.js?v=20261112b",
    "size": 3485
   },
   {
    "url": "gooseulbit-garden.html",
-   "size": 903347
+   "size": 905019
+  },
+  {
+   "url": "monitor.html",
+   "size": 7686
   },
   {
    "url": "manifest.webmanifest",

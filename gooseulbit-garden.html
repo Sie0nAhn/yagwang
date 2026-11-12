@@ -387,6 +387,19 @@
     animation: inviteIn 0.7s cubic-bezier(0.16, 0.9, 0.3, 1);
   }
   .float-next[hidden] { display: none; }
+  /* 손을 올려 두는 동안 버튼 안이 왼쪽부터 보라로 차오른다 — 인식되고 있는지 버튼만 봐도 알게 */
+  .float-next { overflow: hidden; isolation: isolate; }
+  .float-next::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(176, 124, 255, 0.85), rgba(214, 180, 255, 0.85));
+    transform: scaleX(var(--fill, 0));
+    transform-origin: 0 50%;
+    transition: transform 0.12s linear;
+  }
+  .float-next.hand-hot { color: #1e0f33; }
   /* 전시 화면에서는 기록 창 안의 '다음 영상으로'를 뺀다 — 오른쪽 구슬을 가리키다 손이 지나가며 눌렸다.
      아래 가운데 버튼 하나만, 기억을 하나라도 읽었으면 늘 떠 있다 */
   body.yk-embed #panel-next { display: none !important; }
@@ -453,7 +466,7 @@
     height: 56px;
     margin: -28px 0 0 -28px;
     pointer-events: none;
-    z-index: 6;
+    z-index: 30;   /* 버튼보다 위 — '다음 영상으로' 위에서 게이지가 버튼에 가려지지 않게 */
   }
   .hand-cursor .ring {
     position: absolute;
@@ -475,6 +488,13 @@
   .hand-cursor.pinch { transform: scale(0.82); }
   .hand-cursor.pinch .dot { transform: scale(1.9); background: #ffffff; }
   .hand-cursor .ring { transition: opacity 0.15s ease; }
+  /* '다음 영상으로' 위 — 밝은 버튼 위에서도 보이게 흰 고리 + 어두운 테두리 */
+  .hand-cursor.next { width: 72px; height: 72px; margin: -36px 0 0 -36px; }
+  .hand-cursor.next .ring {
+    background: conic-gradient(#ffffff calc(var(--p, 0) * 1turn), rgba(40, 18, 70, 0.45) 0);
+    filter: drop-shadow(0 0 2px rgba(30, 10, 60, 0.9)) drop-shadow(0 0 10px rgba(154, 90, 255, 0.9));
+  }
+  .hand-cursor.next .dot { background: #ffffff; box-shadow: 0 0 0 2px rgba(30, 10, 60, 0.7), 0 0 14px #fff; }
 
   /* 첫 안내 */
   .cue {
@@ -5065,7 +5085,9 @@ function Hb(s,r){for(let id of DW){let b=document.getElementById(id);if(!b)conti
 function ykDwell(k,i){if(k===Dw.key){Dw.t+=i;Dw.miss=0;return k}
 if(Dw.key&&/next/.test(Dw.key)&&!Dw.done&&(Dw.miss=(Dw.miss||0)+i)<.45)return Dw.key;
 Dw.key=k;Dw.t=0;Dw.done=!1;Dw.miss=0;return k}
-function ykDwellQ(k){return k&&!Dw.done?Math.min(1,Math.max(0,Dw.t-.2)/(/next/.test(k)?YK_NEXT_DWELL:/^b:/.test(k)?.8:1)):0}
+function ykDwellQ(k){let q=k&&!Dw.done?Math.min(1,Math.max(0,Dw.t-.2)/(/next/.test(k)?YK_NEXT_DWELL:/^b:/.test(k)?.8:1)):0;ykFill(k==="b:float-next"?q:0);return q}
+/* '다음 영상으로' 버튼 안의 게이지 */
+function ykFill(q){let b=document.getElementById("float-next");b&&b.style.setProperty("--fill",q.toFixed(3))}
 /* 손바닥을 편 채로도 아래 가운데 '다음 영상으로'에 올려 둘 수 있다 — 펴면 둘러보기라 버튼이 안 눌려 헷갈렸다.
    손바닥은 손끝보다 아래에 있으니 화면 아래까지 닿도록 조금 더 넓게 펼쳐서 잰다 */
 function ykPalmNext(t){let b=YkNext;if(!b||b.hidden)return null;let c=b.getBoundingClientRect();if(!c.width)return null;
@@ -5076,7 +5098,7 @@ return s>c.left-p&&s<c.right+p&&r>c.top-p&&r<c.bottom+p?b:null}
 var YK_LOOK={dead:.05,range:.18,yaw:1.6,walk:5},YkOrigin=null,YkPad=document.getElementById("look-pad"),YkKnob=YkPad&&YkPad.querySelector(".knob"),YkRows=Array.from(document.querySelectorAll("#guide li"));
 function ykGuide(n){YkRows.forEach((li,j)=>li.classList.toggle("on",j===n))}
 function Gx(i){$o+=i,$o>1/30&&(pr.update($o),pr.drawPreview(Vx),$o=0);let t=pr.state;
-if(!t.tracked){Fe.hidden=!0,Uc=null,en=null,Dw.key=null,Dw.t=0,YkOrigin=null,YkPad&&YkPad.classList.remove("on"),Fe.classList.remove("look"),ykGuide(-1);return}
+if(!t.tracked){ykFill(0),Fe.hidden=!0,Uc=null,en=null,Dw.key=null,Dw.t=0,YkOrigin=null,YkPad&&YkPad.classList.remove("on"),Fe.classList.remove("look"),ykGuide(-1);return}
 Tt.idle=0;
 /* 손바닥을 펴면 — 둘러보기. 구슬은 고르지 않는다 */
 if(t.gesture==="palm"){
@@ -5087,9 +5109,9 @@ if(t.gesture==="palm"){
     nb!==ii&&(ii&&ii.classList.remove("hand-hot"),ii=nb,nb.classList.add("hand-hot"));
     let k=ykDwell("b:"+nb.id,i),q=ykDwellQ(k);if(q>=1){Dw.done=!0;nb.click()}
     let c=nb.getBoundingClientRect();
-    Fe.hidden=!1;Fe.classList.remove("look","pinch");Fe.classList.add("over");Fe.style.left=(c.left+c.width/2)+"px";Fe.style.top=(c.top+c.height/2)+"px";Fe.style.setProperty("--p",Math.max(.08,q));
+    Fe.hidden=!1;Fe.classList.remove("look","pinch");Fe.classList.add("over","next");Fe.style.left=(c.right-c.height*.62)+"px";Fe.style.top=(c.top+c.height/2)+"px";  /* 버튼 오른쪽 화살표 자리 — 글씨를 가리지 않게 */Fe.style.setProperty("--p",Math.max(.08,q));
     ykGuide(2);return}
-  ii&&(ii.classList.remove("hand-hot"),ii=null);Uc=null;en=null;Dw.key=null;Dw.t=0;t.pinchEdge;
+  ii&&(ii.classList.remove("hand-hot"),ii=null);Uc=null;en=null;Dw.key=null;Dw.t=0;ykFill(0);t.pinchEdge;
   YkOrigin||(YkOrigin={x:t.palm.x,y:t.palm.y});
   let dx=t.palm.x-YkOrigin.x,dy=t.palm.y-YkOrigin.y,amt=v=>{let e=Math.abs(v)-YK_LOOK.dead;return e<=0?0:Math.sign(v)*Math.min(1,e/YK_LOOK.range)},ax=amt(dx),ay=amt(dy);
   if(ax||ay){Tt.auto&&ai(!1);Rs()}
@@ -5097,7 +5119,7 @@ if(t.gesture==="palm"){
   if(ay){let c=new P(-Math.sin(Tt.yaw),0,-Math.cos(Tt.yaw));Tt.pos.addScaledVector(c,-ay*YK_LOOK.walk*i)}
   let k=YK_LOOK.dead+YK_LOOK.range,cl=v=>Math.max(-1,Math.min(1,v/k))*40;
   YkPad&&(YkPad.classList.add("on"),YkKnob.style.transform="translate("+cl(dx).toFixed(1)+"px,"+cl(dy).toFixed(1)+"px)");
-  Fe.hidden=!1;Fe.classList.add("look");Fe.classList.remove("over","pinch");Fe.style.left=t.palm.x*innerWidth+"px";Fe.style.top=t.palm.y*innerHeight+"px";Fe.style.setProperty("--p",0);
+  Fe.hidden=!1;Fe.classList.add("look");Fe.classList.remove("over","pinch","next");Fe.style.left=t.palm.x*innerWidth+"px";Fe.style.top=t.palm.y*innerHeight+"px";Fe.style.setProperty("--p",0);
   ykGuide(0);return}
 /* 그 밖의 손 모양 — 가리키기. 걷지 않고 서서 구슬이나 버튼을 고른다 */
 YkOrigin=null;YkPad&&YkPad.classList.remove("on");Fe.classList.remove("look");
@@ -5105,6 +5127,7 @@ let s=t.tip.x*innerWidth,r=t.tip.y*innerHeight,a=Hb(s,r);if(!a){let o=document.e
 /* 올려 두기 — 구슬이나 버튼 위에 손을 잠시 두면 게이지(커서 고리)가 차고 열린다. 꼬집지 않아도 된다 */
 let k=a?(DW.includes(a.id)?"b:"+a.id:null):l&&!(fr&&fr.gi===l.gi&&fr.id===l.id)?l.gi+":"+l.id:null;k=ykDwell(k,i);let q=ykDwellQ(k);if(q>=1){Dw.done=!0;let kb=/^b:/.test(k)&&document.getElementById(k.slice(2));kb?kb.click():l&&Md(l.gi,l.id)}
 ykGuide(k&&/next/.test(k)?2:1);
+{let nb=k&&/next/.test(k)&&document.getElementById(k.slice(2)),c=nb&&nb.getBoundingClientRect();if(c&&c.width){s=c.right-c.height*.62;r=c.top+c.height/2}Fe.classList.toggle("next",!!(c&&c.width))}
 Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.classList.toggle("over",!!(l||k)),Fe.classList.toggle("pinch",t.pinch),Fe.style.setProperty("--p",k?Math.max(.08,q):l?1:.22),t.pinchEdge&&(Dw.done=!0,ii?(/next/.test(ii.id)?Dw.t>.6&&ii.click():ii.click()):l?Md(l.gi,l.id):mr())}
 /* 전시 화면 안에 들어가 있으면 — 안내 카드를 띄우고, 넘어가는 버튼은 하나만 */
 var YkIntro=document.getElementById("intro"),YkNext=document.getElementById("float-next");

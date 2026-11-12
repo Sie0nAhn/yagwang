@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112a";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112b";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -119,8 +119,14 @@ const STAGE_H = 805;
 const stageEl = document.getElementById("stage");
 let stageScale = 1;
 
+/* 화면 비율이 무대(1440×805)와 거의 같으면 가득 채운다 — 가장자리가 조금 잘리는 대신 검은 띠가 없다.
+   (43인치 모니터 16:9 와 무대 비율은 0.6% 차이라 contain 으로 맞추면 위아래·양옆에 띠가 남았다)
+   비율이 많이 다를 때만 전부 보이게 줄인다. */
+const FILL_SLACK = 0.07;
 function fitStage() {
-  stageScale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+  const sx = window.innerWidth / STAGE_W, sy = window.innerHeight / STAGE_H;
+  const fill = Math.max(sx, sy) / Math.min(sx, sy) - 1 <= FILL_SLACK;
+  stageScale = fill ? Math.max(sx, sy) : Math.min(sx, sy);
   root.style.setProperty("--scale", stageScale);
 }
 fitStage();
@@ -1461,7 +1467,7 @@ async function toFilm(segment) {
       filmEl.pause();
       await playYt(seg);
     }
-    gsap.fromTo(filmHint, { opacity: 0 }, { opacity: 1, duration: 0.6, delay: 1.2 });
+    gsap.set(filmHint, { opacity: 0 });   // 건너뛰기를 막았으니 안내도 띄우지 않는다
   });
 }
 
@@ -1626,7 +1632,8 @@ window.addEventListener("keydown", (e) => {
   if (locked) return;
   if (e.key === "ArrowRight") nudge(1);
   if (e.key === "ArrowLeft") nudge(-1);
-  if (e.key === "Enter" || e.key === " ") advance();
+  // 영상 중에는 Enter 로 넘기지 않는다 (운영자용으로만 — Shift+Enter)
+  if (e.key === "Enter" || e.key === " ") { if (current !== "film" || (e.shiftKey && e.key === "Enter")) advance(); }
   if (e.key === "Escape") back();
 });
 
@@ -1728,6 +1735,7 @@ function handZone(sx, sy) {
    zone : 누르는 자리 — 구슬 화면에서 "back" 이면 다시 고르기, 아니면 확인하러 가기 */
 function startHold(by = "hand", zone = null) {
   if (holding || locked || !ready || performance.now() < armAt) return;
+  if (current === "film") return;      // 영상 1·2 는 건너뛸 수 없다 — 끝까지 본다
   holding = true;
   holdBy = by;
   holdZone = zone;
@@ -2172,6 +2180,110 @@ let camStream = null;
 const sharedHand = { video: camVideo, on: false };
 window.__ykHand = sharedHand;
 
+/* ── 카메라 돌리기 ──
+   아이패드를 모니터에 '확장'으로 연결하고 사파리 창을 모니터로 옮기면, 카메라 영상이 세로(옆으로 누운 채)로 들어온다.
+   (아이패드는 화면이 놓인 방향을 보고 카메라를 돌려 주는데, 모니터 쪽 창에는 그 방향이 없다)
+   그래서 들어온 영상이 세로면 여기서 직접 돌려 가로로 세운다. 손 인식도 돌린 그림으로 한다.
+   어느 쪽으로 돌릴지는 아이패드를 놓은 방향에 따라 다르다 — 거꾸로 서 있으면 손 인식 상자를 누르거나 R 키,
+   또는 아이패드 쪽 '손 인식 화면'(monitor.html)의 버튼으로 위아래를 뒤집는다. 기기에 기억된다. */
+const ROT_KEY = "yk-cam-rot";
+const camRot = (() => {
+  try { return Object.assign({ portrait: 90, landscape: 0 }, JSON.parse(localStorage.getItem(ROT_KEY) || "{}")); }
+  catch { return { portrait: 90, landscape: 0 }; }
+})();
+const rotCanvas = document.createElement("canvas");
+const rotCtx = rotCanvas.getContext("2d");
+let camSrc = camVideo;                    // 손 인식·미리보기에 쓰는 그림 (돌렸으면 rotCanvas)
+
+const camIsPortrait = () => camVideo.videoHeight > camVideo.videoWidth;
+function camRotation() { return camIsPortrait() ? camRot.portrait : camRot.landscape; }
+
+/* 새 카메라 프레임마다 한 번 — 돌릴 필요가 없으면 비디오를 그대로 쓴다 */
+function refreshCamSource() {
+  const r = camRotation();
+  if (!r) { camSrc = camVideo; sharedHand.video = camVideo; return camSrc; }
+  const vw = camVideo.videoWidth, vh = camVideo.videoHeight;
+  const swap = r % 180 !== 0;
+  const w = swap ? vh : vw, h = swap ? vw : vh;
+  if (rotCanvas.width !== w || rotCanvas.height !== h) { rotCanvas.width = w; rotCanvas.height = h; }
+  // 정원과 MediaPipe 는 비디오처럼 읽는다 — 크기·준비 상태를 비디오와 같은 이름으로 달아 둔다
+  rotCanvas.videoWidth = w; rotCanvas.videoHeight = h; rotCanvas.readyState = 4;
+  rotCtx.setTransform(1, 0, 0, 1, w / 2, h / 2);
+  rotCtx.rotate((r * Math.PI) / 180);
+  rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
+  rotCtx.setTransform(1, 0, 0, 1, 0, 0);
+  camSrc = rotCanvas; sharedHand.video = rotCanvas;
+  return camSrc;
+}
+
+function rotateCamera() {
+  const k = camIsPortrait() ? "portrait" : "landscape";
+  camRot[k] = (camRot[k] + 180) % 360;   // 세로로 들어오면 90 ↔ 270, 가로면 0 ↔ 180 — 늘 가로로 선다
+  try { localStorage.setItem(ROT_KEY, JSON.stringify(camRot)); } catch {}
+  lastVideoTime = -1;                     // 다음 프레임을 바로 새로 그린다
+  fx.reset(); fy.reset();
+}
+document.getElementById("cameraBox").addEventListener("click", (e) => { e.stopPropagation(); rotateCamera(); });
+document.getElementById("cameraBox").addEventListener("mousedown", (e) => e.stopPropagation());
+window.addEventListener("keydown", (e) => { if (e.key === "r" || e.key === "R") rotateCamera(); });
+
+/* ── 전체 화면 ──
+   사파리 주소창·탭 줄을 없애고 모니터를 꽉 채운다. 브라우저 규칙상 화면을 한 번 눌러야(클릭) 들어간다.
+   (모니터 쪽 창을 마우스·트랙패드로 한 번 클릭하면 된다. 빠져나오면 다시 클릭) F 키로도 된다. */
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+function goFullscreen() {
+  if (fsEl()) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  try {
+    const r = req.call(el);
+    if (r && r.catch) r.catch(() => {});
+  } catch {}
+}
+window.addEventListener("pointerdown", goFullscreen);
+window.addEventListener("keydown", (e) => { if (e.key === "f" || e.key === "F") goFullscreen(); });
+
+/* ── 아이패드 쪽 손 인식 화면 (monitor.html) ──
+   모니터로 확장했을 때, 아이패드 화면에 카메라와 손 관절을 크게 띄워 둔다.
+   같은 사파리에서 monitor.html 을 다른 창으로 열어 두면 여기서 카메라 그림과 손 좌표를 보내 준다.
+   그쪽 창이 열려 있을 때만 보낸다 (1초마다 '있다'고 알려 온다). */
+const monitorCh = "BroadcastChannel" in window ? new BroadcastChannel("yk-monitor") : null;
+let monitorSeen = 0;
+const monitorCanvas = document.createElement("canvas");
+const monitorCtx = monitorCanvas.getContext("2d");
+let monitorBusy = false, monitorSentAt = 0;
+const SCENE_NAME = { grid: "인터랙션 1 · 아카이브", orb: "구슬", film: "영상", garden: "인터랙션 2 · 구슬빛 정원" };
+if (monitorCh) {
+  monitorCh.onmessage = (e) => {
+    const m = e.data || {};
+    if (m.t === "hello") monitorSeen = performance.now();
+    if (m.t === "rotate") rotateCamera();
+  };
+}
+function sendMonitor(lms, pinch) {
+  if (!monitorCh || performance.now() - monitorSeen > 3000) return;
+  const now = performance.now();
+  const hand = lms ? lms.map((p) => [+p.x.toFixed(4), +p.y.toFixed(4)]) : null;
+  let scene = SCENE_NAME[current] || "";
+  if (current === "film") scene = filmSegment === 1 ? "영상 2" : "영상 1";
+  monitorCh.postMessage({
+    t: "hand", hand, pinch: !!pinch, gauge: hold.p || 0, scene,
+    rot: camRotation(), portrait: camIsPortrait(),
+  });
+  // 카메라 그림은 초당 15장 정도, 작게 — 한 장이 가는 중이면 건너뛴다
+  if (monitorBusy || now - monitorSentAt < 66 || !camSrc.videoWidth) return;
+  monitorSentAt = now;
+  const w = 480, h = Math.round((w * camSrc.videoHeight) / camSrc.videoWidth);
+  if (monitorCanvas.width !== w || monitorCanvas.height !== h) { monitorCanvas.width = w; monitorCanvas.height = h; }
+  monitorCtx.drawImage(camSrc, 0, 0, w, h);
+  monitorBusy = true;
+  monitorCanvas.toBlob((blob) => {
+    monitorBusy = false;
+    if (blob) monitorCh.postMessage({ t: "frame", blob, w, h });
+  }, "image/jpeg", 0.65);
+}
+
 async function startCamera() {
   if (camStream) return true;
   try {
@@ -2239,8 +2351,8 @@ async function initHands() {
 }
 
 function drawCameraFrame() {
-  const vw = camVideo.videoWidth;
-  const vh = camVideo.videoHeight;
+  const vw = camSrc.videoWidth;
+  const vh = camSrc.videoHeight;
   const cw = camCanvas.width;
   const ch = camCanvas.height;
   const s = Math.max(cw / vw, ch / vh);
@@ -2252,7 +2364,7 @@ function drawCameraFrame() {
   camCtx.save();
   camCtx.translate(cw, 0);
   camCtx.scale(-1, 1);            // 거울 모드
-  camCtx.drawImage(camVideo, dx, dy, dw, dh);
+  camCtx.drawImage(camSrc, dx, dy, dw, dh);
   camCtx.restore();
 
   camCtx.fillStyle = "rgba(0,0,0,0.4)";
@@ -2433,17 +2545,21 @@ function trackTick() {
   if (camVideo.readyState >= 2 && camVideo.currentTime !== lastVideoTime) {
     if (current === "garden") {
       lastVideoTime = camVideo.currentTime;
+      refreshCamSource();
       if (sharedHand.on) feedGarden();
+      else sendMonitor(null, false);
       return;
     }
     if (!handActive && (trackTurn++ & 1)) { lastVideoTime = camVideo.currentTime; return; }
     lastVideoTime = camVideo.currentTime;
+    refreshCamSource();
     const now = performance.now();
     const box = drawCameraFrame();
-    lastHands = handLandmarker.detectForVideo(camVideo, now);
+    lastHands = handLandmarker.detectForVideo(camSrc, now);
     const lms = lastHands && lastHands.landmarks && lastHands.landmarks[0];
     if (lms) drawHand(lms, box);
     processHand(lms || null, now, box);
+    sendMonitor(lms || null, pinchSince > 0);
   }
 }
 
@@ -2453,8 +2569,10 @@ function feedGarden() {
   try { gw = gardenFrame.contentWindow; } catch { return; }
   const g = gw && gw.__gardenHand;
   if (!g) return;
-  const res = handLandmarker.detectForVideo(camVideo, performance.now());
-  g.ingest((res && res.landmarks && res.landmarks[0]) || null, gw.performance.now());
+  const res = handLandmarker.detectForVideo(camSrc, performance.now());
+  const lms = (res && res.landmarks && res.landmarks[0]) || null;
+  const st = g.ingest(lms, gw.performance.now());
+  sendMonitor(lms, st && st.pinch);
 }
 
 initHands();

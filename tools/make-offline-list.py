@@ -29,6 +29,7 @@ files = [
     (f"sound.js?v={v}", "sound.js"),
     (f"offline.js?v={v}", "offline.js"),
     ("gooseulbit-garden.html", "gooseulbit-garden.html"),
+    ("monitor.html", "monitor.html"),
     ("manifest.webmanifest", "manifest.webmanifest"),
     ("assets/marble.png", "assets/marble.png"),
     ("assets/fonts/Orbit-Regular.woff2", "assets/fonts/Orbit-Regular.woff2"),
