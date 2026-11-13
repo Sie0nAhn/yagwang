@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113c";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113d";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -3003,6 +3003,7 @@ function processHand(lms, now, box) {
 let trackTurn = 0;
 function trackTick() {
   if (remoteOn()) return;                    // 아이패드가 손을 보내 주는 중
+  if (current === "film") return;            // 영상 중엔 손 인식을 쉰다 — 영상이 끊기지 않게 (건너뛸 수도 없다)
   if (!camStream || camVideo.readyState < 2) return;
   if (!camStatus.classList.contains("is-hidden") && handLandmarker) setCamStatus(null);   // 카메라가 다시 살아났다
   if (!handLandmarker) {

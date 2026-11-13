@@ -32,7 +32,7 @@ self.addEventListener("fetch", (event) => {
 
 let slowUntil = 0;                      // 이 시각까지는 인터넷을 기다리지 않는다
 async function fresh(req) {
-  if (Date.now() < slowUntil) return answer(req);
+  if (Date.now() < slowUntil || self.navigator.onLine === false) return answer(req);   // 인터넷이 없으면 기다리지 않는다
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 3000);
   try {
@@ -54,12 +54,7 @@ async function answer(req) {
       : { ignoreMethod: true, ignoreVary: true };
     // 다 저장된 것 중 가장 새것부터 찾는다 — 예전 버전 페이지가 먼저 걸려 고친 게 안 보이는 일이 없게.
     // 저장이 덜 된 새 버전은 뒤로 미룬다 (새 페이지만 있고 새 스크립트가 없으면 인터넷 없이 깨진다)
-    const done = [], partial = [];
-    for (const n of (await caches.keys()).filter((n) => n.startsWith("yagwang-"))) {
-      const c = await caches.open(n);
-      ((await c.match(COMPLETE)) ? done : partial).push(c);
-    }
-    for (const c of [...done.reverse(), ...partial]) {
+    for (const c of await cacheOrder()) {
       hit = await c.match(req, opts);
       if (hit) break;
     }
@@ -68,12 +63,48 @@ async function answer(req) {
 
   if (req.method === "HEAD") return new Response(null, { status: 200, headers: hit.headers });
   const range = req.headers.get("range");
-  return range ? slice(hit, range) : hit;
+  return range ? slice(hit, range, req.url.split("?")[0]) : hit;
+}
+
+/* 저장분 찾는 순서 — 요청마다 저장소를 다 열어 보지 않게 10초 동안 기억한다 */
+let order = null, orderAt = 0, orderNames = "";
+async function cacheOrder() {
+  if (order && Date.now() - orderAt < 10000) return order;
+  const names = (await caches.keys()).filter((n) => n.startsWith("yagwang-"));
+  if (names.join() !== orderNames) { orderNames = names.join(); memo.clear(); }   // 새 버전이 저장됐으면 기억해 둔 영상도 비운다
+  const done = [], partial = [];
+  for (const n of names) {
+    const c = await caches.open(n);
+    ((await c.match(COMPLETE)) ? done : partial).push(c);
+  }
+  order = [...done.reverse(), ...partial];
+  orderAt = Date.now();
+  return order;
+}
+
+/* 영상 파일 통째 — 한 번 읽으면 기억해 둔다.
+   예전엔 영상이 조각을 달라고 할 때마다 저장소에서 60MB 파일을 통째로 다시 읽어서 영상이 끊겼다.
+   최근에 쓴 것부터 남기고, 합이 170MB 를 넘으면 오래된 것부터 내려놓는다 (본편 둘 + 파편 몇 개) */
+const memo = new Map();
+const MEMO_MAX = 170e6;
+async function blobOf(res, key) {
+  const had = memo.get(key);
+  if (had) { memo.delete(key); memo.set(key, had); return had; }   // 최근 쓴 것으로 옮긴다
+  const blob = await res.blob();
+  memo.set(key, blob);
+  let total = 0;
+  for (const b of memo.values()) total += b.size;
+  while (total > MEMO_MAX && memo.size > 1) {
+    const [k, b] = memo.entries().next().value;
+    memo.delete(k);
+    total -= b.size;
+  }
+  return blob;
 }
 
 /* 영상 조각 — bytes=시작-끝 만큼 잘라서 206 으로 준다 */
-async function slice(res, range) {
-  const blob = await res.blob();
+async function slice(res, range, key) {
+  const blob = await blobOf(res, key);
   const size = blob.size;
   const m = /bytes=(\d*)-(\d*)/.exec(range);
   let start = 0, end = size - 1;

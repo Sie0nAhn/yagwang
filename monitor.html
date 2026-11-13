@@ -536,6 +536,13 @@ function tick() {
   const src = upright();                       // 세로로 들어오면 돌려서 가로로
   L.src = src;
   if (!model) return;                          // 손 모델을 받는 동안에도 카메라는 바로 세워서 보여 준다
+  // 영상이 나오는 동안엔 손 인식을 쉰다 — 영상 재생과 그래픽 칩을 나눠 쓰지 않게 (끊김 줄이기)
+  if (typeof ui !== "undefined" && ui && ui.scene === "film" && performance.now() - uiAt < 1500) {
+    L.lms = null;
+    // 작품 창이 '아이패드가 사라졌다'고 여겨 카메라를 가져가지 않게, 손 없음만 가끔 알린다
+    if (performance.now() - (L.beatAt || 0) > 400) { L.beatAt = performance.now(); ch.postMessage({ t: "lms", lms: null, w: src.videoWidth, h: src.videoHeight, mean: L.mean }); }
+    return;
+  }
   const now = performance.now();
   let res = null;
   try { res = model.detectForVideo(src, now); } catch {}
