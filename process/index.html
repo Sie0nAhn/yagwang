@@ -1154,7 +1154,7 @@ body { background: var(--bg) !important; }
     <section class="sec" id="guestbook">
       <div class="sec__head"><div class="sec__no">07 — GUESTBOOK</div><div>
         <h2 class="sec__title">방명록</h2>
-        <p class="sec__desc">작품을 보고 남은 생각을 남겨 주세요. 남긴 메모는 구슬이 되어 병 속으로 떨어지고, 다른 관객의 구슬과 함께 쌓여요. 구슬을 누르면 읽을 수 있고, 집어서 굴려 볼 수도 있어요.</p></div></div>
+        <p class="sec__desc">작품을 보고 남은 생각을 남겨 주세요. 남긴 메모는 구슬이 되어 아래쪽으로 떨어지고, 다른 관객의 구슬과 함께 쌓여요. 구슬을 누르면 읽을 수 있고, 집어서 굴려 볼 수도 있어요.</p></div></div>
       <div class="gb">
         <form class="gb__form" autocomplete="off">
           <figure class="gb__paper" aria-hidden="true"><p class="gb__preview"></p><figcaption>미리보기</figcaption></figure>
@@ -1166,7 +1166,7 @@ body { background: var(--bg) !important; }
               <div class="gb__box"><textarea id="gb-msg" maxlength="140" rows="3" placeholder="작품을 보고 남은 생각을 적어 주세요" aria-label="메모"></textarea><span class="gb__count">0 / 140</span></div></li>
             <li class="gb__field"><span class="gb__label"><b>3</b>이름 <em>(선택)</em></span>
               <input id="gb-name" maxlength="16" placeholder="비워 두면 익명의 관객" aria-label="이름" /></li>
-            <li class="gb__field gb__field--send"><button class="gb__send" type="submit">구슬로 남기기 ↓</button><p class="gb__status" role="status">남기면 아래 병 속으로 떨어져요.</p></li>
+            <li class="gb__field gb__field--send"><button class="gb__send" type="submit">구슬로 남기기 ↓</button><p class="gb__status" role="status">남기면 아래쪽으로 떨어져요.</p></li>
           </ol>
         </form>
         <div class="gb__summary"><span><b class="gb__num">0</b>개의 메모<span class="gb__dot"> · </span><span class="gb__where">불러오는 중…</span></span><button type="button" class="gb__toggle">모두 펼쳐 보기</button></div>
@@ -1187,7 +1187,7 @@ body { background: var(--bg) !important; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=30" defer></script>
+<script src="guestbook.js?v=31" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;

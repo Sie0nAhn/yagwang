@@ -9,7 +9,7 @@
   // 감각 색 — 피그마 팔레트(1132:87). 구슬은 사이트의 marble 이미지를 이 색으로 물들여요
   const SENSES = [
     ['서늘한 새벽공기', '#6541f2'], ['오후 4시의 햇살', '#f7fc71'], ['윤슬의 빤짝임', '#00bdde'],
-    ['계절의 경계면', '#85ec3b'], ['고요한 정적의 소리', '#c648ff'], ['낯선 타인의 온기', '#ff7627'],
+    ['계절의 경계면', '#9ce469'], ['고요한 정적의 소리', '#c648ff'], ['낯선 타인의 온기', '#ff7627'],
     ['비 오는 날의 흙냄새', '#b98f53'], ['이유없는 설렘', '#f553da'], ['첫눈을 보던 감각', '#00aeff']
   ];
   const $ = s => root.querySelector(s);
@@ -203,7 +203,7 @@
       await store.add({ name: name.value.trim().slice(0, 16), msg: text, sense });
       sessionStorage.setItem('gb-last', String(Date.now()));
       msg.value = ''; grow();
-      status.textContent = '구슬이 병 속으로 떨어졌어요. 고마워요.';
+      status.textContent = '구슬이 아래쪽으로 떨어졌어요. 고마워요.';
     } catch (err) { console.warn(err); status.textContent = '지금은 저장하지 못했어요. 잠시 뒤에 다시 시도해 주세요.'; }
     setTimeout(() => form.classList.remove('is-sending'), 600);
   });
