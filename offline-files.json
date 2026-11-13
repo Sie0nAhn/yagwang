@@ -1,5 +1,5 @@
 {
- "version": "97974db19b",
+ "version": "2418ae2311",
  "files": [
   {
    "url": "./",
@@ -18,8 +18,8 @@
   },
   {
    "url": "main.js?v=20261113h",
-   "size": 148439,
-   "hash": "104eff302c58"
+   "size": 148796,
+   "hash": "8f4e19406519"
   },
   {
    "url": "sound.js?v=20261113h",
@@ -33,13 +33,13 @@
   },
   {
    "url": "gooseulbit-garden.html",
-   "size": 910167,
-   "hash": "d62e2883b6b1"
+   "size": 912163,
+   "hash": "1e71fc3cae37"
   },
   {
    "url": "monitor.html",
-   "size": 45897,
-   "hash": "1ac37963df57"
+   "size": 46445,
+   "hash": "bace301e10ec"
   },
   {
    "url": "manifest.webmanifest",

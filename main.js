@@ -1710,9 +1710,12 @@ let armAt = 0;                  // 이 시각 전에는 손으로 고르지 않�
    손을 한 번 치웠다 다시 올리거나, 펴서 꼬집어야 골라진다. 열린 뒤 잠깐은 아예 받지 않는다. */
 const ARM_DELAY = 1500;
 function armHand() {
-  dwellLatch = true;
+  // 올려 두기는 잠그지 않는다 — 잠그면 손을 가운데에 둔 채로는 2초를 넘겨도 영영 안 골라졌다 ('다시 고르기' 뒤 등).
+  // 대신 열리고 ARM_DELAY 동안은 받지 않고, 그 뒤부터 게이지가 처음부터 다시 찬다 (게이지가 보이니 실수로 넘어가지 않는다)
+  dwellLatch = false;
   pinchLatch = true;
   armAt = performance.now() + ARM_DELAY;
+  dwellAt.since = armAt;
 }
 const dwellAt = { zone: null, since: 0 };
 

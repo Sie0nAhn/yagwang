@@ -252,6 +252,18 @@
   .tools, .progress, .keys { display: none !important; }
   body.yk-embed .panel { top: 28px; max-height: calc(100dvh - 56px); }
 
+  /* 활짝 편 손 — 화면 가운데에 선으로만, 2초 동안 떴다 사라진다 */
+  .palm-nudge { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; pointer-events: none; }
+  .palm-nudge svg { width: min(26vmin, 240px); height: auto; fill: none; stroke: #fff; stroke-width: .9;
+    stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 14px rgba(165,76,239,.75));
+    animation: palmNudge 2s ease-in-out both; }
+  @keyframes palmNudge {
+    0% { opacity: 0; transform: scale(.85); }
+    20% { opacity: 1; transform: scale(1); }
+    50% { transform: scale(1.06); }
+    80% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1); }
+  }
   .intro {
     position: fixed;
     left: 50%;
@@ -737,6 +749,8 @@
   </div>
 </section>
 
+<!-- 안내 카드가 닫힌 뒤 2초 — 활짝 편 손 그림 (손바닥을 다 펴서 움직이라는 넛지) -->
+<div class="palm-nudge" id="palm-nudge" hidden><svg viewBox="0 0 24 24"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5"/><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></div>
 <!-- 처음 들어오면 — 여기서 무엇을 하는지, 손짓은 어떻게 하는지 -->
 <section class="intro" id="intro" hidden>
   <p class="intro__kicker">구슬빛 정원</p>
@@ -5150,10 +5164,15 @@ let s=t.tip.x*innerWidth,r=t.tip.y*innerHeight,a=Hb(s,r);if(!a){let o=document.e
 let k=a?(DW.includes(a.id)?"b:"+a.id:null):l&&!(fr&&fr.gi===l.gi&&fr.id===l.id)?l.gi+":"+l.id:null;k=ykDwell(k,i);let q=ykDwellQ(k);if(q>=1){Dw.done=!0;let kb=/^b:/.test(k)&&document.getElementById(k.slice(2));kb?kb.click():l&&Md(l.gi,l.id)}
 ykGuide(k&&/next/.test(k)||t.pinch?2:1);
 {let nb=k&&/next/.test(k)&&document.getElementById(k.slice(2)),c=nb&&nb.getBoundingClientRect();if(c&&c.width){s=c.right-c.height*.62;r=c.top+c.height/2}Fe.classList.toggle("next",!!(c&&c.width))}
-Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.classList.toggle("over",!!(l||k)),Fe.classList.toggle("pinch",t.pinch),Fe.style.setProperty("--p",k?Math.max(.08,q):l?1:.22),t.pinchEdge&&(Dw.done=!0,ii&&!/next/.test(ii.id)?ii.click():xd())}
+Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.classList.toggle("over",!!(l||k)),Fe.classList.toggle("pinch",t.pinch),Fe.style.setProperty("--p",k?Math.max(.08,q):l?1:.22),t.pinchEdge&&(Dw.done=!0,ii&&!/next/.test(ii.id)?ii.click():performance.now()-YkBorn>YK_PINCH_NEXT_AFTER&&xd())}
+/* 집어서 넘어가기는 정원에 들어오고 20초가 지난 뒤부터 — 막 들어와 손을 맞추다 집혀서 정원을 못 보고 넘어가지 않게
+   (정원은 들어올 때마다 새로 띄우므로 이 창이 뜬 시각이 곧 들어온 시각이다) */
+var YkBorn=performance.now(),YK_PINCH_NEXT_AFTER=2e4;
 /* 엄지와 검지를 모아 집으면 — 어디서든 바로 다음 영상(영상 2)으로. 인터랙션 1의 '바로 확인'과 같다.
    구슬은 촘촘해서 손 커서가 늘 어느 구슬 가까이에 있다 — 그래서 집기는 구슬 열기에 쓰지 않는다 (구슬은 가리키고 멈추면 열린다) */
 /* 전시 화면 안에 들어가 있으면 — 안내 카드를 띄우고, 넘어가는 버튼은 하나만 */
+/* 안내 카드가 닫힌 뒤 — 활짝 편 손을 2초 보여 준다 */
+function ykPalmNudge(){let el=document.getElementById("palm-nudge");if(!el)return;el.hidden=!1;let sv=el.querySelector("svg");sv.style.animation="none";void sv.offsetWidth;sv.style.animation="";clearTimeout(ykPalmNudge.t);ykPalmNudge.t=setTimeout(()=>{el.hidden=!0},2000)}
 var YkIntro=document.getElementById("intro"),YkNext=document.getElementById("float-next");
 YkNext.addEventListener("click",xd);
 /* 아이패드 조작판(monitor.html)에서 오는 조작 — 바깥(main.js)이 이걸 부른다.
@@ -5185,7 +5204,7 @@ window.__gardenCtl={
 };
 if(parent!==window){document.body.classList.add("yk-embed");YkIntro.hidden=!1;
   var YkMouseT=0;addEventListener("mousemove",()=>{document.body.classList.add("yk-mouse");clearTimeout(YkMouseT);YkMouseT=setTimeout(()=>document.body.classList.remove("yk-mouse"),2500)});
-  var hideIntro=()=>{if(YkIntro.hidden||YkIntro.classList.contains("leaving"))return;YkIntro.classList.add("leaving");setTimeout(()=>{YkIntro.hidden=!0},700)};
+  var hideIntro=()=>{if(YkIntro.hidden||YkIntro.classList.contains("leaving"))return;YkIntro.classList.add("leaving");setTimeout(()=>{YkIntro.hidden=!0;ykPalmNudge()},700)};
   setTimeout(hideIntro,12e3);addEventListener("pointerdown",hideIntro)}
 /* 손이 카메라에 1초쯤 이어서 잡히면 안내를 닫는다 */
 var YkHandFor=0;
