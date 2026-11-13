@@ -1152,7 +1152,7 @@ function resetArchive() {
   filmEl.pause();
   stopYt();
   if (current === "garden") releaseGardenHand();
-  else startCamera();
+  else if (!ipadHasCamera()) startCamera();   // 영상 2 뒤 처음으로 — 아이패드가 카메라를 맡고 있으면 건드리지 않는다
   gsap.set([screenOrb, screenFilm, screenGarden], { autoAlpha: 0 });
   gsap.set(screenGrid, { autoAlpha: 1 });
   document.body.classList.remove("is-garden");
@@ -1510,8 +1510,8 @@ async function toGarden() {
         gardenLoaded = true;
       }
     });
-    // 정원을 보는 동안 뒤 영상을 미리 받아둔다
-    if (FILM[1].local) loadFilmFile(FILM[1]);
+    // 정원을 보는 동안 뒤 영상을 미리 받아둔다 — 정원이 막 뜨는 순간과 겹치면 버벅이니 조금 뒤에
+    setTimeout(() => { if (current === "garden" && FILM[1].local) loadFilmFile(FILM[1]); }, 8000);
 
     gsap.set(screenFilm, { autoAlpha: 0 });
     gsap.set(screenGarden, { autoAlpha: 1 });
@@ -1525,6 +1525,20 @@ async function toGarden() {
     cameraAfterFilm();
     prepareGarden();          // 커서 모양 맞추기 (이미 돼 있으면 건너뜀)
     enableGardenHand();       // 정원의 손 조작 켜기 (카메라는 같이 쓴다)
+    // 검은 화면인 채로 정원이 몇 장 그려지기를 기다린다 — 3D 첫 그림(셰이더 준비)이 걷히는 중에 걸려 버벅이지 않게
+    await gardenFrames(12, 2500);
+  });
+}
+/* 정원 창이 n 장을 그릴 때까지 (오래 걸리면 그냥 넘어간다) */
+function gardenFrames(n, maxWait) {
+  return new Promise((res) => {
+    const t = setTimeout(res, maxWait);
+    let w = null;
+    try { w = gardenFrame.contentWindow; } catch {}
+    if (!w || !w.requestAnimationFrame) { clearTimeout(t); return res(); }
+    let k = 0;
+    const step = () => { if (++k >= n) { clearTimeout(t); res(); } else w.requestAnimationFrame(step); };
+    w.requestAnimationFrame(step);
   });
 }
 
@@ -1609,7 +1623,7 @@ function prepareGarden() {
 
 /* 정원의 손 조작을 켠다 — 카메라는 이쪽 것을 그대로 같이 쓴다 */
 function enableGardenHand() {
-  startCamera();
+  if (!ipadHasCamera()) startCamera();   // 아이패드가 카메라를 맡고 있으면 여기서 열지 않는다 — 열면 둘이 카메라를 주고받으며 끊긴다
   let doc;
   try { doc = gardenFrame.contentDocument; } catch { return; }
   const b = doc && doc.getElementById("btn-hand");
@@ -1623,8 +1637,10 @@ function releaseGardenHand() {
   const b = doc && doc.getElementById("btn-hand");
   if (b && b.getAttribute("aria-pressed") === "true") b.click();
   sharedHand.on = false;
-  startCamera();
+  if (!ipadHasCamera()) startCamera();
 }
+/* 아이패드 창이 열려 있고 손(또는 '카메라 맡고 있음' 신호)을 보내 오는 중 */
+function ipadHasCamera() { return remoteOn() || performance.now() - monitorSeen < 3000; }
 gardenFrame.addEventListener("load", prepareGarden);
 
 /* 정원이 보내는 신호 — 위에서 이미 넘어갔으면 무시된다 */
@@ -2429,6 +2445,7 @@ if (monitorCh) {
     if (m.t === "pad") padKeys(m.keys || []);
     if (m.t === "select") padSelect();
     if (m.t === "next") padNext();
+    if (m.t === "back" && current === "orb" && !locked) back();   // 아이패드 '다시 고르기'
   };
 }
 

@@ -92,6 +92,12 @@
   .empty small { font-size: 15px; color: rgba(255,255,255,.65); }
 
   /* 손 인식 안내 — 카메라 칸 오른쪽 아래 */
+  /* 카메라 칸 아래 — 손 인식이 안 될 때 새로고침 (전체 화면에선 사파리 새로고침 버튼이 안 보여 여기서 누른다) */
+  .reload { left: 101px; top: 982px; width: 810px; display: flex; align-items: center; gap: 12px;
+    font-size: 16px; line-height: 1.4; color: rgba(255,255,255,.6); white-space: nowrap; }
+  .reload button { padding: 6px 16px; border-radius: 50px; background: #1d1d1d; color: #fff; font-size: 15px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+  .reload button:active { background: #333; }
   .coach { position: absolute; right: 20px; bottom: 20px;
     display: flex; align-items: center; gap: 8px; padding: 12px 20px;
     border: 1.4px solid rgba(255,255,255,.4); border-radius: 20px;
@@ -177,6 +183,8 @@
     <div class="coach glass" id="coach" hidden><span class="coach__ic" id="coachIc">!</span><span class="coach__t" id="coachText"></span></div>
   </section>
 
+  <p class="abs reload">손 인식이 안 되면 이 화면을 한 번 새로고침해 주세요 <button id="reload" type="button">새로고침</button></p>
+
   <section class="abs panel" id="ctl">
     <div class="ctl-head">
       <p class="ctl-h">손이 안되면 버튼으로</p>
@@ -190,7 +198,7 @@
     </div>
     <div class="acts">
       <button class="btn big" id="bSel" type="button"><span id="selText">선택</span></button>
-      <button class="btn big off" id="bNext" type="button">다음 영상으로</button>
+      <button class="btn big off" id="bNext" type="button"><span id="nextText">다음 영상으로</span></button>
     </div>
   </section>
 
@@ -277,7 +285,9 @@ function tap(el, fn) {
   el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
 }
 tap($("bSel"), () => ch.postMessage({ t: "select" }));
-tap($("bNext"), () => ch.postMessage({ t: "next" }));
+tap($("reload"), () => location.reload());
+// 아래 둘째 버튼 — 인터랙션 1에선 '다시 고르기'(구슬 → 아카이브), 정원에선 '다음 영상으로'
+tap($("bNext"), () => ch.postMessage({ t: lastScene === "grid" || lastScene === "orb" ? "back" : "next" }));
 
 /* 운영자용 — '작품과 연결됨'을 2초 누르면 카메라 위아래 뒤집기 */
 {
@@ -324,7 +334,7 @@ const SCENE = {
   any:    ["Yagwang",      "손으로, 또는 버튼으로 조작해요"],
   boot:   ["Yagwang",      "손을 카메라에 비추거나\n‘시작하기’를 눌러요"],
   grid:   ["Interaction1", "◀ ▶ 파편 넘기기\n‘고르기’ 가운데 파편 고르기"],
-  orb:    ["Interaction1", "‘확인하러 가기’ 영상 보기\n◀ 다시 고르기"],
+  orb:    ["Interaction1", "‘확인하러 가기’ 영상 보기\n‘다시 고르기’ 파편으로 돌아가기"],
   film:   ["Film",         ""],
   garden: ["Interaction2", "◀ ▶ 둘러보기 · ▲ ▼ 걷기\n‘구슬 열기’ 고리가 뜬 구슬 열기"],
 };
@@ -364,7 +374,9 @@ function layout() {
   // 쓸 수 없는 버튼은 회색
   const on = ON[sc] || ON.any;
   for (const k of ["left", "up", "down", "right"]) document.querySelector(".k-" + k).classList.toggle("off", !on.includes(k));
-  $("bNext").classList.toggle("off", !(sc === "garden" && ui && ui.canNext));
+  const inter1 = sc === "grid" || sc === "orb";
+  $("nextText").textContent = inter1 ? "다시 고르기" : "다음 영상으로";
+  $("bNext").classList.toggle("off", inter1 ? sc !== "orb" : !(sc === "garden" && ui && ui.canNext));
   $("bSel").classList.toggle("off", sc === "film");
   $("ctl").hidden = false;                  // 영상이 나오는 동안에도 버튼은 보이되, 모두 회색으로 둔다 (건너뛸 수 없다)
   $("selText").textContent =
