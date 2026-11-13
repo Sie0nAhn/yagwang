@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113f";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113g";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -864,7 +864,7 @@ const focusNameEl = document.getElementById("focusName");
 const cameraHintEl = document.getElementById("cameraHint");
 /* 손 인식 상자 위 설명 — 화면마다 할 수 있는 게 달라서 바꿔 띄운다 */
 const HINT = {
-  grid: "손을 화면 좌우 끝으로 가져가면 그쪽으로 돌아갑니다. 가운데 파편에 손을 올려 두면 골라집니다. 엄지와 검지를 모아 집으면 더 빨리 골라집니다.",
+  grid: "손을 화면 좌우 끝으로 가져가면 파편이 그쪽으로 넘어갑니다. 가운데 파편에 손을 올려 두면 골라집니다. 엄지와 검지를 모아 집으면 더 빨리 골라집니다.",
   orb: "아래 가운데 '확인하러 가기'에 손을 올려 두면 영상이 시작됩니다. 손이 어디 있든 엄지와 검지를 모아 집어도 넘어갑니다.",
 };
 cameraHintEl.textContent = HINT.grid;

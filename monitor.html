@@ -80,6 +80,9 @@
   .chip.pinch.on i { background: #ff2bd6; box-shadow: 0 0 8px #ff2bd6; }
   .chip.charging { background: rgba(165,76,239,.6); }
 
+  .restcover { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; gap: 10px; text-align: center;
+    background: #2c2c2c; font-size: 22px; line-height: 1.5; }
+  .restcover small { font-size: 16px; color: rgba(255,255,255,.6); }
   .empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px;
     padding: 24px; font-size: 20px; line-height: 1.5; }
   .empty small { font-size: 15px; color: rgba(255,255,255,.65); }
@@ -151,6 +154,11 @@
 
   <section class="abs cam">
     <canvas id="view"></canvas>
+    <!-- 영상이 나오는 동안 — 아이패드가 카메라를 잠깐 쉬게 하므로 꺼졌다 켜지는 모습 대신 이 화면을 둔다 -->
+    <div class="restcover" id="restcover" hidden>
+      <b>영상이 나오는 동안 카메라는 잠시 쉬어요</b>
+      <small>영상이 끝나면 다시 켜져요</small>
+    </div>
     <div class="empty" id="empty">
       <b id="emptyT">작품 화면을 기다리는 중이에요</b>
       <small id="emptyS">같은 사파리의 다른 창에서 작품을 열어 두세요.<br />작품 쪽 카메라가 켜지면 여기 크게 보여요.</small>
@@ -284,7 +292,7 @@ tap($("bNext"), () => ch.postMessage({ t: "next" }));
 const HANDS = {
   any:    [["✋", "조작 시작", "손을 카메라에 비추기"]],
   boot:   [["✋", "시작", "손을 카메라에 잠시 비추기"]],
-  grid:   [["↔", "고리 돌리기", "손을 화면 양 끝으로"],
+  grid:   [["↔", "파편 넘기기", "손을 화면 양 끝으로"],
            ["✋", "고르기", "가운데 파편에 손 2초"],
            ["🤏", "빨리 고르기", "엄지와 검지 모아 집기"]],
   orb:    [["✋", "확인하러 가기", "버튼에 손 올려 두기"],
@@ -310,7 +318,7 @@ function lightHands(row) {
 const SCENE = {
   any:    ["Yagwang",      "손으로, 또는 버튼으로 조작해요"],
   boot:   ["Yagwang",      "손을 카메라에 비추거나\n‘시작하기’를 눌러요"],
-  grid:   ["Interaction1", "◀ ▶ 고리 돌리기\n‘고르기’ 가운데 파편 고르기"],
+  grid:   ["Interaction1", "◀ ▶ 파편 넘기기\n‘고르기’ 가운데 파편 고르기"],
   orb:    ["Interaction1", "‘확인하러 가기’ 영상 보기\n◀ 다시 고르기"],
   film:   ["Film",         ""],
   garden: ["Interaction2", "◀ ▶ 둘러보기 · ▲ ▼ 걷기\n‘구슬 열기’ 고리가 뜬 구슬 열기"],
@@ -397,12 +405,17 @@ function draw() {
   const fresh = ui && performance.now() - uiAt < 1500;
   $("link").classList.toggle("on", live);
   $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
+  // 영상 중엔 덮개
+  $("restcover").hidden = !(fresh && ui.scene === "film");
   // 이 아이패드 창이 카메라를 맡는다 (L) — 못 쓰면 예전처럼 작품 창에서 보내 주는 그림(frame)
   const L = window.__local;
+  const lt = L && L.video.srcObject && L.video.srcObject.getVideoTracks()[0];
+  const waking = !!(L && L.ok && lt && lt.muted);       // 영상 소리 때문에 멈춘 카메라가 깨어나는 중
   const localCam = !!(L && L.ok && L.src && L.src.videoWidth);
   const img = localCam ? L.src : frame;                 // 바로 세운 그림
   const iw = localCam ? L.src.videoWidth : frameW, ih = localCam ? L.src.videoHeight : frameH;
-  $("empty").hidden = !!img && (localCam || live);
+  $("empty").hidden = !!img && (localCam || live) && !waking;
+  if (waking) { $("emptyT").textContent = "카메라를 다시 켜는 중이에요"; $("emptyS").textContent = "잠시만 기다려 주세요. 오른쪽 버튼으로도 조작할 수 있어요."; }
   if (!img) {
     if (L && L.err) {
       $("emptyT").textContent = L.err === "NotAllowedError" ? "카메라가 막혀 있어요" : "카메라를 열지 못했어요";
@@ -572,8 +585,9 @@ function restartCam() {
 L.recover = () => {
   const t = video.srcObject && video.srcObject.getVideoTracks()[0];
   if (!L.everOk || L.asking || L.err === "NotAllowedError") return;
-  if (!L.ok || !t || t.readyState === "ended" || t.muted) restartCam();
-  else if (video.paused) video.play().catch(() => {});
+  // 끝난(ended) 카메라만 새로 연다. 멈춤(muted)은 영상 소리가 끝나면 저절로 풀리니 기다린다 — 새로 열면 꺼졌다 켜진다
+  if (!L.ok || !t || t.readyState === "ended") restartCam();
+  else { L.afterFilm = performance.now(); if (video.paused) video.play().catch(() => {}); }
 };
 setInterval(() => {
   const now = performance.now();
@@ -582,7 +596,8 @@ setInterval(() => {
   if (L.ok && (!t || t.readyState === "ended")) L.ok = false;
   if (L.ok && video.paused) video.play().catch(() => {});
   // 멈춤(muted)이 영상 밖에서 3초 넘게 이어지면 새로 연다
-  if (L.ok && t && t.muted && !filming) { mutedSince = mutedSince || now; if (now - mutedSince > 3000) { mutedSince = 0; restartCam(); } }
+  // 멈춤이 영상 밖에서 오래(8초) 이어질 때만 새로 연다 — 영상 직후엔 저절로 풀리기를 먼저 기다린다
+  if (L.ok && t && t.muted && !filming) { mutedSince = mutedSince || now; if (now - mutedSince > 8000) { mutedSince = 0; restartCam(); } }
   else mutedSince = 0;
   // 꺼졌으면 다시 켠다 — 허용해 둔 뒤라 허용 창은 다시 뜨지 않는다 (거절된 때는 누를 때까지 기다린다)
   if (!L.ok && !L.asking && !filming && L.err !== "NotAllowedError" && L.everOk) startCam();
