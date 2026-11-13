@@ -933,24 +933,24 @@ body { background: var(--bg) !important; }
 
 /* ── 표 ── */
 .tbl-wrap { overflow-x: auto; border-radius: 16px; background: var(--panel); scrollbar-width: thin; }
-.ptable { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.65; }
-.ptable th, .ptable td { padding: 14px 16px; text-align: left; vertical-align: top; }
-.ptable thead th { font-family: var(--font-mono); font-size: 11.5px; font-weight: 400; letter-spacing: .06em; color: var(--dim); background: #15121d; white-space: nowrap; }
-.ptable tbody tr + tr td, .ptable tbody tr + tr th { box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
-.ptable tbody th { width: 110px; font-size: 13px; font-weight: 700; color: var(--fg); white-space: nowrap; background: #15121d; }
-.ptable td { color: var(--fg-2); }
+.dtable { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.65; }
+.dtable th, .dtable td { padding: 14px 16px; text-align: left; vertical-align: top; }
+.dtable thead th { font-family: var(--font-mono); font-size: 11.5px; font-weight: 400; letter-spacing: .06em; color: var(--dim); background: #15121d; white-space: nowrap; }
+.dtable tbody tr + tr td, .dtable tbody tr + tr th { box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+.dtable tbody th { width: 110px; font-size: 13px; font-weight: 700; color: var(--fg); white-space: nowrap; background: #15121d; }
+.dtable td { color: var(--fg-2); }
 .t-name { font-weight: 700; color: var(--fg) !important; white-space: nowrap; }
 .t-mono { font-family: var(--font-mono); font-size: 12.5px; color: var(--fg) !important; white-space: nowrap; }
 .t-mono a { color: #ff8fe6; }
 .t-chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; color: #0a0910; }
 .t-chip.is-blue { background: #64b5f6; } .t-chip.is-violet { background: #b98cff; }
 .t-code { margin: 0; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; color: var(--fg-2); white-space: pre-wrap; max-width: 420px; }
-.ptable tr.is-pick td { background: #1d0f1d; }
-.ptable tr.is-pick .t-mono { color: #ff5bd9 !important; }
-.ptable--frame .wfx__diagram { margin-bottom: 8px; }
-.ptable--frame td:first-child { min-width: 170px; }
-.ptable--cmp td { width: 44%; }
-.ptable--tip td:nth-child(3), .ptable--ph td:nth-child(3) { min-width: 220px; }
+.dtable tr.is-pick td { background: #1d0f1d; }
+.dtable tr.is-pick .t-mono { color: #ff5bd9 !important; }
+.dtable--frame .wfx__diagram { margin-bottom: 8px; }
+.dtable--frame td:first-child { min-width: 170px; }
+.dtable--cmp td { width: 44%; }
+.dtable--tip td:nth-child(3), .dtable--ph td:nth-child(3) { min-width: 220px; }
 .phases, .tips { display: block !important; }
 .wfm .tbl-wrap { margin-top: 0; }
 
@@ -965,12 +965,46 @@ body { background: var(--bg) !important; }
 @keyframes hsPulse { 50% { transform: translateX(4px); box-shadow: 0 0 0 8px rgba(255,91,217,.18), 0 6px 20px rgba(0,0,0,.5); } }
 @media (prefers-reduced-motion: reduce) { .hs-arrow--next { animation: none; } }
 
-.ptable--tip .t-name, .ptable--ph .t-name { white-space: normal; min-width: 140px; max-width: 180px; }
-.ptable--tip td:nth-child(4), .ptable--ph td:nth-child(4) { min-width: 340px; }
-.ptable--tip .t-code, .ptable--ph .t-code { max-width: none; }
-.ptable--tip td:last-child { white-space: normal; min-width: 90px; }
+.dtable--tip .t-name, .dtable--ph .t-name { white-space: normal; min-width: 140px; max-width: 180px; }
+.dtable--tip td:nth-child(4), .dtable--ph td:nth-child(4) { min-width: 340px; }
+.dtable--tip .t-code, .dtable--ph .t-code { max-width: none; }
+.dtable--tip td:last-child { white-space: normal; min-width: 90px; }
 
 @media (max-width: 960px) { .hero__pb { flex-wrap: wrap; gap: 10px; } .hero__pb-ko { font-size: 52px !important; white-space: nowrap; } .hero__pb-en { white-space: nowrap; } }
+
+/* ── 프롬프트 쓰는 법: 단계별로 구조가 쌓이는 그림 ── */
+.phx { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: stretch; }
+.phx__step { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 16px; background: var(--panel); }
+.phx__arrow { align-self: center; font-size: 22px; color: #ff5bd9; }
+.phx__top { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11.5px; color: var(--dim); }
+.phx__no { color: #ff8fe6; }
+.phx__name { font-size: 17px; font-weight: 700; }
+.ps { display: flex; flex-direction: column; gap: 6px; padding: 14px; min-height: 120px; border-radius: 10px; background: #15121d; }
+.ps__l { display: block; height: 7px; border-radius: 4px; background: rgba(255,255,255,.22); }
+.ps__k { align-self: flex-start; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: #0a0910; background: var(--k); border-radius: 4px; padding: 1px 6px; margin-top: 2px; }
+.phx__note { margin: 0; font-size: 14px; line-height: 1.65; color: var(--fg-2); }
+.phx__src { margin-top: auto; font-family: var(--font-mono); font-size: 12px; color: #ff8fe6; text-decoration: none; }
+/* ── 팁: 프롬프트 해부도 + 사용 횟수 ── */
+.anat { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 16px; align-items: start; }
+.anat__doc { position: sticky; top: 20px; padding: 16px; border-radius: 16px; background: #15121d; display: flex; flex-direction: column; gap: 6px; }
+.anat__cap { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--dim); margin-bottom: 4px; }
+.anat__cap--out { margin-top: 12px; }
+.anat__row { display: grid; grid-template-columns: 22px auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #0e0c14; box-shadow: inset 3px 0 0 var(--k); }
+.anat__row b, .anat__no { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--k); color: #0a0910; font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+.anat__h { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; color: var(--k); white-space: nowrap; }
+.anat__s { font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.anat__row.is-out { grid-template-columns: 22px 1fr; }
+.anat__row.is-out .anat__h { font-family: var(--font-kr); color: var(--fg); }
+.anat__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.anat__list li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--panel); }
+.anat__list strong { display: block; font-size: 14.5px; font-weight: 700; }
+.anat__list p { margin: 3px 0 8px; font-size: 13.5px; line-height: 1.6; color: var(--fg-2); }
+.anat__bar { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+.anat__bar i { display: block; height: 6px; border-radius: 3px; background: var(--k); }
+@media (max-width: 960px) {
+  .phx { grid-template-columns: 1fr; } .phx__arrow { justify-self: center; transform: rotate(90deg); }
+  .anat { grid-template-columns: 1fr; } .anat__doc { position: static; }
+}
 </style>
 </head>
 <body>
@@ -1038,7 +1072,7 @@ body { background: var(--bg) !important; }
         <h2 class="sec__title">작업 순서</h2>
         <p class="sec__desc">이미지를 먼저 만들고, 첫 프레임과 마지막 프레임 사이를 Seedance로 생성했습니다. 전체 단계를 노드로 연결해 한눈에 볼 수 있도록 정리했습니다.</p></div></div>
       <div class="wf"><svg class="wf__svg" viewBox="0 0 1000 506" role="img" aria-label="작업 순서 노드: 미드저니 → GPT 2.5 → FLUX·GPT Image 2(첫 프레임·끝 프레임) → Seedance → 애프터 이펙트 → 최종 영상"><defs><pattern id="wfdot" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(255,255,255,.06)"/></pattern></defs><rect width="1000" height="506" fill="url(#wfdot)"/><path id="wl0" class="wf__link wf__link--img" d="M308,84 C336,84 336,84 364,84"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#wl0"/></animateMotion></circle><path id="wl1" class="wf__link wf__link--img" d="M636,84 C664,84 664,84 692,84"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#wl1"/></animateMotion></circle><path id="wl2" class="wf__link wf__link--img" d="M964,84 H968 Q982,84 982,98 V216 Q982,230 968,230 H32 Q18,230 18,244 V318 Q18,332 32,332 H36"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="4.2s" repeatCount="indefinite"><mpath href="#wl2"/></animateMotion></circle><path id="wl3" class="wf__link wf__link--img" d="M964,112 H976 Q990,112 990,126 V230 Q990,244 976,244 H24 Q10,244 10,258 V346 Q10,360 24,360 H36"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="4.2s" repeatCount="indefinite"><mpath href="#wl3"/></animateMotion></circle><path id="wl4" class="wf__link wf__link--vid" d="M308,332 C336,332 336,332 364,332"/><circle class="wf__pulse wf__pulse--vid" r="3"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#wl4"/></animateMotion></circle><path id="wl5" class="wf__link wf__link--vid" d="M636,332 C664,332 664,332 692,332"/><circle class="wf__pulse wf__pulse--vid" r="3"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#wl5"/></animateMotion></circle><g class="wf__node wf__node--img" transform="translate(36 24)"><rect class="wf__box" width="272" height="178" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h248 a12,12 0 0 1 12,12 v24 h-272 z"/><circle class="wf__dot" cx="17" cy="18.0" r="5"/><text class="wf__title" x="31" y="23.5">Midjourney v7</text><text class="wf__no" x="258" y="22.5" text-anchor="end">01</text><circle class="wf__slot wf__slot--img" cx="272" cy="60.0" r="5.5"/><text class="wf__slotlab" x="256" y="65.0" text-anchor="end">IMAGE</text><rect class="wf__wg" x="12" y="82" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="98.5">chaos · ar</text><text class="wf__wgval" x="246" y="98.5" text-anchor="end">5 · 16:9</text><rect class="wf__wg" x="12" y="112" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="128.5">stylize</text><text class="wf__wgval" x="246" y="128.5" text-anchor="end">150</text><rect class="wf__wg" x="12" y="142" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="158.5">moodboard</text><text class="wf__wgval" x="246" y="158.5" text-anchor="end">영상캡스톤</text></g><g class="wf__node wf__node--img" transform="translate(364 24)"><rect class="wf__box" width="272" height="178" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h248 a12,12 0 0 1 12,12 v24 h-272 z"/><circle class="wf__dot" cx="17" cy="18.0" r="5"/><text class="wf__title" x="31" y="23.5">GPT 2.5</text><text class="wf__no" x="258" y="22.5" text-anchor="end">02</text><circle class="wf__slot wf__slot--img" cx="0" cy="60.0" r="5.5"/><text class="wf__slotlab" x="16" y="65.0">image</text><circle class="wf__slot wf__slot--img" cx="272" cy="60.0" r="5.5"/><text class="wf__slotlab" x="256" y="65.0" text-anchor="end">IMAGE</text><rect class="wf__wg" x="12" y="82" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="98.5">질감</text><text class="wf__wgval" x="246" y="98.5" text-anchor="end">점토 · 펠트</text><rect class="wf__wg" x="12" y="112" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="128.5">장면</text><text class="wf__wgval" x="246" y="128.5" text-anchor="end">공단</text></g><g class="wf__node wf__node--img" transform="translate(692 24)"><rect class="wf__box" width="272" height="178" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h248 a12,12 0 0 1 12,12 v24 h-272 z"/><circle class="wf__dot" cx="17" cy="18.0" r="5"/><text class="wf__title" x="31" y="23.5">FLUX · GPT Image 2</text><text class="wf__no" x="258" y="22.5" text-anchor="end">03</text><circle class="wf__slot wf__slot--img" cx="0" cy="60.0" r="5.5"/><text class="wf__slotlab" x="16" y="65.0">image</text><circle class="wf__slot wf__slot--img" cx="0" cy="88.0" r="5.5"/><text class="wf__slotlab" x="16" y="93.0">색 가이드</text><circle class="wf__slot wf__slot--img" cx="272" cy="60.0" r="5.5"/><text class="wf__slotlab" x="256" y="65.0" text-anchor="end">첫 프레임</text><circle class="wf__slot wf__slot--img" cx="272" cy="88.0" r="5.5"/><text class="wf__slotlab" x="256" y="93.0" text-anchor="end">끝 프레임</text><rect class="wf__wg" x="12" y="110" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="126.5">작은 수정</text><text class="wf__wgval" x="246" y="126.5" text-anchor="end">FLUX</text><rect class="wf__wg" x="12" y="140" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="156.5">큰 수정</text><text class="wf__wgval" x="246" y="156.5" text-anchor="end">GPT Image 2</text></g><g class="wf__node wf__node--vid" transform="translate(36 272)"><rect class="wf__box" width="272" height="210" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h248 a12,12 0 0 1 12,12 v24 h-272 z"/><circle class="wf__dot" cx="17" cy="18.0" r="5"/><text class="wf__title" x="31" y="23.5">Seedance 2.0 · 2.5</text><text class="wf__no" x="258" y="22.5" text-anchor="end">04</text><circle class="wf__slot wf__slot--img" cx="0" cy="60.0" r="5.5"/><text class="wf__slotlab" x="16" y="65.0">첫 프레임</text><circle class="wf__slot wf__slot--img" cx="0" cy="88.0" r="5.5"/><text class="wf__slotlab" x="16" y="93.0">끝 프레임</text><circle class="wf__slot wf__slot--vid" cx="272" cy="60.0" r="5.5"/><text class="wf__slotlab" x="256" y="65.0" text-anchor="end">VIDEO</text><rect class="wf__wg" x="12" y="110" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="126.5">duration</text><text class="wf__wgval" x="246" y="126.5" text-anchor="end">4–15s</text><rect class="wf__wg" x="12" y="140" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="156.5">resolution</text><text class="wf__wgval" x="246" y="156.5" text-anchor="end">480p</text><rect class="wf__wg wf__wg--text" x="12" y="170" width="248" height="28" rx="8"/><text class="wf__code" x="24" y="188">CAMERA · SUBJECT &amp; ACTION …</text></g><g class="wf__node wf__node--vid" transform="translate(364 272)"><rect class="wf__box" width="272" height="210" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h248 a12,12 0 0 1 12,12 v24 h-272 z"/><circle class="wf__dot" cx="17" cy="18.0" r="5"/><text class="wf__title" x="31" y="23.5">After Effects</text><text class="wf__no" x="258" y="22.5" text-anchor="end">05</text><circle class="wf__slot wf__slot--vid" cx="0" cy="60.0" r="5.5"/><text class="wf__slotlab" x="16" y="65.0">video</text><circle class="wf__slot wf__slot--vid" cx="272" cy="60.0" r="5.5"/><text class="wf__slotlab" x="256" y="65.0" text-anchor="end">편집본</text><rect class="wf__wg" x="12" y="82" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="98.5">컷 · 색</text><text class="wf__wgval" x="246" y="98.5" text-anchor="end">잇고 맞추기</text><rect class="wf__wg" x="12" y="112" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="128.5">사운드</text><text class="wf__wgval" x="246" y="128.5" text-anchor="end">입히기</text></g><g class="wf__node wf__node--out" transform="translate(692 272)"><rect class="wf__box" width="272" height="210" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h248 a12,12 0 0 1 12,12 v24 h-272 z"/><circle class="wf__dot" cx="17" cy="18.0" r="5"/><text class="wf__title" x="31" y="23.5">최종 영상</text><text class="wf__no" x="258" y="22.5" text-anchor="end">06</text><circle class="wf__slot wf__slot--vid" cx="0" cy="60.0" r="5.5"/><text class="wf__slotlab" x="16" y="65.0">편집본</text><rect class="wf__wg" x="12" y="82" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="98.5">구성</text><text class="wf__wgval" x="246" y="98.5" text-anchor="end">영상 3편</text><rect class="wf__wg" x="12" y="112" width="248" height="24" rx="12"/><text class="wf__wglab" x="26" y="128.5">러닝타임</text><text class="wf__wgval" x="246" y="128.5" text-anchor="end">약 8분</text></g></svg></div>
-      <div class="tbl-wrap"><table class="ptable">
+      <div class="tbl-wrap"><table class="dtable">
         <thead><tr><th>모델</th><th>용도</th><th>설명</th><th>주요 작업</th><th>사용 컷</th></tr></thead>
         <tbody>
           <tr><td class="t-name">FLUX</td><td><span class="t-chip is-blue">이미지 작은 수정</span></td><td>장면은 유지하고 일부만 수정. 바꿀 위치를 색으로 표시하면 나머지 영역은 거의 변하지 않습니다.</td><td>연못에 물결 추가<br />구슬에 빛 켜기<br />떠오르는 구슬의 첫·끝 프레임</td><td class="t-mono">C10–C15<br />C22 · C25–C30</td></tr>
@@ -1052,7 +1086,7 @@ body { background: var(--bg) !important; }
         <div class="wfm__bar" role="img" aria-label="ComfyUI 생성 41컷 중 Seedance 2.5 36컷, Seedance 2.0 4컷, 이미지 1컷">
           <span style="flex:36" class="is-25">Seedance 2.5 · 36컷</span><span style="flex:4" class="is-20">2.0 · 4</span><span style="flex:1" class="is-etc"></span>
         </div>
-        <div class="tbl-wrap"><table class="ptable">
+        <div class="tbl-wrap"><table class="dtable">
           <thead><tr><th>모델</th><th>사용</th><th>장점</th><th>한계 · 판단</th></tr></thead>
           <tbody>
             <tr><td class="t-name">Kling</td><td class="t-mono">시험</td><td>움직임이 크고 역동적입니다.</td><td>컷마다 점토·펠트 질감과 야광귀의 형태가 원본에서 조금씩 달라졌습니다.</td></tr>
@@ -1062,13 +1096,32 @@ body { background: var(--bg) !important; }
       </div>
 
       <div class="wfx__sub"><span>02</span>프레임 입력 방식</div>
-      <div class="tbl-wrap"><table class="ptable ptable--frame">
-        <thead><tr><th>입력 방식</th><th>컷 수</th><th>방법</th><th>사용한 장면</th><th>이유</th></tr></thead>
-        <tbody>
-          <tr><td><div class="wfx__diagram" aria-hidden="true"><i class="is-on"></i><b></b><i class="is-on"></i></div><span class="t-name">첫 프레임 + 끝 프레임</span></td><td class="t-mono">32</td><td>시작과 끝 장면을 모두 지정하고, 그 사이의 움직임만 프롬프트로 연출했습니다.</td><td>카메라가 멈출 위치가 정해진 장면<br />구슬·캐릭터의 도착 위치가 정해진 장면<br />앞뒤 컷을 이어 붙여야 하는 장면</td><td>앞 컷의 끝 프레임을 다음 컷의 첫 프레임으로 이어, 컷이 바뀌어도 자세와 빛이 끊기지 않도록 하기 위해 사용하였습니다.</td></tr>
-          <tr><td><div class="wfx__diagram" aria-hidden="true"><i class="is-on"></i><b></b><i></i></div><span class="t-name">첫 프레임만</span></td><td class="t-mono">5</td><td>시작 장면만 입력하고 끝 장면은 비워 두었습니다.</td><td>문이 닫히며 어둠으로 바뀌는 컷 (C2 · C3)<br />카메라가 화면으로 돌진하는 컷 (C22)<br />화면 속 이미지가 변하는 컷 (C36 · C37)</td><td>끝 장면에 억지로 맞춰지지 않고, 어두워지거나 돌진하거나 부서지는 큰 변화를 모델이 자유롭게 만들어 내도록 하기 위해 사용하였습니다.</td></tr>
-          <tr><td><div class="wfx__diagram" aria-hidden="true"><i class="is-ref"></i><b class="is-free"></b><i class="is-ref"></i></div><span class="t-name">참조 이미지</span></td><td class="t-mono">3</td><td>정해진 프레임 없이 캐릭터와 공간 이미지를 참고용으로만 입력했습니다.</td><td>야광귀가 고개를 갸웃거리는 연기 (C12)<br />하늘이 새벽으로 바뀌는 엔딩 (C40 · C41)</td><td>야광귀의 생김새와 공단의 분위기는 지키면서, 표정과 하늘빛처럼 바뀌어야 하는 부분은 새로 만들어지도록 하기 위해 사용하였습니다.</td></tr>
-        </tbody></table></div>
+      <div class="wfx wfx--3">
+        <div class="wfx__item">
+          <div class="wfx__top"><span class="wfx__name">첫 프레임 + 끝 프레임</span><span class="wfx__n">32컷</span></div>
+          <div class="wfx__diagram" aria-hidden="true"><i class="is-on"></i><b></b><i class="is-on"></i></div>
+          <p>시작과 끝 장면을 모두 지정하고, 그 사이의 움직임만 프롬프트로 연출했습니다.</p>
+          <ul class="wfx__list"><li>카메라가 멈출 위치가 정해진 장면</li><li>구슬·캐릭터의 도착 위치가 정해진 장면</li><li>앞뒤 컷을 이어 붙여야 하는 장면</li></ul>
+          <p class="wfx__why">앞 컷의 끝 프레임을 다음 컷의 첫 프레임으로 이어, 컷이 바뀌어도 자세와 빛이 끊기지 않도록 하기 위해 사용하였습니다.</p>
+          <div class="wfx__cuts">연못 · 계단 오르기 · 떠오르는 구슬 등 대부분</div>
+        </div>
+        <div class="wfx__item">
+          <div class="wfx__top"><span class="wfx__name">첫 프레임만</span><span class="wfx__n">5컷</span></div>
+          <div class="wfx__diagram" aria-hidden="true"><i class="is-on"></i><b></b><i></i></div>
+          <p>시작 장면만 입력하고 끝 장면은 비워 두었습니다. 장면의 분위기가 끝으로 갈수록 크게 바뀌어야 하는 컷에 사용했습니다.</p>
+          <ul class="wfx__list"><li>문이 닫히며 어둠으로 바뀌는 컷 (C2 · C3)</li><li>카메라가 화면으로 돌진하는 컷 (C22)</li><li>화면 속 이미지가 변하는 컷 (C36 · C37)</li></ul>
+          <p class="wfx__why">끝 장면에 억지로 맞춰지지 않고, 어두워지거나 돌진하거나 부서지는 큰 변화를 모델이 자유롭게 만들어 내도록 하기 위해 사용하였습니다.</p>
+          <div class="wfx__cuts">C2 · C3 · C22 · C36 · C37</div>
+        </div>
+        <div class="wfx__item">
+          <div class="wfx__top"><span class="wfx__name">참조 이미지</span><span class="wfx__n">3컷</span></div>
+          <div class="wfx__diagram" aria-hidden="true"><i class="is-ref"></i><b class="is-free"></b><i class="is-ref"></i></div>
+          <p>정해진 프레임 없이 캐릭터와 공간 이미지를 참고용으로만 입력했습니다. 생김새는 유지하되 연기나 시간대가 바뀌어야 하는 컷에 사용했습니다.</p>
+          <ul class="wfx__list"><li>야광귀가 고개를 갸웃거리는 연기 (C12)</li><li>하늘이 새벽으로 바뀌는 엔딩 (C40 · C41)</li></ul>
+          <p class="wfx__why">야광귀의 생김새와 공단의 분위기는 지키면서, 표정과 하늘빛처럼 바뀌어야 하는 부분은 새로 만들어지도록 하기 위해 사용하였습니다.</p>
+          <div class="wfx__cuts">C12 · C40 · C41</div>
+        </div>
+      </div>
     </section>
 
     <section class="sec" id="character">
@@ -1147,7 +1200,7 @@ body { background: var(--bg) !important; }
       <div class="wf webg-wrap"><svg class="wf__svg webg" viewBox="0 0 1000 530" role="img" aria-label="체험 구조: 웹캠과 손 인식, 아이패드 조작판이 두 인터랙션으로 들어가고, 장면은 로딩부터 영상 2까지 이어지며, 화면과 소리는 Canvas, GSAP, Three.js, Web Audio, Service Worker가 담당합니다."><defs><pattern id="wgdot" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(255,255,255,.06)"/></pattern></defs><rect width="1000" height="530" fill="url(#wgdot)"/><text class="webg__lane" x="20" y="24">입력</text><text class="webg__lane" x="20" y="218">장면 흐름</text><text class="webg__lane" x="20" y="404">화면 · 소리 · 전시</text><path id="wg0" class="webg__link webg__link--flow" d="M154,264 C170,264 170,264 185,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg0"/></animateMotion></circle><path id="wg1" class="webg__link webg__link--flow" d="M319,264 C335,264 335,264 350,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg1"/></animateMotion></circle><path id="wg2" class="webg__link webg__link--flow" d="M484,264 C500,264 500,264 516,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg2"/></animateMotion></circle><path id="wg3" class="webg__link webg__link--flow" d="M650,264 C665,264 665,264 681,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg3"/></animateMotion></circle><path id="wg4" class="webg__link webg__link--flow" d="M815,264 C830,264 830,264 846,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg4"/></animateMotion></circle><path id="wg5" class="webg__link webg__link--in" d="M240,79 C285,79 285,79 330,79"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg5"/></animateMotion></circle><path id="wg6" class="webg__link webg__link--in" d="M390,118 C390,175 252,175 252,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg6"/></animateMotion></circle><path id="wg7" class="webg__link webg__link--in" d="M470,118 C470,175 734,175 734,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg7"/></animateMotion></circle><path id="wg8" class="webg__link webg__link--in" d="M740,118 C740,175 775,175 775,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg8"/></animateMotion></circle><path id="wg9" class="webg__link webg__link--in" d="M680,118 C680,175 292,175 292,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg9"/></animateMotion></circle><path id="wg10" class="webg__link webg__link--out" d="M239,296 C239,358 108,358 108,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg10"/></animateMotion></circle><path id="wg11" class="webg__link webg__link--out" d="M417,296 C417,358 286,358 286,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg11"/></animateMotion></circle><path id="wg12" class="webg__link webg__link--out" d="M583,296 C583,358 339,358 339,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg12"/></animateMotion></circle><path id="wg13" class="webg__link webg__link--out" d="M734,296 C734,358 500,358 500,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg13"/></animateMotion></circle><path id="wg14" class="webg__link webg__link--out" d="M279,296 C279,358 661,358 661,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg14"/></animateMotion></circle><path id="wg15" class="webg__link webg__link--out" d="M775,296 C775,358 731,358 731,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg15"/></animateMotion></circle><g class="webg__scene webg__scene--etc" transform="translate(20 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">로딩</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">타이틀 · 손으로 시작</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--int" transform="translate(185 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">인터랙션 1</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">감각 자원 아카이브</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--etc" transform="translate(350 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">구슬</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">고른 감각이 응축</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--film" transform="translate(516 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">영상 1</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">자동문 전환</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--int" transform="translate(681 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">인터랙션 2</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">구슬빛 정원</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--film" transform="translate(846 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">영상 2</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">환해지며 전환</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="wf__node webg__tech webg__tech--in" transform="translate(40 40)"><rect class="wf__box" width="200" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h176 a12,12 0 0 1 12,12 v18 h-200 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">웹캠 · 손</text><text class="wf__tool" x="12" y="48">getUserMedia</text><text class="wf__desc" x="12" y="66">640×480 · 어두우면 밝게</text></g><g class="wf__node webg__tech webg__tech--in" transform="translate(330 40)"><rect class="wf__box" width="200" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h176 a12,12 0 0 1 12,12 v18 h-200 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">손 인식</text><text class="wf__tool" x="12" y="48">MediaPipe Hands</text><text class="wf__desc" x="12" y="66">손끝 → 커서 · 꾹 누르기</text></g><g class="wf__node webg__tech webg__tech--in" transform="translate(640 40)"><rect class="wf__box" width="200" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h176 a12,12 0 0 1 12,12 v18 h-200 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">아이패드 조작판</text><text class="wf__tool" x="12" y="48">BroadcastChannel</text><text class="wf__desc" x="12" y="66">손 인식 화면 · 관람객 버튼</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(20 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">글자 화면</text><text class="wf__tool" x="12" y="48">Canvas 2D · Worker</text><text class="wf__desc" x="12" y="66">영상을 ASCII로 · 볼록하게</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(216 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">전환</text><text class="wf__tool" x="12" y="48">GSAP</text><text class="wf__desc" x="12" y="66">고리 회전 · 장면 전환</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(412 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">3D 정원</text><text class="wf__tool" x="12" y="48">Three.js · Bloom</text><text class="wf__desc" x="12" y="66">구슬 · 유리 계단 · 물</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(608 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">공간 소리</text><text class="wf__tool" x="12" y="48">Web Audio</text><text class="wf__desc" x="12" y="66">파일 없이 직접 합성</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(804 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">오프라인</text><text class="wf__tool" x="12" y="48">Service Worker</text><text class="wf__desc" x="12" y="66">아이패드 홈 화면 앱</text></g></svg></div>
 
       <div class="wfx__sub"><span>02</span>두 인터랙션</div>
-      <div class="tbl-wrap"><table class="ptable ptable--cmp">
+      <div class="tbl-wrap"><table class="dtable dtable--cmp">
         <thead><tr><th></th><th>인터랙션 1 · 감각 자원 아카이브</th><th>인터랙션 2 · 구슬빛 정원</th></tr></thead>
         <tbody>
           <tr><th>파일</th><td class="t-mono">index.html · main.js</td><td class="t-mono">gooseulbit-garden.html</td></tr>
@@ -1283,11 +1336,16 @@ const PH = [
   { when: '장면 묘사', name: '장면을 묘사하기', note: '움직일 대상과 고정할 대상, 카메라 위치를 함께 기술했습니다.', f: '구슬업.mp4', lines: 1, cut: 300 },
   { when: '항목별 연출', name: '항목으로 나눠 연출하기', note: 'SUBJECT, CAMERA, 초 단위 구간, @Image1 고정 범위를 콘티처럼 항목별로 나누어 작성했습니다.', f: '처음.mp4', lines: 3, cut: 380 },
 ];
-$('#phases').innerHTML = `<div class="tbl-wrap"><table class="ptable ptable--ph"><thead><tr><th>단계</th><th>방식</th><th>설명</th><th>예시 프롬프트</th><th>출처</th></tr></thead><tbody>${PH.map((p, i) => {
-  const e = byFile[p.f]; let t = mainPrompt(e).split('\n').map(l => l.trim()).filter(Boolean).slice(0, p.lines).join('\n');
-  if (p.cut && t.length > p.cut) t = t.slice(0, p.cut).trim() + ' …';
-  return `<tr><td class="t-mono">PHASE ${i + 1}</td><td class="t-name">${p.name}</td><td>${p.note}</td><td><p class="t-code">${highlight(t)}</p></td><td class="t-mono"><a href="#${e.id}">${e.code}</a><br />${esc(e.model)}</td></tr>`;
-}).join('')}</tbody></table></div>`;
+const PH_SHAPE = [
+  '<div class="ps"><i class="ps__l" style="width:58%"></i></div>',
+  '<div class="ps"><i class="ps__l" style="width:96%"></i><i class="ps__l" style="width:90%"></i><i class="ps__l" style="width:94%"></i><i class="ps__l" style="width:62%"></i></div>',
+  '<div class="ps"><span class="ps__k" style="--k:#ff5bd9">SUBJECT</span><i class="ps__l" style="width:80%"></i><span class="ps__k" style="--k:#64b5f6">CAMERA</span><i class="ps__l" style="width:70%"></i><span class="ps__k" style="--k:#f1eb84">0–2s · 2–5s</span><i class="ps__l" style="width:86%"></i><span class="ps__k" style="--k:#b98cff">@Image1 고정</span></div>'];
+$('#phases').innerHTML = `<ol class="phx">${PH.map((p, i) => {
+  const e = byFile[p.f];
+  return `<li class="phx__step"><div class="phx__top"><span class="phx__no">PHASE ${i + 1}</span><span class="phx__when">${p.when}</span></div>
+    <b class="phx__name">${p.name}</b>${PH_SHAPE[i]}<p class="phx__note">${p.note}</p>
+    <a class="phx__src" href="#${e.id}">${e.code} · ${esc(e.model)} →</a></li>`;
+}).join('<li class="phx__arrow" aria-hidden="true">→</li>')}</ol>`;
 const TIPS = [
   { t: '첫 줄에 스타일과 카메라 지정', b: '장면 분위기와 카메라 상태를 맨 앞에 두면 재생성해도 톤이 유지됩니다. 구슬 장면은 여섯 번 모두 같은 첫 줄로 시작했습니다.', c: '카메라 고정 22 · 스타일 첫 줄 11',
     ex: 'Stylized claymation fantasy courtyard at lavender dusk, translucent frosted-glass staircases, mossy stone architecture, a still reflecting pool. Locked-off static camera, no camera movement, one continuous shot.' },
@@ -1310,8 +1368,23 @@ const TIPS = [
   { t: '연출이 맞으면 문장은 유지하고 재생성', b: '프롬프트가 의도에 맞을 때는 문장을 유지하고 시드나 길이만 바꾸어 가장 좋은 결과를 선택했습니다.', c: '5',
     ex: '{{계단.mp4}} → {{계단1.mp4}}  시드만 변경\n{{구슬계단.mp4}} → {{계단구슬!.mp4}}  5초 → 7초\n{{여명.mp4}} → {{마지막3.mp4}}  10초 → 14초' },
 ];
-$('#tipsList').innerHTML = `<div class="tbl-wrap"><table class="ptable ptable--tip"><thead><tr><th>#</th><th>방법</th><th>설명</th><th>예시 프롬프트</th><th>사용 횟수</th></tr></thead><tbody>${TIPS.map((t, i) =>
-  `<tr><td class="t-mono">${String(i + 1).padStart(2, '0')}</td><td class="t-name">${esc(t.t)}</td><td>${esc(t.b)}</td><td><p class="t-code">${highlight(fill(t.ex))}</p></td><td class="t-mono">${esc(t.c)}</td></tr>`).join('')}</tbody></table></div>`;
+const TIP_C = ['#ff5bd9', '#64b5f6', '#f1eb84', '#9ce469', '#ff9b4d', '#b98cff', '#4fd2e6', '#ff7a8a', '#c9c4d6', '#e6c88a'];
+// 실제 프롬프트 안에서 각 방법이 놓이는 순서 (9 · 10은 프롬프트 밖의 작업 방식)
+const TIP_ORDER = [0, 1, 2, 4, 5, 6, 8, 3];
+const num = c => { const m = String(c).match(/\d+/g); return m ? Math.max(...m.map(Number)) : 0; };
+const maxN = Math.max(...TIPS.map(t => num(t.c)));
+const snip = t => esc(fill(t.ex).split('\n')[0].replace(/^[^:]{2,40}:\s*/, '').slice(0, 64)) + '…';
+const head = t => { const m = fill(t.ex).match(/^([A-Z0-9 &@–\-()]{3,40}?):/); return m ? m[1] : ''; };
+$('#tipsList').innerHTML = `<div class="anat">
+  <div class="anat__doc"><div class="anat__cap">프롬프트 한 장의 구성 — 위에서부터 쓰는 순서</div>
+    ${TIP_ORDER.map(i => { const t = TIPS[i]; return `<div class="anat__row" style="--k:${TIP_C[i]}"><b>${i + 1}</b><span class="anat__h">${esc(head(t) || t.t)}</span><span class="anat__s">${snip(t)}</span></div>`; }).join('')}
+    <div class="anat__cap anat__cap--out">프롬프트 밖의 작업 방식</div>
+    ${[7, 9].map(i => `<div class="anat__row is-out" style="--k:${TIP_C[i]}"><b>${i + 1}</b><span class="anat__h">${esc(TIPS[i].t)}</span></div>`).join('')}
+  </div>
+  <ol class="anat__list">${TIPS.map((t, i) => { const n = num(t.c);
+    return `<li style="--k:${TIP_C[i]}"><b class="anat__no">${i + 1}</b><div><strong>${esc(t.t)}</strong><p>${esc(t.b)}</p>
+      <div class="anat__bar"><i style="width:${n ? Math.max(6, n / maxN * 100) : 0}%"></i><span>${esc(t.c)}</span></div></div></li>`; }).join('')}</ol>
+</div>`;
 const mc = {}; E.forEach(e => { const k = e.model || '기타'; mc[k] = (mc[k] || 0) + 1; });
 const mx = Math.max(...Object.values(mc));
 const secs = E.filter(e => !e.isImage).reduce((a, e) => a + (+e.duration || 0), 0);
