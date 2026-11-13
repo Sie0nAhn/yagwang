@@ -690,6 +690,13 @@ section.sec { padding-top: 140px; }
 .wfm__bar span.is-25 { background: #ff5bd9; }
 .wfm__bar span.is-20 { background: #b98cff; }
 .wfm__bar span.is-etc { background: #64b5f6; padding: 0; }
+
+/* 미드저니: 쓰지 않은 시안 + 탈락 이유 */
+.mj-grid { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.mj-grid a { display: flex; flex-direction: column; }
+.mj-grid span { padding: 9px 12px 2px; font-size: 13.5px; color: var(--fg); }
+.mj-grid small { display: block; padding: 2px 12px 12px; font-size: 12.5px; line-height: 1.55; color: var(--dim); }
+@media (max-width: 960px) { .mj-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 </style>
 </head>
 <body>
@@ -875,7 +882,7 @@ section.sec { padding-top: 140px; }
       <div class="rail-head"><span class="sub-label">대표 시안</span>
         <div class="rail-nav"><button class="btn" type="button" data-rail="-1" aria-label="이전">←</button><button class="btn" type="button" data-rail="1" aria-label="다음">→</button></div></div>
       <div class="rail" id="mjList"></div>
-      <div class="sub-label" style="margin-top:20px">그 밖의 시안</div>
+      <div class="sub-label" style="margin-top:20px">쓰지 않은 시안 — 탈락 이유</div>
       <div class="mj-grid" id="mjGrid"></div>
     </section>
 
@@ -992,11 +999,25 @@ $('#mjList').innerHTML = MJ.map(m => `<article class="mj-card"><img src="${m.img
   <p class="prompt__text is-clamped">${esc(m.prompt)}</p><div class="prompt__foot"><button class="btn prompt__more" type="button">전체 보기</button></div></div>
   <div class="traits">${m.params.map(p => `<span class="tag">${esc(p)}</span>`).join('')}</div>
   <div class="mj-card__then">→ <b>GPT 2.5</b>로 다듬어 ComfyUI로. ${esc(fill(m.then))}</div></div></article>`).join('');
-const MJG = [['e8ac4f58d1a3', '무한 서가와 구슬'], ['e1c0c6a83ec9', '야광귀 얼굴 시안'], ['1742a2c7a92e', '야광귀 얼굴 시안'], ['0dc76b010c62', '야광귀 얼굴 시안'],
-  ['34a01363a270', '문 — 다른 버전'], ['4f4c4e5fc660', '드론 하강 — 서울'], ['df4f8bef5ce4', '80년대 TV 화면'], ['bb2a89c144ce', '구슬을 드는 검은 손'],
-  ['26e424865ed3', '투명 구슬 클로즈업'], ['cca70185a7ed', '풀이 자라는 실내'], ['c72446a4ee2f', '비유클리드 계단'], ['be4535fb4d94', '비유클리드 계단'],
-  ['3c981ff402d6', '공단 내부 시안'], ['d83c9ec9058b', '공단 내부 시안'], ['6c0e68d0c8ce', '공단 내부 시안'], ['ad3ca8800201', '단말기 시안']];
-$('#mjGrid').innerHTML = MJG.map(([h, n]) => `<a href="media/mj/${h}.jpg" target="_blank" rel="noopener"><img src="media/mj/${h}.jpg" alt="${esc(n)}" loading="lazy" /><span>${esc(n)}</span></a>`).join('');
+// 쓰지 않은 시안과 탈락 이유
+const MJG = [
+  ['e8ac4f58d1a3', '무한 서가와 구슬', '서가가 차갑고 사실적이라, 손으로 빚은 듯한 공단의 질감과 맞지 않아 탈락.'],
+  ['e1c0c6a83ec9', '야광귀 얼굴 시안', '사람에 가깝고 눈빛이 강해 무섭게 느껴져서 탈락. 친근한 모습으로 방향을 바꿈.'],
+  ['1742a2c7a92e', '야광귀 얼굴 시안', '설화 속 야광귀보다 어두운 인물처럼 보여 탈락.'],
+  ['0dc76b010c62', '야광귀 얼굴 시안', '얼굴이 가려져 표정을 읽을 수 없어, 관객이 다가가기 어려워 탈락.'],
+  ['34a01363a270', '문 — 다른 버전', '문틈의 빛이 불길처럼 번져, 들어가고 싶은 문보다 위험한 문으로 보여 탈락.'],
+  ['4f4c4e5fc660', '드론 하강 — 서울', '도시가 단조롭고 비어 보여, 감각이 넘치는 과자극 도시의 혼잡함이 살지 않아 탈락.'],
+  ['df4f8bef5ce4', '80년대 TV 화면', '가정용 TV처럼 보여 공단의 감각 판독 장치로 읽히지 않아 탈락.'],
+  ['bb2a89c144ce', '구슬을 드는 검은 손', '손이 그림자처럼 보여, 감각을 돌려받는 따뜻한 장면과 반대 느낌이라 탈락.'],
+  ['26e424865ed3', '투명 구슬 클로즈업', '디지털 그래픽 느낌이 강해 점토·펠트 질감과 어울리지 않아 탈락.'],
+  ['cca70185a7ed', '풀이 자라는 실내', '공간이 넓고 흩어져 구슬이 눈에 띄지 않아 탈락.'],
+  ['c72446a4ee2f', '비유클리드 계단', '계단이 풍경에 묻혀 끝없는 계단이라는 인상이 약해 탈락.'],
+  ['be4535fb4d94', '비유클리드 계단', '계단보다 정원이 주인공처럼 보여 탈락. 이후 유리 계단으로 바꿈.'],
+  ['3c981ff402d6', '공단 내부 시안', '색이 무겁고 어두워 공단의 라벤더빛 몽환적인 톤과 달라 탈락.'],
+  ['d83c9ec9058b', '공단 내부 시안', '공간이 동굴처럼 막혀 보여 공단의 높고 넓은 구조가 드러나지 않아 탈락.'],
+  ['6c0e68d0c8ce', '공단 내부 시안', '구슬과 인물이 작게 묻혀 장면의 중심이 보이지 않아 탈락.'],
+  ['ad3ca8800201', '단말기 시안', '하얀 플라스틱 기계라 돌·점토로 만든 공단의 장치처럼 보이지 않아 탈락.']];
+$('#mjGrid').innerHTML = MJG.map(([h, n, why]) => `<a href="media/mj/${h}.jpg" target="_blank" rel="noopener"><img src="media/mj/${h}.jpg" alt="${esc(n)}" loading="lazy" /><span>${esc(n)}</span><small>${esc(why)}</small></a>`).join('');
 
 /* ---------- 프롬프트 변화 · 팁 ---------- */
 const mainPrompt = e => (e.prompts.find(p => !p.bypass) || e.prompts[0] || { text: '' }).text;
