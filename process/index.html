@@ -709,6 +709,34 @@ section.sec { padding-top: 140px; }
 /* 카드 · 배경은 그라데이션 없이 단색으로 */
 body { background: var(--bg) !important; }
 .card.is-final { background: var(--panel); }
+
+/* ── 웹 인터랙션 ── */
+.web-flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; counter-reset: wf; }
+.web-flow li { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; border-radius: 12px; background: var(--panel); }
+.web-flow li::before { counter-increment: wf; content: counter(wf, decimal-leading-zero); font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); }
+.web-flow b { font-size: 14.5px; font-weight: 700; }
+.web-flow small { font-size: 12px; color: var(--dim); line-height: 1.45; }
+.web-flow li.is-int { background: #1b1430; box-shadow: inset 0 0 0 1.5px #9a5aff; }
+.web-flow li.is-film { background: #1d0f1d; box-shadow: inset 0 0 0 1.5px #ff5bd9; }
+.web-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.web-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.web-tags span { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg); background: #2a2140; border-radius: 999px; padding: 4px 10px; }
+.web-stack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.web-stack div { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border-radius: 14px; background: var(--panel); }
+.web-stack b { font-size: 15px; font-weight: 700; }
+.web-stack span { font-family: var(--font-mono); font-size: 12px; color: #b98cff; }
+.web-stack small { font-size: 13.5px; line-height: 1.65; color: var(--fg-2); }
+.web-log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.web-log li { display: grid; grid-template-columns: 64px 170px minmax(0, 1fr); gap: 16px; align-items: baseline; padding: 12px 16px; border-radius: 12px; background: var(--panel); }
+.web-log time { font-family: var(--font-mono); font-size: 12.5px; color: #ff5bd9; }
+.web-log b { font-size: 14.5px; font-weight: 700; }
+.web-log span { font-size: 14px; line-height: 1.6; color: var(--fg-2); }
+#web .wfx__sub:first-of-type { margin-top: 0; }
+@media (max-width: 960px) {
+  .web-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .web-two, .web-stack { grid-template-columns: 1fr; }
+  .web-log li { grid-template-columns: 54px 1fr; } .web-log span { grid-column: 1 / -1; }
+}
 </style>
 </head>
 <body>
@@ -930,8 +958,64 @@ body { background: var(--bg) !important; }
       <p class="empty" id="empty">찾는 프롬프트가 없어요.</p>
     </section>
 
+    <section class="sec" id="web">
+      <div class="sec__head"><div class="sec__no">06 — WEB INTERACTION</div><div>
+        <h2 class="sec__title">웹 인터랙션</h2>
+        <p class="sec__desc">관객이 손으로 감각을 고르고, 구슬을 받아 정원으로 들어가는 두 개의 인터랙션을 웹으로 만들었어요. 영상 두 편 사이에 끼워 한 편의 흐름으로 이어지게 했어요.</p></div></div>
+
+      <div class="wfx__sub"><span>01</span>체험 흐름</div>
+      <ol class="web-flow">
+        <li><b>로딩</b><small>타이틀 · 손으로 시작</small></li>
+        <li class="is-int"><b>인터랙션 1</b><small>감각 자원 아카이브</small></li>
+        <li><b>구슬</b><small>고른 감각이 응축</small></li>
+        <li class="is-film"><b>영상 1</b><small>자동문으로 넘어감</small></li>
+        <li class="is-int"><b>인터랙션 2</b><small>구슬빛 정원</small></li>
+        <li class="is-film"><b>영상 2</b><small>환해지며 넘어감</small></li>
+        <li><b>처음으로</b><small>다음 관객</small></li>
+      </ol>
+
+      <div class="wfx__sub"><span>02</span>두 인터랙션</div>
+      <div class="wfx web-two">
+        <div class="wfx__item">
+          <div class="wfx__top"><span class="wfx__name">인터랙션 1 · 감각 자원 아카이브</span><span class="wfx__n">index.html</span></div>
+          <p>감각 영상 9개가 세 겹 고리로 돌아가요. 오른쪽 목록 첫 칸에 손을 얹으면 그 영상이 왼쪽 큰 화면으로 올라오고, 손가락을 모아 꾹 누르면 선택돼 구슬로 응축돼요.</p>
+          <ul class="wfx__list"><li>큰 화면은 영상을 글자로 다시 그려(ASCII) 브라운관처럼 볼록하게 휘게 했어요.</li><li>목록 썸네일은 굵은 픽셀로 뭉개, 고르기 전의 감각이 흐릿하게 보이게 했어요.</li><li>카메라가 없으면 마우스로 움직이고 길게 눌러 같은 조작을 할 수 있어요.</li></ul>
+          <div class="web-tags"><span>MediaPipe Hands</span><span>Canvas 2D</span><span>Web Worker</span><span>GSAP</span></div>
+        </div>
+        <div class="wfx__item">
+          <div class="wfx__top"><span class="wfx__name">인터랙션 2 · 구슬빛 정원</span><span class="wfx__n">gooseulbit-garden.html</span></div>
+          <p>다른 이들의 기억이 담긴 구슬이 떠 있는 3D 정원이에요. 손으로 정원을 좌우로 돌리고, 마음에 드는 구슬을 꾹 눌러 열면 그 안의 기억을 볼 수 있어요.</p>
+          <ul class="wfx__list"><li>구슬과 정원의 빛은 블룸 후처리로 은은하게 번지게 했어요.</li><li>구슬을 충분히 본 뒤에만 '다음 영상으로'가 나타나고, 손바닥을 펴거나 가리켜 게이지를 채우면 넘어가요.</li><li>정원은 들어가는 순간 새로 띄워, 앞사람이 본 구슬이 남지 않게 했어요.</li></ul>
+          <div class="web-tags"><span>Three.js</span><span>WebGL · Bloom</span><span>MediaPipe Hands</span></div>
+        </div>
+      </div>
+
+      <div class="wfx__sub"><span>03</span>쓴 기술</div>
+      <div class="web-stack">
+        <div><b>손 인식</b><span>MediaPipe Tasks Vision (HandLandmarker)</span><small>손끝 위치와 손가락 모으기를 읽어 커서와 '꾹 누르기'로 썼어요. GPU가 안 되는 기기에서는 CPU로 바꿔 돌려요.</small></div>
+        <div><b>화면 · 애니메이션</b><span>Canvas 2D · Web Worker · GSAP</span><small>글자 화면의 픽셀 읽기는 워커로 따로 돌려 렉을 줄였어요. 고리 회전과 장면 전환은 GSAP로 움직였어요.</small></div>
+        <div><b>3D 정원</b><span>Three.js (WebGL)</span><small>구슬, 유리 계단, 물을 3D로 만들고 블룸으로 빛 번짐을 넣었어요.</small></div>
+        <div><b>소리</b><span>Web Audio API</span><small>소리 파일 없이 직접 만들었어요. 아카이브는 마른 바람, 정원은 긴 울림과 화음·물방울로 서로 다른 공간처럼 들리게 했어요.</small></div>
+        <div><b>오프라인</b><span>Service Worker</span><small>아이패드 홈 화면 앱으로 저장해 두면 인터넷 없이도 전시장에서 돌아가요.</small></div>
+        <div><b>전시 구성</b><span>BroadcastChannel · monitor.html</span><small>큰 모니터에는 작품을, 아이패드에는 손 인식 화면과 관람객용 버튼을 띄워 둘이 함께 움직이게 했어요.</small></div>
+      </div>
+
+      <div class="wfx__sub"><span>04</span>만든 과정</div>
+      <ol class="web-log">
+        <li><time>09.28</time><b>첫 버전</b><span>아카이브에서 감각을 골라 구슬로 받고, 본편 영상으로 이어지는 흐름을 만들었어요.</span></li>
+        <li><time>10.12</time><b>아카이브 · 정원 다듬기</b><span>아카이브를 세 겹 고리로 바꾸고, 정원 손 인식을 교체하고, 영상 전환 효과를 넣었어요.</span></li>
+        <li><time>10.15</time><b>손 조작 쉽게</b><span>손을 올려 두기만 해도 고를 수 있게 하고, 손 인식 렉을 줄였어요.</span></li>
+        <li><time>10.18</time><b>타이틀 · 글꼴</b><span>로딩 화면에 타이틀 로고와 도장 찍기를 넣고, Orbit · TT Autonomous Mono로 글꼴을 정했어요.</span></li>
+        <li><time>10.25</time><b>소리 · 전환</b><span>두 인터랙션이 다른 공간처럼 들리게 소리를 만들고, 자동문 · 필름 릴 전환을 넣었어요.</span></li>
+        <li><time>10.27</time><b>오프라인</b><span>아이패드 홈 화면 앱으로 인터넷 없이 돌아가게 했어요.</span></li>
+        <li><time>11.10</time><b>정원 넘어가기</b><span>'다음 영상으로'를 손바닥을 펴도, 가리켜도 되게 하고, 손이 떨려도 게이지가 유지되게 했어요.</span></li>
+        <li><time>11.12</time><b>전시 대응</b><span>모니터 확장 화면, 아이패드 조작판, 약한 와이파이, 어두운 곳의 손 인식까지 전시장 환경에 맞췄어요.</span></li>
+        <li><time>11.13</time><b>마무리</b><span>카메라 허용을 한 번만 묻게 하고, 아이패드 화면을 피그마 배치대로 정리했어요.</span></li>
+      </ol>
+    </section>
+
     <section class="sec" id="guestbook">
-      <div class="sec__head"><div class="sec__no">06 — GUESTBOOK</div><div>
+      <div class="sec__head"><div class="sec__no">07 — GUESTBOOK</div><div>
         <h2 class="sec__title">방명록</h2>
         <p class="sec__desc">작품을 보고 남은 생각을 메모로 남겨 주세요. 남긴 메모는 다른 관객의 메모와 함께 천천히 흘러가요.</p></div></div>
       <div class="gb">
@@ -1172,7 +1256,7 @@ $('#chaptersEl').innerHTML = D.groups.map((g, i) => {
 
 /* ---------- 목차 ---------- */
 const NAV = [['top', '00', '개요'], ['flow', '01', '작업 순서'], ['character', '02', '캐릭터'], ['mj', '03', '미드저니'], ['prompt', '04', '프롬프트']];
-const NAV_END = [['guestbook', '06', '방명록']];
+const NAV_END = [['web', '06', '웹 인터랙션'], ['guestbook', '07', '방명록']];
 $('#nav').innerHTML = NAV.map(([id, n, t]) => `<a href="#${id}"><span class="mono">${n}</span>${t}</a>`).join('')
   + `<div class="nav__label">05 — 장면 (영상 순서)</div>`
   + D.groups.map((g, i) => { const f = E.filter(e => e.group === g.id && e.final);
