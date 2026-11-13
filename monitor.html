@@ -567,6 +567,16 @@ function upright() {
   return rc;
 }
 L.upright = upright;                           // 시험용 손잡이
+/* 손 좌표를 화면에 보이는(세운) 방향으로 돌린다 — 손 모델에는 카메라 원본을 그대로 넣고, 결과 좌표만 돌린다.
+   (돌린 캔버스를 손 모델에 넣으면 아이패드에서 손을 못 찾는 일이 있었다. 원본은 늘 잘 읽는다) */
+function curRot() { return video.videoHeight > video.videoWidth ? rot.portrait : rot.landscape; }
+function rotPt(p, r) {
+  if (r === 90) return { x: 1 - p.y, y: p.x, z: p.z };
+  if (r === 270) return { x: p.y, y: 1 - p.x, z: p.z };
+  if (r === 180) return { x: 1 - p.x, y: 1 - p.y, z: p.z };
+  return p;
+}
+L.rotPt = rotPt;
 L.rotate = () => {
   const k = video.videoHeight > video.videoWidth ? "portrait" : "landscape";
   rot[k] = (rot[k] + 180) % 360;               // 세로면 90 ↔ 270, 가로면 0 ↔ 180 — 늘 가로로 선다
@@ -698,15 +708,17 @@ function tick() {
   const now = performance.now();
   let res = null;
   // 원래 그림(video/rc)과 밝힌 그림(dc)은 크기가 같아 번갈아 넣어도 된다
-  const input = detectInput(src);
+  const input = detectInput(video);            // 카메라 원본 방향 그대로 (밝힐 때도 원본 크기·방향)
   try { res = model.detectForVideo(input, now); failCount = 0; }
   catch (e) {
     // 손 모델이 계속 오류를 내면(그래픽 칩 문제 등) CPU 로 다시 불러온다
     if (++failCount > 30) { failCount = 0; model = null; loadModel("CPU"); }
   }
-  const lms = (res && res.landmarks && res.landmarks[0]) || null;
+  const raw = (res && res.landmarks && res.landmarks[0]) || null;
+  const r = curRot();
+  const lms = raw ? raw.map((p) => rotPt(p, r)) : null;   // 화면에 보이는 방향으로
   L.lms = lms;
-  if (!lms) tryBoost = !tryBoost;              // 못 찾았으면 다음엔 다른 그림으로
+  if (!raw) tryBoost = !tryBoost;              // 못 찾았으면 다음엔 다른 그림으로
   if (now - meterAt > 500) {
     meterAt = now;
     try {
