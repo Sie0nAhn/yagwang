@@ -46,6 +46,8 @@
     font-weight: 400; font-size: 60px; line-height: 1.4; white-space: nowrap; }
   .scene-sub { left: 101px; top: 172px; margin: 0; font-size: 20px; line-height: 1.4; white-space: nowrap; }
   .scene-sub .time { margin-left: 14px; color: rgba(255,255,255,.6); }
+  /* 할 일 아래 — 버튼 안내 (작게) */
+  .scene-tip { left: 101px; top: 214px; margin: 0; font-size: 16px; line-height: 1.4; color: rgba(255,255,255,.55); white-space: nowrap; }
 
   /* ── 카메라 칸 (x101 y319, 810×610) ── */
   .cam { left: 101px; top: 319px; width: 810px; height: 610px; padding: 20px;
@@ -123,7 +125,8 @@
 <div class="stage" id="stage">
 
   <h1 class="abs scene" id="scene">Yagwang</h1>
-  <p class="abs scene-sub" id="sub">손이 잘 안되면 버튼을 눌러보세요</p>
+  <p class="abs scene-sub" id="sub">손을 카메라에 비추거나 버튼을 누르십시오.</p>
+  <p class="abs scene-tip" id="topTip">손이 잘 안되면 버튼을 눌러보세요</p>
 
   <section class="abs cam">
     <canvas id="view"></canvas>
@@ -257,7 +260,14 @@ const SCENE = {
   film:   ["Film",         ""],
   garden: ["Interaction2", "◀ ▶ 둘러보기 · ▲ ▼ 걷기\n‘구슬 열기’ 고리가 뜬 구슬 열기"],
 };
-const TIP = "손이 잘 안되면 버튼을 눌러보세요";
+/* 장면 이름 아래 — 이 인터랙션에서 무엇을 하는지 (작품 화면의 문구 그대로) */
+const MISSION = {
+  any:    "손을 카메라에 비추거나 버튼을 누르십시오.",
+  boot:   "야광감각관리 공단 · 손을 비추거나 ‘시작하기’를 누르십시오.",
+  grid:   "사유 데이터 유실 감지되었습니다. 본인의 파편을 선택하십시오.",
+  orb:    "자원 식별 완료. 보관 번호 YK-2087로 이동하여 확인하십시오.",
+  garden: "구슬 하나를 골라 그 속에 담긴 기억을 읽어 보세요.",
+};
 const ON = {
   any: ["left", "up", "down", "right"],
   boot: [],
@@ -275,7 +285,8 @@ function layout() {
   const [name, sub] = SCENE[sc] || SCENE.any;
   $("scene").textContent = name;
   $("hint").textContent = sub;
-  if (sc !== "film") $("sub").textContent = TIP;
+  if (sc !== "film") $("sub").textContent = MISSION[sc] || MISSION.any;
+  $("topTip").hidden = sc === "film";
 
   // 쓸 수 없는 버튼은 회색
   const on = ON[sc] || ON.any;
@@ -326,30 +337,47 @@ function draw() {
   const fresh = ui && performance.now() - uiAt < 1500;
   $("link").classList.toggle("on", live);
   $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
-  $("empty").hidden = live && !!frame;
-  if (live && !frame) { $("emptyT").textContent = "카메라를 켜는 중이에요"; $("emptyS").textContent = "조금만 기다려 주세요. 오른쪽 버튼으로도 조작할 수 있어요."; }
-  if (fresh && (ui.camOff || ui.camAsk || ui.camDenied)) {
+  // 이 아이패드 창이 카메라를 맡는다 (L) — 못 쓰면 예전처럼 작품 창에서 보내 주는 그림(frame)
+  const L = window.__local;
+  const localCam = !!(L && L.ok && L.video.readyState >= 2 && L.video.videoWidth);
+  const img = localCam ? L.video : frame;
+  const iw = localCam ? L.video.videoWidth : frameW, ih = localCam ? L.video.videoHeight : frameH;
+  $("empty").hidden = !!img && (localCam || live);
+  if (!img) {
+    if (L && L.err) {
+      $("emptyT").textContent = L.err === "NotAllowedError" ? "카메라가 막혀 있어요" : "카메라를 열지 못했어요";
+      $("emptyS").textContent = "이 화면을 한 번 누르면 다시 물어요. 허용 창이 뜨면 '허용'을 눌러 주세요.";
+    } else if (L && L.asking) {
+      $("emptyT").textContent = "카메라 허용 창에서 '허용'을 눌러 주세요";
+      $("emptyS").textContent = "이 아이패드 화면에 뜬 창이에요.";
+    } else {
+      $("emptyT").textContent = "카메라를 켜는 중이에요";
+      $("emptyS").textContent = "조금만 기다려 주세요. 오른쪽 버튼으로도 조작할 수 있어요.";
+    }
+  }
+  if (!localCam && fresh && (ui.camOff || ui.camAsk || ui.camDenied)) {
     $("empty").hidden = false;
     $("emptyT").textContent = ui.camAsk ? "모니터에 카메라 허용 창이 떠 있어요" : ui.camDenied ? "카메라가 막혀 있어요" : "카메라가 멈췄어요";
     $("emptyS").textContent = (ui.camAsk ? "모니터 쪽 창에서 '허용'을 눌러 주세요." : "모니터 쪽 작품 화면을 한 번 눌러 주세요.") + " 오른쪽 버튼으로는 계속 조작할 수 있어요.";
   }
-  if (!frame) return;
+  if (!img) return;
 
   // 카메라 그림을 칸에 꽉 차게 (칸이 카메라와 같은 4:3 이라 거의 잘리지 않는다) — 거울처럼 좌우를 뒤집는다
-  const s = Math.max(W / frameW, H / frameH);
-  const dw = frameW * s, dh = frameH * s, dx = (W - dw) / 2, dy = (H - dh) / 2;
+  const s = Math.max(W / iw, H / ih);
+  const dw = iw * s, dh = ih * s, dx = (W - dw) / 2, dy = (H - dh) / 2;
   g.save();
   g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
   g.translate(W, 0); g.scale(-1, 1);
-  g.drawImage(frame, W - dx - dw, dy, dw, dh);
+  g.drawImage(img, W - dx - dw, dy, dw, dh);
   g.restore();
-  if (!live) { g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, 0, W, H); }
+  if (!live && !localCam) { g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, 0, W, H); }
 
   const st = state || {};
-  const hand = live ? st.hand : null;
+  // 손 관절 — 이 창에서 찾은 손을 바로 그린다 (늦지 않게). 아니면 작품 창이 보내 준 손
+  const hand = localCam ? (L.lms ? L.lms.map((p) => [p.x, p.y]) : null) : live ? st.hand : null;
   const filming = fresh && ui.scene === "film";
   // 카메라가 멈췄으면 그 안내가 먼저 — 모니터 쪽 창을 눌러야 사파리가 카메라를 다시 열어 준다
-  const camMsg = !fresh ? null
+  const camMsg = !fresh || localCam ? null
     : ui.camAsk ? { kind: "black", text: "모니터에 카메라 허용 창이 떠 있어요", sub: "모니터 쪽 창에서 '허용'을 눌러 주세요" }
     : ui.camDenied ? { kind: "black", text: "카메라가 막혀 있어요", sub: "모니터 쪽 작품 화면을 한 번 누르면 다시 물어요" }
     : ui.camOff ? { kind: "black", text: "카메라가 멈췄어요", sub: "모니터 쪽 작품 화면을 한 번 눌러 주세요" } : null;
@@ -360,7 +388,7 @@ function draw() {
   if (!hand) { shownHand = null; return; }
 
   // 받은 손으로 부드럽게 다가간다 — 손 좌표는 초당 15~30번 오지만 화면은 60~120번 그리므로
-  if (!shownHand) shownHand = hand.map((p) => p.slice());
+  if (!shownHand || localCam) shownHand = hand.map((p) => p.slice());
   else for (let i = 0; i < hand.length; i++) {
     shownHand[i][0] += (hand[i][0] - shownHand[i][0]) * 0.5;
     shownHand[i][1] += (hand[i][1] - shownHand[i][1]) * 0.5;
@@ -411,6 +439,98 @@ function showCoach(c) {
   $("coachIc").textContent = c.kind === "ok" ? "✓" : "!";
   $("coachText").innerHTML = "<span>" + c.text + "</span>" + (c.sub ? "<span>" + c.sub + "</span>" : "");
 }
+</script>
+
+<script type="module">
+/* ── 이 아이패드 창에서 카메라 + 손 모델을 돌린다 ──
+   아이패드 사파리는 '마지막으로 만진(또는 전체 화면인) 창'에만 카메라를 준다. 관람객이 만지는 건 이 창이니
+   카메라도 여기서 쓴다. 찾은 손 좌표(lms)와 작은 카메라 그림(rframe)을 작품 창으로 보낸다. */
+import { HandLandmarker, FilesetResolver } from "./vendor/mediapipe/vision_bundle.mjs";
+const L = window.__local = { video: document.createElement("video"), ok: false, asking: false, err: null, lms: null, mean: 128 };
+const video = L.video;
+video.muted = true; video.playsInline = true; video.autoplay = true;
+
+async function startCam() {
+  if (L.asking || L.ok) return;
+  L.asking = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: "user", frameRate: { ideal: 30 } }, audio: false,
+    });
+    video.srcObject = stream;
+    await video.play().catch(() => {});
+    L.ok = true; L.err = null;
+    stream.getVideoTracks().forEach((t) => {
+      t.addEventListener("ended", () => { L.ok = false; });
+      t.addEventListener("unmute", () => video.play().catch(() => {}));
+    });
+  } catch (e) {
+    L.err = (e && e.name) || "error";
+  } finally {
+    L.asking = false;
+  }
+}
+// 거절됐거나 실패했으면 — 화면을 누를 때만 다시 묻는다 (저절로 계속 묻지 않는다)
+addEventListener("pointerdown", () => { if (!L.ok && !L.asking) startCam(); }, true);
+setInterval(() => {
+  const t = video.srcObject && video.srcObject.getVideoTracks()[0];
+  if (L.ok && (!t || t.readyState === "ended")) L.ok = false;
+  if (L.ok && video.paused) video.play().catch(() => {});
+}, 2000);
+
+let model = null;
+async function loadModel() {
+  const fs = await FilesetResolver.forVisionTasks(new URL("vendor/mediapipe/wasm", location.href).href);
+  const opts = (delegate) => ({
+    baseOptions: { modelAssetPath: new URL("vendor/mediapipe/hand_landmarker.task", location.href).href, delegate },
+    runningMode: "VIDEO", numHands: 1,
+    minHandDetectionConfidence: 0.4, minHandPresenceConfidence: 0.25, minTrackingConfidence: 0.25,
+  });
+  try { model = await HandLandmarker.createFromOptions(fs, opts("GPU")); }
+  catch { model = await HandLandmarker.createFromOptions(fs, opts("CPU")); }
+}
+
+// 밝기 (작품 창의 '너무 어두워요' 안내에 쓴다)
+const mc = document.createElement("canvas"); mc.width = 32; mc.height = 24;
+const mx = mc.getContext("2d", { willReadFrequently: true });
+let meterAt = 0;
+// 작품 창 손 인식 상자에 띄울 작은 그림 (초당 8장)
+const fc = document.createElement("canvas"), fx = fc.getContext("2d");
+let frameAt = 0, frameBusy = false, lastT = -1;
+
+function tick() {
+  requestAnimationFrame(tick);
+  if (!L.ok || !model || video.readyState < 2 || video.currentTime === lastT) return;
+  lastT = video.currentTime;
+  const now = performance.now();
+  let res = null;
+  try { res = model.detectForVideo(video, now); } catch {}
+  const lms = (res && res.landmarks && res.landmarks[0]) || null;
+  L.lms = lms;
+  if (now - meterAt > 500) {
+    meterAt = now;
+    try {
+      mx.drawImage(video, 0, 0, 32, 24);
+      const d = mx.getImageData(0, 0, 32, 24).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+      L.mean = sum / (d.length / 4);
+    } catch {}
+  }
+  ch.postMessage({ t: "lms", lms: lms ? lms.map((p) => [p.x, p.y, p.z || 0]) : null,
+    w: video.videoWidth, h: video.videoHeight, mean: L.mean });
+  if (!frameBusy && now - frameAt > 125) {
+    frameAt = now;
+    const w = 320, h = Math.round((320 * video.videoHeight) / video.videoWidth);
+    if (fc.width !== w || fc.height !== h) { fc.width = w; fc.height = h; }
+    fx.drawImage(video, 0, 0, w, h);
+    frameBusy = true;
+    fc.toBlob((b) => { frameBusy = false; if (b) ch.postMessage({ t: "rframe", blob: b, w, h }); }, "image/jpeg", 0.6);
+  }
+}
+
+startCam();
+loadModel().then(() => requestAnimationFrame(tick)).catch(() => { L.err = L.err || "model"; });
 </script>
 </body>
 </html>

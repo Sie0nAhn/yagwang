@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113b";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113c";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -2420,11 +2420,68 @@ if (monitorCh) {
   monitorCh.onmessage = (e) => {
     const m = e.data || {};
     if (m.t === "hello") monitorSeen = performance.now();
+    if (m.t === "lms") onRemoteHand(m);
+    if (m.t === "rframe") onRemoteFrame(m);
     if (m.t === "rotate") rotateCamera();
     if (m.t === "pad") padKeys(m.keys || []);
     if (m.t === "select") padSelect();
     if (m.t === "next") padNext();
   };
+}
+
+/* ── 아이패드가 카메라와 손 인식을 맡는다 ──
+   아이패드 사파리는 '마지막으로 만진(또는 전체 화면인) 창'에만 카메라를 준다. 관람객은 아이패드 화면만 만지므로
+   카메라와 손 모델은 아이패드 창(monitor.html)에서 돌리고, 여기(모니터 쪽)는 손 좌표(lms)와 작은 카메라 그림(rframe)만 받는다.
+   아이패드 창이 없거나 그쪽 카메라가 안 되면 예전처럼 여기서 직접 카메라를 연다 (ownCamera). */
+const remote = { at: 0, w: 640, h: 480, mean: 128 };
+const remoteCanvas = document.createElement("canvas");
+const remoteCtx = remoteCanvas.getContext("2d");
+const remoteOn = () => performance.now() - remote.at < 1500;
+function useRemote() {
+  if (camStream) {                         // 여기 카메라는 내려놓는다 — 아이패드가 쓰게
+    camStream.getTracks().forEach((t) => t.stop());
+    camStream = null;
+    camVideo.srcObject = null;
+  }
+  camBadSince = 0;
+  if (!camStatus.classList.contains("is-hidden")) setCamStatus(null);
+  if (remoteCanvas.videoWidth) { camSrc = remoteCanvas; sharedHand.video = remoteCanvas; }
+}
+function onRemoteFrame(m) {
+  createImageBitmap(m.blob).then((bmp) => {
+    if (remoteCanvas.width !== m.w || remoteCanvas.height !== m.h) { remoteCanvas.width = m.w; remoteCanvas.height = m.h; }
+    remoteCtx.drawImage(bmp, 0, 0, m.w, m.h);
+    if (bmp.close) bmp.close();
+    remoteCanvas.videoWidth = m.w; remoteCanvas.videoHeight = m.h; remoteCanvas.readyState = 4;   // 비디오처럼 읽히게
+  }).catch(() => {});
+}
+function onRemoteHand(m) {
+  remote.at = performance.now(); remote.w = m.w || 640; remote.h = m.h || 480; remote.mean = m.mean || 128;
+  useRemote();
+  meter.mean = remote.mean; meter.data = null;
+  const lms = m.lms ? m.lms.map(([x, y, z]) => ({ x, y, z })) : null;
+  const now = performance.now();
+  if (current === "garden") {
+    let gw = null;
+    try { gw = gardenFrame.contentWindow; } catch {}
+    const g = gw && gw.__gardenHand;
+    const st = g && sharedHand.on ? g.ingest(lms, gw.performance.now()) : null;
+    coachFor(lms, now);
+    sendMonitorState(st && st.pinch);
+    return;
+  }
+  const box = current === "grid" && camSrc.videoWidth ? drawCameraFrame() : null;
+  if (lms && box) drawHand(lms, box);
+  processHand(lms, now, box);
+  coachFor(lms, now);
+  sendMonitorState(pinchSince > 0);
+}
+// 손 관절은 아이패드가 직접 그리므로, 게이지·집기·안내만 보낸다
+function sendMonitorState(pinch) {
+  if (!monitorCh) return;
+  let scene = SCENE_NAME[current] || "";
+  if (current === "film") scene = filmSegment === 1 ? "영상 2" : "영상 1";
+  monitorCh.postMessage({ t: "hand", hand: null, pinch: !!pinch, gauge: hold.p || 0, scene, coach: coachNow });
 }
 
 /* 지금 나오는 영상 — 이름 · 지난 시간 · 전체 길이(초). 아이패드 화면에 진행 막대로 뜬다 */
@@ -2614,6 +2671,7 @@ function camHealthy() {
 let camBadSince = 0;
 setInterval(() => {
   if (document.hidden) return;                       // 안 보이는 동안은 브라우저가 멈춰 두는 게 정상
+  if (remoteOn() || !camEverAsked) { camBadSince = 0; return; }   // 아이패드가 카메라를 맡고 있다
   const now = performance.now();
   // 카메라가 5초 넘게 멈춰 있으면 — 손 인식 상자에 알린다 (아이패드 화면에도 ui 로 간다)
   if (camHealthy()) camBadSince = 0;
@@ -2637,6 +2695,7 @@ setInterval(() => {
 }, 2000);
 // 이 창으로 돌아오거나(포커스) 한 번 누르면 — 카메라가 멈췄거나 꺼져 있으면 바로 깨운다 (누름은 사파리가 카메라를 다시 열어 주는 열쇠)
 function wakeCamera(byTap) {
+  if (remoteOn() || !camEverAsked) return;          // 아이패드가 카메라를 맡고 있으면 여기선 열지 않는다
   camFrameAt = performance.now();
   if (camVideo.paused) camVideo.play().catch(() => {});
   if (camStream || camStarting) return;              // 허용 창이 떠 있으면 또 묻지 않는다
@@ -2711,18 +2770,46 @@ async function initHands() {
     setCamStatus("카메라를 쓸 수 없습니다<br />마우스를 움직이고 길게 누르세요");
     return;
   }
-  setCamStatus("카메라를 허용해 주세요");
   gsap.ticker.add(trackTick);         // 그리기(drawTiles) 다음에 돈다 — 순서가 중요하다
-  camEverAsked = true;
-  startCamera().then((ok) => {
-    if (!ok) setCamStatus("카메라를 다시 여는 중<br />사파리 설정에서 카메라를 '허용'으로 두세요");
-    else if (!handLandmarker) setCamStatus("손 인식 준비 중");
-  });
-  await loadHandModel();
+  setCamStatus("손 인식 준비 중");
+  // 아이패드 손 인식 화면이 열려 있으면 그쪽이 카메라를 맡는다 — 여기선 카메라를 열지 않는다 (둘이 다투지 않게)
+  await new Promise((r) => setTimeout(r, 1800));
+  if (performance.now() - monitorSeen < 3000) { handReadyOnce(); return; }
+  await ownCamera();
+}
+function handReadyOnce() {
+  if (window.__ykHandReady) return;
   window.__ykHandReady = true;
   window.dispatchEvent(new Event("yk:hand-ready"));   // offline.js 가 이걸 기다렸다가 저장을 시작한다
-  if (camStream) setCamStatus(null);
 }
+/* 여기서 직접 카메라 + 손 모델 (아이패드 창이 없을 때) */
+let ownStarting = null;
+async function ownCamera() {
+  if (ownStarting) return ownStarting;
+  ownStarting = (async () => {
+    camEverAsked = true;
+    if (!camStream) {
+      setCamStatus("카메라를 허용해 주세요");
+      startCamera().then((ok) => {
+        if (!ok) setCamStatus("카메라를 다시 여는 중<br />사파리 설정에서 카메라를 '허용'으로 두세요");
+        else if (!handLandmarker) setCamStatus("손 인식 준비 중");
+      });
+    }
+    await loadHandModel();
+    handReadyOnce();
+    if (camStream) setCamStatus(null);
+  })();
+  try { await ownStarting; } finally { ownStarting = null; }
+}
+/* 아이패드 쪽 손이 끊겼으면 — 아이패드 창이 아예 없으면 3초, 있는데 손이 안 오면 20초 뒤에 여기서 카메라를 연다 */
+const handsBornAt = performance.now();
+setInterval(() => {
+  if (remoteOn() || camStream || camStarting || ownStarting) return;
+  const now = performance.now();
+  const ipadThere = now - monitorSeen < 3000;
+  const quiet = now - Math.max(remote.at, handsBornAt);
+  if ((!ipadThere && quiet > 3000) || quiet > 20000) ownCamera();
+}, 1000);
 
 function drawCameraFrame() {
   const vw = camSrc.videoWidth;
@@ -2915,6 +3002,7 @@ function processHand(lms, now, box) {
    손이 없을 때는 손이 들어오는지만 보면 되므로 절반만 본다. */
 let trackTurn = 0;
 function trackTick() {
+  if (remoteOn()) return;                    // 아이패드가 손을 보내 주는 중
   if (!camStream || camVideo.readyState < 2) return;
   if (!camStatus.classList.contains("is-hidden") && handLandmarker) setCamStatus(null);   // 카메라가 다시 살아났다
   if (!handLandmarker) {
