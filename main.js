@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113d";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113f";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -1184,6 +1184,7 @@ function resetArchive() {
   spinLock = false;
   current = "grid";
   setScene("archive");
+  cameraAfterFilm();
 }
 
 /* 구슬 → 아카이브. 다른 전환과 똑같이 검정 페이드로 */
@@ -1519,7 +1520,9 @@ async function toGarden() {
     gsap.set(cursorEl, { opacity: 0 });   // 정원은 자기 손 커서가 있다
     current = "garden";
     setScene("garden");
-    try { gardenFrame.contentWindow.focus(); } catch {}
+    // 정원에 키보드 포커스를 주면 아이패드에서 이 창이 앞으로 나와 아이패드 창이 카메라를 잃는다 — 아이패드가 카메라를 맡을 땐 하지 않는다
+    if (!remoteOn() && performance.now() - monitorSeen > 3000) { try { gardenFrame.contentWindow.focus(); } catch {} }
+    cameraAfterFilm();
     prepareGarden();          // 커서 모양 맞추기 (이미 돼 있으면 건너뜀)
     enableGardenHand();       // 정원의 손 조작 켜기 (카메라는 같이 쓴다)
   });
@@ -2476,12 +2479,27 @@ function onRemoteHand(m) {
   coachFor(lms, now);
   sendMonitorState(pinchSince > 0);
 }
+/* 아이패드 '손으로 하기' 안내에서 지금 하고 있는 손동작 줄 (-1 이면 없음)
+   아카이브: 0 끝으로 돌리기 · 1 올려 두기 · 2 집기 / 구슬 화면: 0 확인하러 가기 · 1 다시 고르기 · 2 집기 / 정원: 정원 안내와 같은 줄 */
+function guideRow() {
+  if (!handActive && current !== "garden") return -1;
+  if (current === "grid") return pinchSince ? 2 : spin.drive ? 0 : dwellAt.zone ? 1 : -1;
+  if (current === "orb") return pinchSince ? 2 : holdZone === "back" || dwellAt.zone === "back" ? 1 : dwellAt.zone === "go" || holding ? 0 : -1;
+  if (current === "garden") {
+    try {
+      const rows = [...gardenFrame.contentDocument.querySelectorAll("#guide li")];
+      return rows.findIndex((li) => li.classList.contains("on"));
+    } catch { return -1; }
+  }
+  return -1;
+}
+
 // 손 관절은 아이패드가 직접 그리므로, 게이지·집기·안내만 보낸다
 function sendMonitorState(pinch) {
   if (!monitorCh) return;
   let scene = SCENE_NAME[current] || "";
   if (current === "film") scene = filmSegment === 1 ? "영상 2" : "영상 1";
-  monitorCh.postMessage({ t: "hand", hand: null, pinch: !!pinch, gauge: hold.p || 0, scene, coach: coachNow });
+  monitorCh.postMessage({ t: "hand", hand: null, pinch: !!pinch, gauge: hold.p || 0, scene, coach: coachNow, row: guideRow() });
 }
 
 /* 지금 나오는 영상 — 이름 · 지난 시간 · 전체 길이(초). 아이패드 화면에 진행 막대로 뜬다 */
@@ -2501,6 +2519,17 @@ function filmInfo() {
     } catch {}
   }
   return { title: seg.title || "영상 " + (filmSegment + 1), t: Math.min(t, dur || t), dur };
+}
+
+/* 영상이 끝나 인터랙션으로 돌아왔을 때 — 여기서 카메라를 쓰는 중이면(아이패드 창이 없을 때) 멈췄는지 바로 살핀다.
+   영상 소리 때문에 카메라가 멈춰 있을 수 있다. 이미 허용돼 있어 다시 묻지 않는다 */
+function cameraAfterFilm() {
+  if (remoteOn() || !camEverAsked || camDenied || camStarting) return;   // 거절됐거나 묻는 중이면 건드리지 않는다
+  setTimeout(() => {
+    const track = camStream && camStream.getVideoTracks()[0];
+    if (!camStream || !track || track.readyState === "ended" || track.muted) { camRestartAt = 0; restartCamera("영상 뒤"); }
+    else if (camVideo.paused) camVideo.play().catch(() => {});
+  }, 300);
 }
 
 /* ── 아이패드 조작판 ──
@@ -2577,7 +2606,7 @@ function sendMonitor(lms, pinch) {
   let scene = SCENE_NAME[current] || "";
   if (current === "film") scene = filmSegment === 1 ? "영상 2" : "영상 1";
   monitorCh.postMessage({
-    t: "hand", hand, pinch: !!pinch, gauge: hold.p || 0, scene, coach: coachNow,
+    t: "hand", hand, pinch: !!pinch, gauge: hold.p || 0, scene, coach: coachNow, row: guideRow(),
     rot: camRotation(), portrait: camIsPortrait(),
   });
   // 카메라 그림은 초당 10장, 작게 — 한 장이 가는 중이면 건너뛴다.
@@ -2690,7 +2719,10 @@ setInterval(() => {
   if (!track || track.readyState === "ended") return restartCamera("끝남");
   if (camVideo.paused) camVideo.play().catch(() => {});
   if (camVideo.currentTime !== camLastTime) { camLastTime = camVideo.currentTime; camFrameAt = now; camFailures = 0; return; }
-  if (track.muted) return;                           // 다른 창을 만지는 중 — 닫지 말고 기다린다
+  if (track.muted) {                                 // 다른 창을 만지거나 영상 소리 때문에 멈춤 — 바로 닫지 않고 기다린다
+    if (current !== "film" && now - camFrameAt > 8000) restartCamera("오래 멈춤");   // 영상이 끝났는데도 계속이면 새로 연다 (이미 허용돼 다시 묻지 않는다)
+    return;
+  }
   if (now - camFrameAt > 6000) restartCamera("멈춤");
 }, 2000);
 // 이 창으로 돌아오거나(포커스) 한 번 누르면 — 카메라가 멈췄거나 꺼져 있으면 바로 깨운다 (누름은 사파리가 카메라를 다시 열어 주는 열쇠)

@@ -49,8 +49,20 @@
   /* 할 일 아래 — 버튼 안내 (작게) */
   .scene-tip { left: 101px; top: 214px; margin: 0; font-size: 16px; line-height: 1.4; color: rgba(255,255,255,.55); white-space: nowrap; }
 
+  /* ── 손으로 하기 — 장면 이름·할 일 바로 아래, 카메라 칸과 같은 폭(x101~911)의 한 줄 ──
+     [이름 칸 | 손동작 셋을 같은 폭으로]. 오른쪽 '조작하기(버튼)'와 왼쪽·오른쪽으로 나뉜다. 지금 하는 손동작은 보라 */
+  /* 손동작 카드 셋 (피그마 1126:5 — x92 y250, 267px 씩, #111, 모서리 20, 안쪽 위12·양옆16·아래20) —
+     지금 하는 손동작은 색 없이 조금 밝은 회색으로만 */
+  .hands { left: 92px; top: 250px; width: 819px; }
+  .hands__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 267px); gap: 9px; }
+  .hands__list li { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 20px; border-radius: 20px;
+    background: #111; box-shadow: inset 0 0 0 1px transparent; transition: background .2s, box-shadow .2s; }
+  .hands__list li b { font-weight: 400; font-size: 20px; line-height: 1.4; color: #fff; }
+  .hands__list li small { font-size: 14px; line-height: 1.4; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hands__list li.on { background: #262626; box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); }
+
   /* ── 카메라 칸 (x101 y319, 810×610) ── */
-  .cam { left: 101px; top: 319px; width: 810px; height: 610px; padding: 20px;
+  .cam { left: 101px; top: 360px; width: 810px; height: 610px; padding: 20px;
     background: #2c2c2c; border: 4px solid rgba(255,255,255,.4); border-radius: 30px; overflow: hidden; }
   #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 26px; }
 
@@ -84,10 +96,12 @@
   @keyframes coachIn { from { opacity: 0; transform: translateY(10px); } }
 
   /* ── 오른쪽: 조작하기 ── */
-  .ctl-h { left: 1002px; top: 322px; margin: 0; font-size: 24px; line-height: 1.4; }
-  /* 방향키 설명 — 조작하기 아래 (줄바꿈은 \n) */
-  .ctl-p { left: 1001px; top: 364px; width: 300px; margin: 0; font-size: 16px; line-height: 1.5; white-space: pre-line; color: rgba(255,255,255,.85); }
-
+  /* 오른쪽 판 (x946 y360, 370×610, #141414, 모서리 30) — 위 제목·설명, 가운데 십자, 아래 큰 버튼 둘 */
+  .panel { left: 946px; top: 360px; width: 370px; height: 610px; padding: 20px; border-radius: 30px; background: #141414;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+  .ctl-head { text-align: center; }
+  .ctl-h { margin: 0; font-size: 24px; line-height: 1.4; }
+  .ctl-p { margin: 12px 0 0; font-size: 16px; line-height: 1.5; white-space: pre-line; color: rgba(255,255,255,.85); }
   /* 버튼 공통 — 보라 + 안쪽 흰 빛, 쓸 수 없으면 회색 */
   .btn { display: flex; align-items: center; justify-content: center;
     background: var(--on); color: #fff;
@@ -98,11 +112,13 @@
   .btn.off { background: var(--off); color: rgba(255,255,255,.28); box-shadow: inset 0 0 30px rgba(76,76,76,.4); pointer-events: none; }
 
   /* 십자 (위 1101,483 · 왼 1018,554 · 오른 1185,554 · 아래 1101,627 · 66px) */
+  /* 십자 (피그마 233×210 안에 66px 버튼 넷) */
+  .dpad { display: grid; grid-template-columns: repeat(3, 66px); grid-template-rows: repeat(3, 66px); column-gap: 11px; row-gap: 6px; }
   .key { width: 66px; height: 66px; border-radius: 10px; }
-  .k-up    { left: 1101px; top: 483px; }
-  .k-left  { left: 1018px; top: 554px; }
-  .k-right { left: 1185px; top: 554px; }
-  .k-down  { left: 1101px; top: 627px; }
+  .k-up    { grid-area: 1 / 2; }
+  .k-left  { grid-area: 2 / 1; }
+  .k-right { grid-area: 2 / 3; }
+  .k-down  { grid-area: 3 / 2; }
   .key svg { width: 48px; height: 48px; overflow: visible; }
   .k-up svg { transform: rotate(180deg); } .k-left svg { transform: rotate(90deg); } .k-right svg { transform: rotate(-90deg); }
   /* 아이콘 — 피그마 picon:south (켜짐: 보라 두 겹 · 꺼짐: 검정 두 겹) */
@@ -113,10 +129,11 @@
   .key.off .i2 { fill: #1c1c1c; stroke: #1c1c1c; }
 
   /* 큰 버튼 (x1004 · 258×63 · y784 / y863) */
-  .big { left: 1004px; width: 258px; height: 63px; border-radius: 20px; font-size: 24px; line-height: 1.4; white-space: nowrap; }
-  #bSel { top: 784px; }
+  /* 큰 버튼 둘 — 판 폭 가득, 사이 16 */
+  .acts { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+  .big { width: 100%; height: 63px; border-radius: 20px; font-size: 24px; line-height: 1.4; white-space: nowrap; }
   /* 다음 영상으로 — 고르기(보라)와 다른 색: 작품의 강조 마젠타 */
-  #bNext { top: 863px; background: #e33ccb; }
+  #bNext { background: #e33ccb; }
   #bNext.down { background: #f45bd9; }
   #bNext.off { background: var(--off); }
 </style>
@@ -126,7 +143,11 @@
 
   <h1 class="abs scene" id="scene">Yagwang</h1>
   <p class="abs scene-sub" id="sub">손을 카메라에 비추거나 버튼을 누르십시오.</p>
-  <p class="abs scene-tip" id="topTip">손이 잘 안되면 버튼을 눌러보세요</p>
+
+  <!-- 손으로 하기 — 이 장면에서 손으로 넘어가는 방법. 지금 하고 있는 손동작 줄이 밝아진다 -->
+  <section class="abs hands" id="hands">
+    <ol class="hands__list" id="handsList"></ol>
+  </section>
 
   <section class="abs cam">
     <canvas id="view"></canvas>
@@ -143,18 +164,22 @@
     <div class="coach glass" id="coach" hidden><span class="coach__ic" id="coachIc">!</span><span class="coach__t" id="coachText"></span></div>
   </section>
 
-  <div id="ctl">
-    <p class="abs ctl-h">조작하기</p>
-    <p class="abs ctl-p" id="hint">손으로, 또는 버튼으로 조작해요</p>
-
-    <button class="abs btn key k-up" data-key="up" type="button" aria-label="앞으로"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
-    <button class="abs btn key k-left" data-key="left" type="button" aria-label="왼쪽"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
-    <button class="abs btn key k-right" data-key="right" type="button" aria-label="오른쪽"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
-    <button class="abs btn key k-down" data-key="down" type="button" aria-label="뒤로"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
-
-    <button class="abs btn big" id="bSel" type="button"><span id="selText">선택</span></button>
-    <button class="abs btn big off" id="bNext" type="button">다음 영상으로</button>
-  </div>
+  <section class="abs panel" id="ctl">
+    <div class="ctl-head">
+      <p class="ctl-h">손이 안되면 버튼으로</p>
+      <p class="ctl-p" id="hint">손으로, 또는 버튼으로 조작해요</p>
+    </div>
+    <div class="dpad">
+      <button class="btn key k-up" data-key="up" type="button" aria-label="앞으로"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
+      <button class="btn key k-left" data-key="left" type="button" aria-label="왼쪽"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
+      <button class="btn key k-right" data-key="right" type="button" aria-label="오른쪽"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
+      <button class="btn key k-down" data-key="down" type="button" aria-label="뒤로"><svg viewBox="0 0 48 48"><path class="i1" d="M13 19.5H35L24 33Z"/><path class="i2" d="M13 19.5H35L24 33Z"/></svg></button>
+    </div>
+    <div class="acts">
+      <button class="btn big" id="bSel" type="button"><span id="selText">선택</span></button>
+      <button class="btn big off" id="bNext" type="button">다음 영상으로</button>
+    </div>
+  </section>
 
 </div>
 
@@ -185,7 +210,7 @@ ch.onmessage = async (e) => {
       if (frame && frame.close) frame.close();
       frame = bmp; frameW = m.w; frameH = m.h;
     } catch {}
-  } else if (m.t === "hand") state = m;
+  } else if (m.t === "hand") { state = m; lightHands(typeof m.row === "number" ? m.row : -1); }
   else if (m.t === "ui") { ui = m; uiAt = performance.now(); layout(); showFilm(m.film); }
 };
 
@@ -255,6 +280,32 @@ tap($("bNext"), () => ch.postMessage({ t: "next" }));
 
 /* ── 장면마다 이름 · 설명 · 켜지는 버튼 ──
    작품에서 장면을 못 받고 있으면(예전 작품 화면 등) 'any' — 방향 네 개 + 선택을 다 켠다. */
+/* 손으로 하기 — [아이콘, 손동작, 결과] (줄 순서는 작품 쪽 guideRow 와 같다) */
+const HANDS = {
+  any:    [["✋", "조작 시작", "손을 카메라에 비추기"]],
+  boot:   [["✋", "시작", "손을 카메라에 잠시 비추기"]],
+  grid:   [["↔", "고리 돌리기", "손을 화면 양 끝으로"],
+           ["✋", "고르기", "가운데 파편에 손 2초"],
+           ["🤏", "빨리 고르기", "엄지와 검지 모아 집기"]],
+  orb:    [["✋", "확인하러 가기", "버튼에 손 올려 두기"],
+           ["✋", "다시 고르기", "버튼에 손 올려 두기"],
+           ["🤏", "바로 확인", "엄지와 검지 모아 집기"]],
+  garden: [["✋", "둘러보기", "손바닥 펴고 움직이기"],
+           ["☝️", "구슬 열기", "검지로 가리키고 멈추기"],
+           ["→", "다음 영상", "버튼에 손 커서 1초"]],
+};
+let handsShown = "";
+function showHands(sc) {
+  if (sc === handsShown) return;
+  handsShown = sc;
+  $("hands").hidden = sc === "film";
+  const rows = HANDS[sc] || HANDS.any;
+  $("handsList").innerHTML = rows.map(([ic, what, how]) => "<li><b>" + what + "</b><small>" + how + "</small></li>").join("");
+}
+function lightHands(row) {
+  [...$("handsList").children].forEach((li, i) => li.classList.toggle("on", i === row));
+}
+
 /* [장면 이름, 조작하기 아래 설명] */
 const SCENE = {
   any:    ["Yagwang",      "손으로, 또는 버튼으로 조작해요"],
@@ -264,6 +315,8 @@ const SCENE = {
   film:   ["Film",         ""],
   garden: ["Interaction2", "◀ ▶ 둘러보기 · ▲ ▼ 걷기\n‘구슬 열기’ 고리가 뜬 구슬 열기"],
 };
+/* 조작하기 아래 첫 줄 — 손이 안 될 때 버튼으로 */
+const TIP_BTN = "손이 잘 안되면 버튼을 눌러보세요";
 /* 장면 이름 아래 — 이 인터랙션에서 무엇을 하는지 (작품 화면의 문구 그대로) */
 const MISSION = {
   any:    "손을 카메라에 비추거나 버튼을 누르십시오.",
@@ -280,17 +333,20 @@ const ON = {
   film: [],
   garden: ["left", "up", "down", "right"],
 };
-let shown = "";
+let shown = "", lastScene = "";
 function layout() {
   const sc = ui && performance.now() - uiAt < 1500 ? ui.scene : "any";
   const key = sc + "|" + (ui && ui.canNext) + "|" + (ui && ui.reading) + "|" + (ui && ui.same);
   if (key === shown) return;
   shown = key;
+  // 영상에서 인터랙션으로 넘어왔으면 카메라를 바로 살핀다 (영상 소리 때문에 멈춰 있을 수 있다)
+  if (lastScene === "film" && sc !== "film" && window.__local && window.__local.recover) setTimeout(() => window.__local.recover(), 300);
+  lastScene = sc;
   const [name, sub] = SCENE[sc] || SCENE.any;
   $("scene").textContent = name;
   $("hint").textContent = sub;
   if (sc !== "film") $("sub").textContent = MISSION[sc] || MISSION.any;
-  $("topTip").hidden = sc === "film";
+  showHands(sc);
 
   // 쓸 수 없는 버튼은 회색
   const on = ON[sc] || ON.any;
@@ -490,7 +546,7 @@ async function startCam() {
     });
     video.srcObject = stream;
     await video.play().catch(() => {});
-    L.ok = true; L.err = null;
+    L.ok = true; L.err = null; L.everOk = true;
     stream.getVideoTracks().forEach((t) => {
       t.addEventListener("ended", () => { L.ok = false; });
       t.addEventListener("unmute", () => video.play().catch(() => {}));
@@ -503,10 +559,33 @@ async function startCam() {
 }
 // 거절됐거나 실패했으면 — 화면을 누를 때만 다시 묻는다 (저절로 계속 묻지 않는다)
 addEventListener("pointerdown", () => { if (!L.ok && !L.asking) startCam(); }, true);
-setInterval(() => {
+/* 카메라 지킴이 — 영상이 소리를 내며 나오는 동안 아이패드가 카메라를 끊거나 멈추는 일이 있다.
+   한 번 허용한 뒤라면 다시 묻지 않고 저절로 다시 켠다 (영상이 끝난 뒤). 거절됐을 때만 누를 때까지 기다린다. */
+let mutedSince = 0;
+function restartCam() {
+  try { video.srcObject && video.srcObject.getTracks().forEach((t) => t.stop()); } catch {}
+  video.srcObject = null;
+  L.ok = false;
+  startCam();
+}
+// 영상이 끝나 인터랙션으로 넘어온 순간 — 기다리지 않고 바로 살핀다. 멈췄거나 꺼졌으면 곧장 다시 켠다
+L.recover = () => {
   const t = video.srcObject && video.srcObject.getVideoTracks()[0];
+  if (!L.everOk || L.asking || L.err === "NotAllowedError") return;
+  if (!L.ok || !t || t.readyState === "ended" || t.muted) restartCam();
+  else if (video.paused) video.play().catch(() => {});
+};
+setInterval(() => {
+  const now = performance.now();
+  const t = video.srcObject && video.srcObject.getVideoTracks()[0];
+  const filming = typeof ui !== "undefined" && ui && ui.scene === "film" && now - uiAt < 1500;
   if (L.ok && (!t || t.readyState === "ended")) L.ok = false;
   if (L.ok && video.paused) video.play().catch(() => {});
+  // 멈춤(muted)이 영상 밖에서 3초 넘게 이어지면 새로 연다
+  if (L.ok && t && t.muted && !filming) { mutedSince = mutedSince || now; if (now - mutedSince > 3000) { mutedSince = 0; restartCam(); } }
+  else mutedSince = 0;
+  // 꺼졌으면 다시 켠다 — 허용해 둔 뒤라 허용 창은 다시 뜨지 않는다 (거절된 때는 누를 때까지 기다린다)
+  if (!L.ok && !L.asking && !filming && L.err !== "NotAllowedError" && L.everOk) startCam();
 }, 2000);
 
 let model = null;
