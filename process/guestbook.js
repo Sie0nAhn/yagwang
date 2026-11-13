@@ -49,10 +49,10 @@
 
   function card(e, no) {
     const [name, col] = SENSES[e.sense] || SENSES[0];
-    return `<article class="gb__note ${sizeOf(e.msg.length)}${e.id === lastAdded ? ' is-new' : ''}" style="--c:${col}">
-      <div class="gb__note-top"><span>No.${String(no).padStart(4, '0')}</span><span>${esc(name)}</span></div>
+    return `<article class="gb__note ${sizeOf(e.msg.length)}${e.id === lastAdded ? ' is-new' : ''}" style="--c:${col}" tabindex="0" data-no="${no}" data-i="${entries.indexOf(e)}">
+      <span class="gb__note-sense">${esc(name)}</span>
       <p>${esc(e.msg)}</p>
-      <div class="gb__note-by"><span>${esc(e.name || '익명의 관객')}</span><span>${fmt(e.t)}</span></div></article>`;
+      <span class="gb__note-by">${esc(e.name || '익명의 관객')}</span></article>`;
   }
 
   function draw() {
@@ -82,6 +82,19 @@
     known = new Set(list.map(e => e.id));
     entries = list; draw();
   }
+
+  // 구슬을 누르면 크게 펼쳐서 전체 글을 보여줘요
+  const dlg = $('.gb__dlg');
+  const openNote = el => {
+    const e = entries[+el.dataset.i]; if (!e) return;
+    const [name, col] = SENSES[e.sense] || SENSES[0];
+    dlg.style.setProperty('--c', col);
+    dlg.querySelector('.gb__dlg-orb').innerHTML = `<span class="gb__note-sense">No.${String(el.dataset.no).padStart(4, '0')} · ${esc(name)}</span><p>${esc(e.msg)}</p><span class="gb__note-by">${esc(e.name || '익명의 관객')} · ${fmt(e.t)}</span>`;
+    dlg.showModal();
+  };
+  board.addEventListener('click', ev => { const el = ev.target.closest('.gb__note'); if (el) openNote(el); });
+  board.addEventListener('keydown', ev => { const el = ev.target.closest('.gb__note'); if (el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openNote(el); } });
+  dlg.addEventListener('click', ev => { if (ev.target === dlg || ev.target.closest('.gb__dlg-close')) dlg.close(); });
 
   // 흐르는 보기 ↔ 모두 펼쳐 보기
   const toggle = $('.gb__toggle');

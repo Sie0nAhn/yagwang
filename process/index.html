@@ -495,7 +495,7 @@ section.sec { padding-top: 56px; }
 .gb__paper textarea { position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; font: inherit; font-family: var(--gb-font); font-weight: 800; font-size: 21px; line-height: 1.25; letter-spacing: -.035em; color: #000; background: transparent; border: 0; padding: 16px 16px 34px; resize: none; outline: none; word-break: keep-all; }
 .gb__paper textarea::placeholder { color: rgba(0,0,0,.38); }
 .gb__paper .gb__count { position: absolute; left: 16px; bottom: 12px; font-family: var(--font-mono); font-size: 10.5px; color: rgba(0,0,0,.5); }
-.gb__ctrl { display: flex; flex-direction: column; justify-content: space-between; gap: 22px; padding: 4px 0; }
+.gb__ctrl { display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 4px 0; }
 .gb__field { display: flex; flex-direction: column; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
 .gb__label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; color: var(--dim); }
 .gb__senses { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -571,6 +571,73 @@ section.sec { padding-top: 56px; }
 .card.is-final { border-color: transparent; background: linear-gradient(180deg, rgba(255,43,214,.07), transparent 40%), var(--panel); }
 .badge.is-final, .step.is-final { border-color: transparent; background-color: rgba(255,43,214,.2); }
 @media (max-width: 960px) { .nav a { border-color: transparent; background: rgba(255,255,255,.06); } .side { border: 0 !important; } }
+
+/* ── 작업 순서 노드 그래프 (ComfyUI 노드처럼) ── */
+.wf { border-radius: 16px; background: #0b0a10; overflow-x: auto; scrollbar-width: none; }
+.wf::-webkit-scrollbar { display: none; }
+.wf__svg { display: block; width: 100%; min-width: 0; height: auto; font-family: var(--font-kr); }
+.wf__link { fill: none; stroke-width: 3; stroke-linecap: round; }
+.wf__link--img { stroke: #64b5f6; opacity: .75; }
+.wf__link--vid { stroke: #ff5bd9; opacity: .85; }
+.wf__link.is-dash { stroke: rgba(255,255,255,.3); stroke-width: 2; stroke-dasharray: 5 7; opacity: 1; }
+.wf__pulse--img { fill: #d7ecff; filter: drop-shadow(0 0 5px #64b5f6); }
+.wf__pulse--vid { fill: #ffe0f7; filter: drop-shadow(0 0 6px #ff2bd6); }
+.wf__note { font-family: var(--font-mono); font-size: 12px; fill: rgba(255,255,255,.45); }
+.wf__box { fill: #1c1924; filter: drop-shadow(0 10px 18px rgba(0,0,0,.5)); }
+.wf__head { fill: #2a2533; }
+.wf__node--vid .wf__box { fill: #221828; } .wf__node--vid .wf__head { fill: #3a1f3a; }
+.wf__dot { fill: #64b5f6; } .wf__node--vid .wf__dot { fill: #ff5bd9; } .wf__node--out .wf__dot { fill: #c9c4d6; }
+.wf__title { font-size: 16px; font-weight: 700; fill: #fff; }
+.wf__no { font-family: var(--font-mono); font-size: 11.5px; fill: rgba(255,255,255,.45); }
+.wf__slot { stroke: #0b0a10; stroke-width: 2; }
+.wf__slot--img { fill: #64b5f6; } .wf__slot--vid { fill: #ff5bd9; }
+.wf__slotlab { font-size: 14px; fill: rgba(255,255,255,.82); }
+.wf__wg { fill: #12101a; }
+.wf__wglab { font-size: 13px; fill: rgba(255,255,255,.5); }
+.wf__wgval { font-size: 13.5px; fill: #fff; font-weight: 600; }
+.wf__code { font-family: var(--font-mono); font-size: 12px; fill: rgba(255,255,255,.75); }
+.wf__cap { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; fill: rgba(255,255,255,.45); }
+@media (prefers-reduced-motion: reduce) { .wf__pulse { display: none; } }
+@media (max-width: 960px) { .wf__svg { min-width: 900px; } }
+/* ── 작업 순서 노드 그래프 끝 ── */
+
+/* ── 메모를 구슬처럼 둥글게 ── */
+#guestbook { --gb-w: 196px; }
+.gb__note, .gb__paper, .gb__dlg-orb { --orb: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--c) 35%, #fff) 0%, var(--c) 46%, color-mix(in srgb, var(--c) 78%, #000) 100%); }
+.gb__note { width: var(--gb-w); aspect-ratio: 1; border-radius: 50%; padding: 0 calc(var(--gb-w) * .16); align-items: center; justify-content: center; text-align: center; gap: 8px; cursor: pointer;
+  background: var(--orb); box-shadow: 0 0 46px -10px var(--c), inset -14px -18px 34px rgba(0,0,0,.2), inset 10px 12px 24px rgba(255,255,255,.22); }
+.gb__note:hover, .gb__note:focus-visible { transform: scale(1.05); box-shadow: 0 0 70px -6px var(--c), inset -14px -18px 34px rgba(0,0,0,.2), inset 10px 12px 24px rgba(255,255,255,.22); outline: none; }
+.gb__note p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.gb__note.s-xl p { font-size: 22px; line-height: 1.15; } .gb__note.s-l p { font-size: 16px; } .gb__note.s-m p { font-size: 13px; line-height: 1.3; -webkit-line-clamp: 5; } .gb__note.s-s p { font-size: 11.5px; line-height: 1.35; -webkit-line-clamp: 6; }
+.gb__note-sense { font-family: var(--font-kr); font-size: 10.5px; font-weight: 600; color: rgba(0,0,0,.55); white-space: nowrap; }
+.gb__note-by { margin: 0; padding: 0; font-family: var(--font-kr); font-size: 10.5px; font-weight: 600; color: rgba(0,0,0,.6); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb__track { align-items: center; padding: 18px 0; gap: 22px; }
+.gb__track .gb__note:nth-child(3n+1) { margin-top: -26px; } .gb__track .gb__note:nth-child(3n+2) { margin-top: 30px; }
+@keyframes gbFlow { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 11px)); } }
+.gb__grid { gap: 22px; justify-items: center; }
+.gb__grid .gb__note { width: 100%; max-width: var(--gb-w); }
+.gb__form { grid-template-columns: 260px minmax(0, 1fr); }
+.gb__ctrl { justify-content: center; }
+.gb__paper { align-self: start; width: 100%; height: auto; aspect-ratio: 1; border-radius: 50%; background: var(--orb); box-shadow: 0 0 70px -14px var(--c), inset -16px -20px 40px rgba(0,0,0,.2), inset 12px 14px 28px rgba(255,255,255,.22); }
+.gb__paper textarea { inset: 18%; width: 64%; height: 64%; padding: 0; text-align: center; font-size: 18px; display: block; }
+.gb__paper .gb__count { left: 0; right: 0; bottom: 9%; text-align: center; }
+.gb__dlg { border: 0; padding: 0; background: transparent; overflow: visible; color: #000; }
+.gb__dlg::backdrop { background: rgba(4,2,10,.75); backdrop-filter: blur(6px); }
+.gb__dlg-orb { width: min(420px, 82vw); aspect-ratio: 1; border-radius: 50%; box-sizing: border-box; padding: 0 calc(min(420px, 82vw) * .15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; background: var(--orb); box-shadow: 0 0 120px -10px var(--c), inset -20px -26px 50px rgba(0,0,0,.2), inset 14px 16px 34px rgba(255,255,255,.24); animation: gbIn .5s cubic-bezier(.2,.8,.2,1); }
+.gb__dlg-orb p { margin: 0; font-size: 20px; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; white-space: pre-wrap; }
+.gb__dlg-orb .gb__note-sense, .gb__dlg-orb .gb__note-by { font-size: 12px; }
+.gb__dlg-close { display: block; margin: 18px auto 0; font: inherit; font-size: 13px; color: var(--fg-2); background: rgba(255,255,255,.08); border: 0; border-radius: 999px; padding: 8px 18px; cursor: pointer; }
+/* 메모 글씨는 Orbit (한 굵기라 굵기 지정은 빼요) */
+.gb__note p, .gb__paper textarea, .gb__dlg-orb p { font-family: "Orbit", var(--font-kr); font-weight: 400; letter-spacing: -.02em; }
+.gb__sense { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--c) 35%, #fff) 0%, var(--c) 50%, color-mix(in srgb, var(--c) 78%, #000) 100%); }
+.gb__sense[aria-checked="true"] { box-shadow: 0 0 18px -2px var(--c); }
+@media (max-width: 960px) {
+  #guestbook { --gb-w: 150px; }
+  .gb__form { grid-template-columns: 1fr; }
+  .gb__paper { aspect-ratio: 1; height: auto; width: min(260px, 100%); margin: 0 auto; justify-self: center; }
+  .gb__note.s-xl p { font-size: 17px; } .gb__note.s-l p { font-size: 13px; } .gb__note.s-m p { font-size: 11px; } .gb__note.s-s p { font-size: 10px; }
+  .gb__note-sense, .gb__note-by { font-size: 9px; }
+}
 </style>
 </head>
 <body>
@@ -655,14 +722,8 @@ section.sec { padding-top: 56px; }
     <section class="sec" id="flow">
       <div class="sec__head"><div class="sec__no">01 — WORKFLOW</div><div>
         <h2 class="sec__title">작업 순서</h2>
-        <p class="sec__desc">이미지를 먼저 만들고, 첫 프레임과 마지막 프레임 사이를 Seedance로 채웠어요.</p></div></div>
-      <div class="flow">
-        <div class="flow__step"><div class="flow__no">STEP 01</div><div class="flow__name">이미지 시안</div><div class="flow__tool">Midjourney v7</div><p class="flow__desc">무드보드 ‘영상캡스톤’을 걸고 도시, 문, 야광귀 시안을 만들었어요.</p></div>
-        <div class="flow__step"><div class="flow__no">STEP 02</div><div class="flow__name">수정</div><div class="flow__tool">GPT 2.5</div><p class="flow__desc">고른 시안을 점토·펠트 질감의 공단 장면으로 다듬었어요.</p></div>
-        <div class="flow__step"><div class="flow__no">STEP 03</div><div class="flow__name">프레임 편집</div><div class="flow__tool">FLUX · GPT Image 2</div><p class="flow__desc">이미지를 작게 고칠 땐 FLUX, 크게 바꿀 땐 GPT를 썼어요. 아래에 나눠 정리했어요.</p></div>
-        <div class="flow__step is-hot"><div class="flow__no">STEP 04</div><div class="flow__name">영상 생성</div><div class="flow__tool">Seedance 2.0 · 2.5</div><p class="flow__desc">첫·끝 프레임과 참조 이미지를 넣고 카메라와 움직임을 프롬프트로 연출했어요.</p></div>
-        <div class="flow__step"><div class="flow__no">STEP 05</div><div class="flow__name">편집</div><div class="flow__tool">After Effects</div><p class="flow__desc">컷을 잇고 색을 맞춘 뒤 사운드를 입혔어요.</p></div>
-      </div>
+        <p class="sec__desc">이미지를 먼저 만들고, 첫 프레임과 마지막 프레임 사이를 Seedance로 채웠어요. 단계를 노드로 이어 한눈에 볼 수 있게 했어요.</p></div></div>
+      <div class="wf"><svg class="wf__svg" viewBox="0 0 1000 540" role="img" aria-label="작업 순서 노드: 미드저니 → GPT 2.5 → FLUX 또는 GPT Image 2 → Seedance(첫 프레임 · 끝 프레임) → 애프터 이펙트"><defs><pattern id="wfdot" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(255,255,255,.07)"/></pattern></defs><rect width="1000" height="540" fill="url(#wfdot)"/><path id="wl0" class="wf__link wf__link--img" d="M194,166 C254,166 164,166 224,166"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#wl0"/></animateMotion></circle><path id="wl1" class="wf__link wf__link--img" d="M394,166 C454,166 370,74 430,74"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#wl1"/></animateMotion></circle><path id="wl2" class="wf__link wf__link--img" d="M394,166 C454,166 370,288 430,288"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#wl2"/></animateMotion></circle><path id="wl3" class="wf__link wf__link--img" d="M600,74 C660,74 580,96 640,96"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#wl3"/></animateMotion></circle><path id="wl4" class="wf__link wf__link--img" d="M600,288 C660,288 580,124 640,124"/><circle class="wf__pulse wf__pulse--img" r="3"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#wl4"/></animateMotion></circle><path id="wl5" class="wf__link wf__link--img is-dash" d="M394,166 C517,166 517,152 640,152"/><path id="wl6" class="wf__link wf__link--vid" d="M880,96 C940,96 700,396 760,396"/><circle class="wf__pulse wf__pulse--vid" r="3"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#wl6"/></animateMotion></circle><text class="wf__note" x="420" y="204">고칠 필요 없으면 그대로 →</text><g class="wf__node wf__node--img" transform="translate(14 110)"><rect class="wf__box" width="180" height="206" rx="10"/><path class="wf__head" d="M0,10 a10,10 0 0 1 10,-10 h160 a10,10 0 0 1 10,10 v24 h-180 z"/><circle class="wf__dot" cx="15" cy="17.0" r="5"/><text class="wf__title" x="28" y="22.0">Midjourney v7</text><text class="wf__no" x="170" y="21.0" text-anchor="end">01</text><circle class="wf__slot wf__slot--img" cx="180" cy="56.0" r="5"/><text class="wf__slotlab" x="166" y="60.0" text-anchor="end">IMAGE</text><rect class="wf__wg" x="10" y="76" width="160" height="24" rx="11"/><text class="wf__wglab" x="22" y="91">chaos</text><text class="wf__wgval" x="158" y="91" text-anchor="end">5</text><rect class="wf__wg" x="10" y="106" width="160" height="24" rx="11"/><text class="wf__wglab" x="22" y="121">ar</text><text class="wf__wgval" x="158" y="121" text-anchor="end">16:9</text><rect class="wf__wg" x="10" y="136" width="160" height="24" rx="11"/><text class="wf__wglab" x="22" y="151">stylize</text><text class="wf__wgval" x="158" y="151" text-anchor="end">150</text><rect class="wf__wg" x="10" y="166" width="160" height="24" rx="11"/><text class="wf__wglab" x="22" y="181">moodboard</text><text class="wf__wgval" x="158" y="181" text-anchor="end">영상캡스톤</text><text class="wf__cap" x="0" y="222">01 이미지 시안</text></g><g class="wf__node wf__node--img" transform="translate(224 110)"><rect class="wf__box" width="170" height="146" rx="10"/><path class="wf__head" d="M0,10 a10,10 0 0 1 10,-10 h150 a10,10 0 0 1 10,10 v24 h-170 z"/><circle class="wf__dot" cx="15" cy="17.0" r="5"/><text class="wf__title" x="28" y="22.0">GPT 2.5</text><text class="wf__no" x="160" y="21.0" text-anchor="end">02</text><circle class="wf__slot wf__slot--img" cx="0" cy="56.0" r="5"/><text class="wf__slotlab" x="14" y="60.0">image</text><circle class="wf__slot wf__slot--img" cx="170" cy="56.0" r="5"/><text class="wf__slotlab" x="156" y="60.0" text-anchor="end">IMAGE</text><rect class="wf__wg" x="10" y="76" width="150" height="24" rx="11"/><text class="wf__wglab" x="22" y="91">질감</text><text class="wf__wgval" x="148" y="91" text-anchor="end">점토 · 펠트</text><rect class="wf__wg" x="10" y="106" width="150" height="24" rx="11"/><text class="wf__wglab" x="22" y="121">장면</text><text class="wf__wgval" x="148" y="121" text-anchor="end">공단</text><text class="wf__cap" x="0" y="162">02 스타일 수정</text></g><g class="wf__node wf__node--img" transform="translate(430 18)"><rect class="wf__box" width="170" height="144" rx="10"/><path class="wf__head" d="M0,10 a10,10 0 0 1 10,-10 h150 a10,10 0 0 1 10,10 v24 h-170 z"/><circle class="wf__dot" cx="15" cy="17.0" r="5"/><text class="wf__title" x="28" y="22.0">FLUX</text><text class="wf__no" x="160" y="21.0" text-anchor="end">03</text><circle class="wf__slot wf__slot--img" cx="0" cy="56.0" r="5"/><text class="wf__slotlab" x="14" y="60.0">image</text><circle class="wf__slot wf__slot--img" cx="0" cy="84.0" r="5"/><text class="wf__slotlab" x="14" y="88.0">색 가이드</text><circle class="wf__slot wf__slot--img" cx="170" cy="56.0" r="5"/><text class="wf__slotlab" x="156" y="60.0" text-anchor="end">IMAGE</text><rect class="wf__wg" x="10" y="104" width="150" height="24" rx="11"/><text class="wf__wglab" x="22" y="119">고칠 곳</text><text class="wf__wgval" x="148" y="119" text-anchor="end">물결 · 빛</text><text class="wf__cap" x="0" y="160">03 작은 수정</text></g><g class="wf__node wf__node--img" transform="translate(430 232)"><rect class="wf__box" width="170" height="116" rx="10"/><path class="wf__head" d="M0,10 a10,10 0 0 1 10,-10 h150 a10,10 0 0 1 10,10 v24 h-170 z"/><circle class="wf__dot" cx="15" cy="17.0" r="5"/><text class="wf__title" x="28" y="22.0">GPT Image 2</text><text class="wf__no" x="160" y="21.0" text-anchor="end">03</text><circle class="wf__slot wf__slot--img" cx="0" cy="56.0" r="5"/><text class="wf__slotlab" x="14" y="60.0">image</text><circle class="wf__slot wf__slot--img" cx="170" cy="56.0" r="5"/><text class="wf__slotlab" x="156" y="60.0" text-anchor="end">IMAGE</text><rect class="wf__wg" x="10" y="76" width="150" height="24" rx="11"/><text class="wf__wglab" x="22" y="91">고칠 곳</text><text class="wf__wgval" x="148" y="91" text-anchor="end">구도 · 배경</text><text class="wf__cap" x="0" y="132">03 큰 수정</text></g><g class="wf__node wf__node--vid" transform="translate(640 40)"><rect class="wf__box" width="240" height="310" rx="10"/><path class="wf__head" d="M0,10 a10,10 0 0 1 10,-10 h220 a10,10 0 0 1 10,10 v24 h-240 z"/><circle class="wf__dot" cx="15" cy="17.0" r="5"/><text class="wf__title" x="28" y="22.0">Seedance 2.0 · 2.5</text><text class="wf__no" x="230" y="21.0" text-anchor="end">04</text><circle class="wf__slot wf__slot--img" cx="0" cy="56.0" r="5"/><text class="wf__slotlab" x="14" y="60.0">첫 프레임</text><circle class="wf__slot wf__slot--img" cx="0" cy="84.0" r="5"/><text class="wf__slotlab" x="14" y="88.0">끝 프레임</text><circle class="wf__slot wf__slot--img" cx="0" cy="112.0" r="5"/><text class="wf__slotlab" x="14" y="116.0">참조 이미지</text><circle class="wf__slot wf__slot--vid" cx="240" cy="56.0" r="5"/><text class="wf__slotlab" x="226" y="60.0" text-anchor="end">VIDEO</text><rect class="wf__wg" x="10" y="132" width="220" height="24" rx="11"/><text class="wf__wglab" x="22" y="147">duration</text><text class="wf__wgval" x="218" y="147" text-anchor="end">4–15s</text><rect class="wf__wg" x="10" y="162" width="220" height="24" rx="11"/><text class="wf__wglab" x="22" y="177">resolution</text><text class="wf__wgval" x="218" y="177" text-anchor="end">480p</text><rect class="wf__wg" x="10" y="192" width="220" height="24" rx="11"/><text class="wf__wglab" x="22" y="207">seed</text><text class="wf__wgval" x="218" y="207" text-anchor="end">고정 · 재생성</text><rect class="wf__wg" x="10" y="222" width="220" height="70" rx="8"/><text class="wf__code" x="20" y="242">SUBJECT &amp; ACTION: …</text><text class="wf__code" x="20" y="261">CAMERA: tracking, slow …</text><text class="wf__code" x="20" y="280">ORB LIGHT: brightness</text><text class="wf__cap" x="0" y="326">04 영상 생성</text></g><g class="wf__node wf__node--out" transform="translate(760 340)"><rect class="wf__box" width="200" height="176" rx="10"/><path class="wf__head" d="M0,10 a10,10 0 0 1 10,-10 h180 a10,10 0 0 1 10,10 v24 h-200 z"/><circle class="wf__dot" cx="15" cy="17.0" r="5"/><text class="wf__title" x="28" y="22.0">After Effects</text><text class="wf__no" x="190" y="21.0" text-anchor="end">05</text><circle class="wf__slot wf__slot--vid" cx="0" cy="56.0" r="5"/><text class="wf__slotlab" x="14" y="60.0">video</text><circle class="wf__slot wf__slot--vid" cx="200" cy="56.0" r="5"/><text class="wf__slotlab" x="186" y="60.0" text-anchor="end">영상 1 · 2 · 3</text><rect class="wf__wg" x="10" y="76" width="180" height="24" rx="11"/><text class="wf__wglab" x="22" y="91">컷</text><text class="wf__wgval" x="178" y="91" text-anchor="end">잇기</text><rect class="wf__wg" x="10" y="106" width="180" height="24" rx="11"/><text class="wf__wglab" x="22" y="121">색</text><text class="wf__wgval" x="178" y="121" text-anchor="end">맞추기</text><rect class="wf__wg" x="10" y="136" width="180" height="24" rx="11"/><text class="wf__wglab" x="22" y="151">사운드</text><text class="wf__wgval" x="178" y="151" text-anchor="end">입히기</text><text class="wf__cap" x="0" y="192">05 편집 · 사운드</text></g></svg></div>
       <div class="pick">
         <div class="pick__item">
           <div class="pick__head"><span class="pick__name">FLUX</span><span class="pick__when">이미지 작은 수정</span></div>
@@ -764,10 +825,11 @@ section.sec { padding-top: 56px; }
         </form>
         <div class="gb__summary"><span><b class="gb__num">0</b>개의 메모<span class="gb__dot"> · </span><span class="gb__where">불러오는 중…</span></span><button type="button" class="gb__toggle">모두 펼쳐 보기</button></div>
         <div class="gb__board">
-          <div class="gb__flow" aria-hidden="true"></div>
+          <div class="gb__flow"></div>
           <div class="gb__grid"></div>
           <p class="gb__empty">아직 남겨진 메모가 없어요. 첫 메모를 남겨 주세요.</p>
         </div>
+        <dialog class="gb__dlg" aria-label="메모 크게 보기"><div class="gb__dlg-orb"></div><button type="button" class="gb__dlg-close" aria-label="닫기">닫기</button></dialog>
       </div>
     </section>
     <footer>
@@ -779,7 +841,7 @@ section.sec { padding-top: 56px; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=20" defer></script>
+<script src="guestbook.js?v=21" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;
