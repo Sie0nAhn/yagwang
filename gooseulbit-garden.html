@@ -269,7 +269,7 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: min(540px, calc(100vw - 40px));
+    width: min(620px, calc(100vw - 40px));
     padding: 30px 32px 24px;
     border-radius: 28px;
     background: var(--glass), rgba(28, 16, 42, 0.62);
@@ -289,24 +289,22 @@
   .intro__kicker { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.3em; color: #ffe2bd; }
   .intro h2 { margin: 0 0 10px; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; color: #fdfaff; }
   .intro__body { margin: 0 0 20px; font-size: 14px; line-height: 1.75; color: var(--ink-dim); }
-  .intro__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .intro__steps li {
-    display: grid;
-    grid-template-columns: 44px 1fr;
-    grid-template-rows: auto auto;
-    column-gap: 14px;
-    align-items: center;
-    padding: 12px 14px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-  .intro__steps i { grid-row: 1 / 3; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 226, 189, 0.16); color: #ffe2bd; }
-  .intro__steps b { font-size: 15px; font-weight: 700; color: #fdfaff; }
-  .intro__steps span { font-size: 13.5px; color: var(--ink-dim); margin-top: 2px; }
+  /* 손짓 세 단계를 가로로 — 아이콘 · 이름 · 짧은 설명, 사이에 화살표 */
+  .intro__flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 8px; }
+  .intro__flow > li:not(.intro__arrow) { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+    padding: 16px 10px 14px; border-radius: 18px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12); }
+  .intro__flow i { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 226, 189, 0.16); color: #ffe2bd; margin-bottom: 4px; }
+  .intro__flow i svg { width: 28px; height: 28px; }
+  .intro__flow b { font-size: 16px; font-weight: 700; color: #fdfaff; }
+  .intro__flow span { font-size: 13px; line-height: 1.45; color: var(--ink-dim); }
+  .intro__arrow { align-self: center; margin-top: -10px; font-size: 18px; color: rgba(255, 226, 189, 0.6); }
+  /* 둘러보기 아래 — 편 손으로 할 수 있는 세 움직임 */
+  .intro__moves { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; font-style: normal; }
+  .intro__moves u { text-decoration: none; font-size: 12px; padding: 3px 9px; border-radius: 20px; background: rgba(255, 226, 189, 0.1); color: #ffe2bd; white-space: nowrap; }
+  .intro__note { margin: 14px 0 0; font-size: 12.5px; text-align: center; color: rgba(255, 252, 255, 0.55); }
   .intro__mouse { margin: 16px 0 0; font-size: 12.5px; text-align: center; color: rgba(255, 252, 255, 0.45); }
   /* 닫는 방법 — 카드 맨 아래. 줄이 줄어들다 다 없어지면 저절로 닫힌다 */
-  .intro__close { margin: 18px -32px -24px; padding: 16px 32px 18px; border-top: 1px solid rgba(255, 255, 255, 0.12); text-align: center; }
+  .intro__close { margin: 18px -32px -24px; padding: 4px 32px 18px; text-align: center; }   /* 위 구분선은 없앤다 */
   .intro__close b { display: block; font-size: 14px; font-weight: 700; color: #ffe2bd; }
   .intro__close span { display: block; margin-top: 4px; font-size: 13px; color: rgba(255, 252, 255, 0.5); }
   .intro__timer { display: block; width: 160px; height: 2px; margin: 12px auto 0; border-radius: 2px; background: rgba(255, 226, 189, 0.7); transform-origin: left center; animation: introTimer 12s linear forwards; }
@@ -727,7 +725,7 @@
   <ol class="guide" id="guide">
     <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5"/><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><span><b>손바닥을 펴서</b> 방향을 움직이세요</span></li>
     <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5"/><path d="M11 11.5v-2a1.5 1.5 0 1 1 3 0v2.5"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><span><b>검지로 구슬을</b> 가리키고 잠시 멈추면 열기</span></li>
-    <li><i><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></svg></i><span><b>다음 영상</b>은 엄지와 검지를 모아 집으면 바로 넘어가요. 아이패드에서 눌러도 돼요</span></li>
+    <li><i><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></svg></i><span><b>다음 영상</b> 구슬을 본 뒤 엄지·검지 집기</span></li>
   </ol>
   <div class="hand-cam">
     <canvas id="hand-preview" width="600" height="382"></canvas>
@@ -755,16 +753,20 @@
 <section class="intro" id="intro" hidden>
   <p class="intro__kicker">구슬빛 정원</p>
   <h2>구슬 속 기억을 읽어 보세요</h2>
-  <p class="intro__body">이 정원에 떠 있는 구슬마다 누군가 흘리고 간 기억이 담겨 있습니다.<br />마음이 가는 구슬 하나를 골라 그 속을 들여다보세요.</p>
-  <ol class="intro__steps">
-    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5"/><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><b>손바닥을 펴고 움직이기</b><span>편 자리에서 좌우로 밀면 방향을 돌고, 위아래로 움직이면 오르내려요. 카메라 쪽으로 내밀면 앞으로, 몸 쪽으로 빼면 뒤로 가요</span></li>
-    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5"/><path d="M11 11.5v-2a1.5 1.5 0 1 1 3 0v2.5"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><b>검지로 구슬 가리키기</b><span>잠시 멈추면 기억이 열립니다</span></li>
-    <li><i><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></svg></i><b>엄지와 검지를 모아 집으면 다음 영상</b><span>어디서든 집으면 바로 넘어가요 · 아이패드에서 눌러도 돼요</span></li>
+  <p class="intro__body">마음이 가는 구슬 하나를 골라 그 속을 들여다보세요.</p>
+  <!-- 손짓 세 단계 — 둘러보기 → 구슬 열기 → 다음 영상 -->
+  <ol class="intro__flow">
+    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5"/><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5"/><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><b>둘러보기</b><span>손바닥 펴기</span>
+      <em class="intro__moves"><u>↔ 방향</u><u>↕ 오르내리기</u><u>내밀면 앞 · 빼면 뒤</u></em></li>
+    <li class="intro__arrow" aria-hidden="true">→</li>
+    <li><i><svg viewBox="0 0 24 24"><path d="M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5"/><path d="M11 11.5v-2a1.5 1.5 0 1 1 3 0v2.5"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/></svg></i><b>구슬 열기</b><span>검지로 가리키고<br />잠시 멈추기</span></li>
+    <li class="intro__arrow" aria-hidden="true">→</li>
+    <li><i><svg viewBox="0 0 24 24"><path d="M7 20v-5.5a4 4 0 0 1 2.2 -3.6l3.3 -1.6"/><path d="M12.5 9.3l2.3 -3.9a1.4 1.4 0 0 1 2.4 1.4l-2.4 4.2"/><path d="M14.8 11l3 -1.5a1.4 1.4 0 0 1 1.3 2.5l-4.6 2.4a4 4 0 0 1 -1.8 .4h-1.2"/><circle cx="13.6" cy="7.3" r=".6"/></svg></i><b>다음 영상</b><span>구슬을 본 뒤<br />엄지·검지 모아 집기</span></li>
   </ol>
+  <p class="intro__note">아이패드 '다음 영상으로'는 구슬을 안 열어도 언제든 누를 수 있어요</p>
   <p class="intro__mouse">마우스로는 끌어서 둘러보고, 구슬을 눌러 엽니다</p>
   <div class="intro__close">
-    <b>손을 카메라에 잠시 비추거나 화면을 누르면 닫혀요</b>
-    <span>그대로 두면 잠시 뒤 저절로 닫힙니다</span>
+    <b>손을 비추거나 화면을 누르면 닫혀요</b>
     <i class="intro__timer"></i>
   </div>
 </section>
@@ -5164,9 +5166,10 @@ let s=t.tip.x*innerWidth,r=t.tip.y*innerHeight,a=Hb(s,r);if(!a){let o=document.e
 let k=a?(DW.includes(a.id)?"b:"+a.id:null):l&&!(fr&&fr.gi===l.gi&&fr.id===l.id)?l.gi+":"+l.id:null;k=ykDwell(k,i);let q=ykDwellQ(k);if(q>=1){Dw.done=!0;let kb=/^b:/.test(k)&&document.getElementById(k.slice(2));kb?kb.click():l&&Md(l.gi,l.id)}
 ykGuide(k&&/next/.test(k)||t.pinch?2:1);
 {let nb=k&&/next/.test(k)&&document.getElementById(k.slice(2)),c=nb&&nb.getBoundingClientRect();if(c&&c.width){s=c.right-c.height*.62;r=c.top+c.height/2}Fe.classList.toggle("next",!!(c&&c.width))}
-Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.classList.toggle("over",!!(l||k)),Fe.classList.toggle("pinch",t.pinch),Fe.style.setProperty("--p",k?Math.max(.08,q):l?1:.22),t.pinchEdge&&(Dw.done=!0,ii&&!/next/.test(ii.id)?ii.click():performance.now()-YkBorn>YK_PINCH_NEXT_AFTER&&xd())}
+Fe.hidden=!1,Fe.style.left=(l?l.sx:s)+"px",Fe.style.top=(l?l.sy:r)+"px",Fe.classList.toggle("over",!!(l||k)),Fe.classList.toggle("pinch",t.pinch),Fe.style.setProperty("--p",k?Math.max(.08,q):l?1:.22),t.pinchEdge&&(Dw.done=!0,ii&&!/next/.test(ii.id)?ii.click():Fc&&performance.now()-YkBorn>YK_PINCH_NEXT_AFTER&&xd())}
 /* 집어서 넘어가기는 정원에 들어오고 20초가 지난 뒤부터 — 막 들어와 손을 맞추다 집혀서 정원을 못 보고 넘어가지 않게
    (정원은 들어올 때마다 새로 띄우므로 이 창이 뜬 시각이 곧 들어온 시각이다) */
+/* 손으로 집어서 넘어가기는 구슬을 하나 이상 열어 본 뒤에만(Fc) — 아이패드 '다음 영상으로' 버튼은 구슬을 안 열어도 된다 */
 var YkBorn=performance.now(),YK_PINCH_NEXT_AFTER=2e4;
 /* 엄지와 검지를 모아 집으면 — 어디서든 바로 다음 영상(영상 2)으로. 인터랙션 1의 '바로 확인'과 같다.
    구슬은 촘촘해서 손 커서가 늘 어느 구슬 가까이에 있다 — 그래서 집기는 구슬 열기에 쓰지 않는다 (구슬은 가리키고 멈추면 열린다) */
@@ -5198,9 +5201,10 @@ window.__gardenCtl={
     if(!qc.hidden&&(t.same||!t.orb)){mr();return"closed"}
     if(t.orb){Md(t.orb.gi,t.orb.id);YkCtl.opened=performance.now();return"opened"}return null},
   same(){return!qc.hidden&&ykTarget().same},
-  canNext(){return!YkNext.hidden},
+  /* 아이패드 '다음 영상으로'는 구슬을 하나도 안 열어도 누를 수 있다 */
+  canNext(){return!Fi},
   reading(){return!qc.hidden},
-  next(){if(!YkNext.hidden)YkNext.click()}
+  next(){if(!YkNext.hidden)YkNext.click();else xd()}
 };
 if(parent!==window){document.body.classList.add("yk-embed");YkIntro.hidden=!1;
   var YkMouseT=0;addEventListener("mousemove",()=>{document.body.classList.add("yk-mouse");clearTimeout(YkMouseT);YkMouseT=setTimeout(()=>document.body.classList.remove("yk-mouse"),2500)});

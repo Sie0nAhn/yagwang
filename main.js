@@ -1311,6 +1311,22 @@ function onFilmEnded() {
   else if (filmSegment === 1) { filmSegment = -1; toArchive(); }
 }
 
+/* 아이패드 버튼 — 영상 건너뛰기: 영상이 끝난 것과 똑같이 넘어간다 (영상 1 → 정원 · 영상 2 → 처음) */
+function filmSkip() {
+  if (locked || current !== "film") return;
+  onFilmEnded();
+}
+/* 아이패드 버튼 — 이전 인터랙션으로: 영상 1 → 인터랙션 1(아카이브) · 영상 2 → 인터랙션 2(정원, 처음부터) */
+async function filmPrev() {
+  if (locked || current !== "film") return;
+  const seg = filmSegment;
+  filmSegment = -1;
+  filmEl.pause();
+  stopYt();
+  if (seg === 1) return toGarden();
+  await transition(async () => resetArchive());
+}
+
 async function playYt(seg) {
   await loadYtApi();
   if (!window.YT || !window.YT.Player) return;
@@ -2449,6 +2465,8 @@ if (monitorCh) {
     if (m.t === "select") padSelect();
     if (m.t === "next") padNext();
     if (m.t === "back" && current === "orb" && !locked) back();   // 아이패드 '다시 고르기'
+    if (m.t === "filmPrev") filmPrev();   // 아이패드 '이전 인터랙션으로' (영상 중)
+    if (m.t === "filmSkip") filmSkip();   // 아이패드 '영상 건너뛰기' (영상 중)
   };
 }
 

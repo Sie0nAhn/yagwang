@@ -287,10 +287,11 @@ function tap(el, fn) {
   const up = () => el.classList.remove("down");
   el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
 }
-tap($("bSel"), () => ch.postMessage({ t: "select" }));
+// 영상 중엔 아래 두 버튼이 '이전 인터랙션으로' · '영상 건너뛰기'
+tap($("bSel"), () => ch.postMessage({ t: lastScene === "film" ? "filmPrev" : "select" }));
 tap($("reload"), () => location.reload());
 // 아래 둘째 버튼 — 인터랙션 1에선 '다시 고르기'(구슬 → 아카이브), 정원에선 '다음 영상으로'
-tap($("bNext"), () => ch.postMessage({ t: lastScene === "grid" || lastScene === "orb" ? "back" : "next" }));
+tap($("bNext"), () => ch.postMessage({ t: lastScene === "film" ? "filmSkip" : lastScene === "grid" || lastScene === "orb" ? "back" : "next" }));
 
 /* 운영자용 — '작품과 연결됨'을 2초 누르면 카메라 위아래 뒤집기 */
 {
@@ -378,15 +379,16 @@ function layout() {
   const on = ON[sc] || ON.any;
   for (const k of ["left", "up", "down", "right"]) document.querySelector(".k-" + k).classList.toggle("off", !on.includes(k));
   const inter1 = sc === "grid" || sc === "orb";
-  $("nextText").textContent = inter1 ? "다시 고르기" : "다음 영상으로";
-  $("bNext").classList.toggle("off", inter1 ? sc !== "orb" : !(sc === "garden" && ui && ui.canNext));
-  $("bSel").classList.toggle("off", sc === "film");
-  $("ctl").hidden = false;                  // 영상이 나오는 동안에도 버튼은 보이되, 모두 회색으로 둔다 (건너뛸 수 없다)
+  $("nextText").textContent = sc === "film" ? "영상 건너뛰기" : inter1 ? "다시 고르기" : "다음 영상으로";
+  $("bNext").classList.toggle("off", sc === "film" ? false : inter1 ? sc !== "orb" : !(sc === "garden" && ui && ui.canNext));
+  $("bSel").classList.toggle("off", false);
+  $("ctl").hidden = false;                  // 영상이 나오는 동안엔 방향키만 회색, 아래 두 버튼은 '이전 인터랙션으로' · '영상 건너뛰기'
   $("selText").textContent =
     sc === "boot" ? "시작하기" :
     sc === "orb" ? "확인하러 가기" :
     sc === "garden" ? (ui && ui.reading && ui.same ? "구슬 설명 닫기" : "구슬 열기") :
-    sc === "grid" ? "고르기" : "선택";
+    sc === "grid" ? "고르기" :
+    sc === "film" ? "이전 인터랙션으로" : "선택";
 
   // 장면이 바뀌면 누르고 있던 방향은 놓는다
   if (held.size) { held.clear(); document.querySelectorAll("[data-key].down").forEach((b) => b.classList.remove("down")); sendPad(); }
