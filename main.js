@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261112m";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113a";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -2233,10 +2233,14 @@ function camRotation() { return camIsPortrait() ? camRot.portrait : camRot.lands
    그러면 손 모델이 손을 잡았다 놓쳤다 한다. 0.5초마다 화면 밝기를 재서, 어두우면
    손 인식에 넘기기 전에 그림을 밝혀 준다 ('screen' 으로 겹쳐 그리기 — 밝은 곳은 덜, 어두운 곳은 많이 밝아진다). */
 const LIGHT = {
-  aim: 115,       // 손 인식에 넘기는 그림의 평균 밝기를 이쯤으로 맞춘다 (0~255)
-  maxGain: 4,     // 가장 세게 밝힐 때 몇 배까지 (어두운 전시장)
+  dark: 90,       // 평균 밝기(0~255)가 이보다 어두우면 살짝 밝히기 시작한다
+  full: 35,       // 이만큼 어두우면 가장 세게 ('screen' 겹쳐 그리기 두 번 — 밝은 곳은 타지 않는다)
   every: 500,     // 밝기를 재는 간격(ms)
 };
+/* 4배까지 '더하기'로 밝혔더니 어두운 전시장에서 밝은 곳이 하얗게 타 버려 손을 못 찾았다.
+   그래서 다시 부드럽게('screen') 밝히고, 손이 안 잡히는 동안엔 밝힌 그림과 원래 그림을 번갈아 넣는다 —
+   어느 쪽으로든 손이 잡히면 그 쪽을 계속 쓴다 (tryBoost). */
+let tryBoost = true;
 const meterCanvas = document.createElement("canvas");
 meterCanvas.width = 32; meterCanvas.height = 24;
 const meterCtx = meterCanvas.getContext("2d", { willReadFrequently: true });
@@ -2261,7 +2265,7 @@ function measureLight() {
     const mean = sum / (d.length / 4);
     meter.data = d; meter.w = mw; meter.h = mh; meter.mean = mean;
     // 밝힐 배수 - 1 (0 이면 그대로). 거의 검정(카메라가 멈춤)이면 밝혀 봐야 소용없으니 그대로 둔다
-    lightTarget = mean < 6 ? 0 : gsap.utils.clamp(0, LIGHT.maxGain - 1, LIGHT.aim / Math.max(mean, 1) - 1);
+    lightTarget = mean < 6 ? 0 : gsap.utils.clamp(0, 2, ((LIGHT.dark - mean) / (LIGHT.dark - LIGHT.full)) * 2);
   } catch {}
 }
 const meter = { data: null, w: 32, h: 24, mean: 128 };
@@ -2335,12 +2339,14 @@ function coachFor(lms, now) {
   return coachNow;
 }
 
-function refreshCamSource() {
+function refreshCamSource(useBoost = true) {
   measureLight();
   lightBoost += (lightTarget - lightBoost) * 0.15;     // 천천히 바뀌게 — 갑자기 번쩍이면 손 모델이 흔들린다
   const r = camRotation();
-  const boost = lightBoost > 0.05;
-  if (!r && !boost) { camSrc = camVideo; sharedHand.video = camVideo; return camSrc; }
+  const dim = lightBoost > 0.05;               // 어두워서 밝히는 중인지
+  const boost = useBoost && dim;               // 이번 프레임에 실제로 밝힐지 (원래 그림과 번갈아)
+  // 밝히는 중이면 원래 그림도 같은 캔버스(같은 크기)로 넘긴다 — 손 모델에 크기가 번갈아 바뀌어 들어가지 않게
+  if (!r && !dim) { camSrc = camVideo; sharedHand.video = camVideo; return camSrc; }
   const vw = camVideo.videoWidth, vh = camVideo.videoHeight;
   const swap = r % 180 !== 0;
   // 손 모델에는 작게(긴 쪽 480) 넘긴다 — 그리기·올리기가 가벼워져 손이 덜 밀린다 (모델은 어차피 더 작게 줄여 본다)
@@ -2355,9 +2361,9 @@ function refreshCamSource() {
   rotCtx.globalAlpha = 1;
   rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
   if (boost) {
-    // 같은 그림을 '더하기'로 겹쳐 그려 밝힌다 — 한 번 겹치면 두 배. 어두운 전시장에서도 손 윤곽이 살아나게
-    rotCtx.globalCompositeOperation = "lighter";
-    let left = lightBoost;
+    // 같은 그림을 'screen' 으로 겹쳐 그려 밝힌다 — 어두운 곳은 많이, 밝은 곳은 조금만 (하얗게 타지 않게)
+    rotCtx.globalCompositeOperation = "screen";
+    let left = Math.min(2, lightBoost);
     while (left > 0.02) {
       rotCtx.globalAlpha = Math.min(1, left);
       rotCtx.drawImage(camVideo, -vw / 2, -vh / 2, vw, vh);
@@ -2923,18 +2929,19 @@ function trackTick() {
   if (camVideo.readyState >= 2 && camVideo.currentTime !== lastVideoTime) {
     if (current === "garden") {
       lastVideoTime = camVideo.currentTime;
-      refreshCamSource();
+      refreshCamSource(tryBoost);
       if (sharedHand.on) feedGarden();
       else sendMonitor(null, false);
       return;
     }
     if (!handActive && (trackTurn++ & 1)) { lastVideoTime = camVideo.currentTime; return; }
     lastVideoTime = camVideo.currentTime;
-    refreshCamSource();
+    refreshCamSource(tryBoost);
     const now = performance.now();
     const box = drawCameraFrame();
     lastHands = handLandmarker.detectForVideo(camSrc, now);
     const lms = lastHands && lastHands.landmarks && lastHands.landmarks[0];
+    if (!lms) tryBoost = !tryBoost;            // 못 찾았으면 다음엔 다른 그림으로 (밝힌 것 ↔ 원래)
     if (lms) drawHand(lms, box);
     processHand(lms || null, now, box);
     coachFor(lms || null, now);
@@ -2950,6 +2957,7 @@ function feedGarden() {
   if (!g) return;
   const res = handLandmarker.detectForVideo(camSrc, performance.now());
   const lms = (res && res.landmarks && res.landmarks[0]) || null;
+  if (!lms) tryBoost = !tryBoost;              // 못 찾았으면 다음엔 다른 그림으로
   const st = g.ingest(lms, gw.performance.now());
   coachFor(lms, performance.now());
   sendMonitor(lms, st && st.pinch);
