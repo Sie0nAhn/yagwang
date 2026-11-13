@@ -843,6 +843,21 @@ body { background: var(--bg) !important; }
 .gb__dlg-orb .gb__note-sense, .gb__dlg-orb .gb__note-by { color: rgba(255,255,255,.85); }
 .gb__sense { box-shadow: none; } .gb__sense[aria-checked="true"] { box-shadow: 0 0 18px -2px var(--c); }
 .gb__card { color: #1b1222; } .gb__form.is-ready .gb__send { color: #1b1222; }
+
+/* 쓰는 칸: 1 → 2 → 3 → 남기기 순서가 보이게 */
+.gb__ctrl { list-style: none; margin: 0; padding: 0; }
+.gb__label { display: flex; align-items: center; gap: 10px; font-family: var(--font-kr) !important; font-size: 15px !important; font-weight: 700; color: var(--fg) !important; letter-spacing: 0 !important; }
+.gb__label b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #2a2140; font-family: var(--font-mono); font-size: 12px; font-weight: 400; color: #fff; }
+.gb__label em { font-style: normal; font-weight: 400; font-size: 13px; color: var(--dim); }
+.gb__field { gap: 10px; padding-top: 0 !important; }
+.gb__write { align-self: flex-start; font: inherit; font-size: 14px; color: var(--fg-2); background: #1b1724; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.gb__write:hover { color: #fff; background: #2a2140; }
+.gb__form.is-ready .gb__write { color: var(--dim); }
+.gb__field input { background: #15121d; border-radius: 12px; padding: 11px 14px; }
+.gb__send { font-size: 15.5px; padding: 12px 24px; }
+.gb__status { color: var(--dim); }
+.gb__paper:focus-within { outline: 2px solid rgba(255,255,255,.7); outline-offset: 6px; }
+@media (max-width: 960px) { .gb__write { display: none; } }
 </style>
 </head>
 <body>
@@ -1108,15 +1123,17 @@ body { background: var(--bg) !important; }
         <p class="sec__desc">작품을 보고 남은 생각을 남겨 주세요. 남긴 메모는 구슬이 되어 병 속으로 떨어지고, 다른 관객의 구슬과 함께 쌓여요. 구슬을 누르면 읽을 수 있고, 집어서 굴려 볼 수도 있어요.</p></div></div>
       <div class="gb">
         <form class="gb__form" autocomplete="off">
-          <div class="gb__paper"><textarea id="gb-msg" maxlength="140" placeholder="작품을 보고 남은 생각을 적어주세요" aria-label="남길 말"></textarea><span class="gb__count">0 / 140</span></div>
-          <div class="gb__ctrl">
-            <div class="gb__field"><span class="gb__label">01 — 어떤 감각을 선호하시나요?</span>
-              <div class="gb__senses" role="radiogroup" aria-label="감각"></div>
-              <span class="gb__sense-name"></span></div>
-            <div class="gb__field"><span class="gb__label">02 — 이름</span>
-              <input id="gb-name" maxlength="16" placeholder="비워 두면 익명의 관객" aria-label="이름" /></div>
-            <div class="gb__field gb__field--send"><button class="gb__send" type="submit">메모 남기기 →</button><p class="gb__status" role="status"></p></div>
-          </div>
+          <div class="gb__paper"><textarea id="gb-msg" maxlength="140" placeholder="여기를 눌러 메모를 적어 주세요" aria-label="메모"></textarea><span class="gb__count">0 / 140</span></div>
+          <ol class="gb__ctrl">
+            <li class="gb__field"><span class="gb__label"><b>1</b>어떤 감각을 선호하시나요?</span>
+              <div class="gb__row"><div class="gb__senses" role="radiogroup" aria-label="감각"></div></div>
+              <span class="gb__sense-name"></span></li>
+            <li class="gb__field"><span class="gb__label"><b>2</b>메모 쓰기</span>
+              <button type="button" class="gb__write">← 왼쪽 구슬 안에 적어 주세요</button></li>
+            <li class="gb__field"><span class="gb__label"><b>3</b>이름 <em>(선택)</em></span>
+              <input id="gb-name" maxlength="16" placeholder="비워 두면 익명의 관객" aria-label="이름" /></li>
+            <li class="gb__field gb__field--send"><button class="gb__send" type="submit">구슬로 남기기 ↓</button><p class="gb__status" role="status">남기면 아래 병 속으로 떨어져요.</p></li>
+          </ol>
         </form>
         <div class="gb__summary"><span><b class="gb__num">0</b>개의 메모<span class="gb__dot"> · </span><span class="gb__where">불러오는 중…</span></span><button type="button" class="gb__toggle">모두 펼쳐 보기</button></div>
         <div class="gb__board">
@@ -1136,7 +1153,7 @@ body { background: var(--bg) !important; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=24" defer></script>
+<script src="guestbook.js?v=25" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;

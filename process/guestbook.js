@@ -5,10 +5,11 @@
 
   // 본 사이트의 감각 9가지. 카드 색은 벽에서 또렷하게 보이도록 채도를 높였어요.
   // 본 사이트 아카이브와 같은 감각 색 — 구슬은 사이트의 marble 이미지를 이 색으로 물들여요
+  // 부드러운 감각 색 — 영상의 라벤더빛 해 질 녘 톤에 맞춰 채도를 낮췄어요. 구슬은 사이트의 marble 이미지를 이 색으로 물들여요
   const SENSES = [
-    ['서늘한 새벽공기', '#6f83e8'], ['오후 4시의 햇살', '#ff9b4d'], ['윤슬의 빤짝임', '#4fd2e6'],
-    ['계절의 경계면', '#7fdc9b'], ['고요한 정적의 소리', '#b9b4e8'], ['낯선 타인의 온기', '#ff8a70'],
-    ['비 오는 날의 흙냄새', '#c9c076'], ['이유없는 설렘', '#ff77b8'], ['첫눈을 보던 감각', '#bcd8f5']
+    ['서늘한 새벽공기', '#9ea9d8'], ['오후 4시의 햇살', '#e9b896'], ['윤슬의 빤짝임', '#9fc8cf'],
+    ['계절의 경계면', '#aec7a8'], ['고요한 정적의 소리', '#bcb1dc'], ['낯선 타인의 온기', '#e2aa9e'],
+    ['비 오는 날의 흙냄새', '#cbbd9c'], ['이유없는 설렘', '#dda7c2'], ['첫눈을 보던 감각', '#c8d2e2']
   ];
   const $ = s => root.querySelector(s);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -184,6 +185,7 @@
   setSense(sense);
   const grow = () => { const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
   msg.addEventListener('input', grow); grow();
+  $('.gb__write').addEventListener('click', () => msg.focus());
   msg.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); form.requestSubmit(); } });
 
   form.addEventListener('submit', async ev => {
@@ -196,7 +198,7 @@
       await store.add({ name: name.value.trim().slice(0, 16), msg: text, sense });
       sessionStorage.setItem('gb-last', String(Date.now()));
       msg.value = ''; grow();
-      status.textContent = '구슬이 병에 떨어졌어요. 고마워요.';
+      status.textContent = '구슬이 병 속으로 떨어졌어요. 고마워요.';
     } catch (err) { console.warn(err); status.textContent = '지금은 저장하지 못했어요. 잠시 뒤에 다시 시도해 주세요.'; }
     setTimeout(() => form.classList.remove('is-sending'), 600);
   });
