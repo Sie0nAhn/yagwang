@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>야광(夜光) — 프롬프트 북</title>
 <meta name="description" content="《야광(夜光) — 당신이 모르는 사이》 AI 영상 제작 과정. 미드저니 시안부터 ComfyUI 노드와 프롬프트, 에펙 편집까지." />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2.0.5/fonts/variable/woff2/SUIT-Variable.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 <link rel="stylesheet" href="../vendor/fonts/roboto-mono.css" />
 <!-- 영문 — TT Autonomous Mono (Adobe Fonts) -->
@@ -15,7 +16,7 @@
 @font-face { font-family: "Orbit"; src: url("../assets/fonts/Orbit-Regular.woff2") format("woff2"); font-display: swap; }
 
 :root {
-  --font-kr: "Orbit", "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+  --font-kr: "SUIT Variable", SUIT, "Pretendard Variable", Pretendard, -apple-system, sans-serif;
   --font-mono: "tt-autonomous-mono", "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --bg: #000;
   --panel: #0b0a0e;
@@ -486,7 +487,7 @@ section.sec { padding-top: 56px; }
 
 .nav__gap { height: 8px; }
 /* ── 방명록: 감각 색 메모가 흐르는 줄 ── */
-#guestbook { --gb-font: "Pretendard Variable", Pretendard, sans-serif; --gb-w: 190px; }
+#guestbook { --gb-font: var(--font-kr); --gb-w: 190px; }
 .gb { display: flex; flex-direction: column; }
 /* 쓰기: 왼쪽 색 메모 한 장 + 오른쪽 세 단계 */
 .gb__form { --c: #b9a2ef; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: stretch; }
@@ -550,6 +551,26 @@ section.sec { padding-top: 56px; }
   .gb__summary { margin-top: 36px; }
   .gb__summary .gb__where, .gb__summary .gb__dot { display: none; }
 }
+
+/* ── 선 줄이기: 구분선은 빼고, 면과 여백으로 나눠요 ── */
+:root { --panel: #0f0d15; --panel-2: #17141f; }
+.side, .sec__head, .stats, .stat, .chapter__head, footer, .hero__foot, .about, .about__info div, .mj-card__then, .prompt__bar, .pick__cuts, .gb__field, .gb__note-by, .phase__quote,
+.card__body, .rail > .card .card__body, .card__change, .rail > .card .card__change, .rail > .card .card__media, .flow__step, .story li { border: 0 !important; }
+.sec__head { padding-top: 0; }
+.stat + .stat { padding-left: 0; }
+.flow { border: 0; gap: 8px; overflow: visible; }
+.flow__step { background: var(--panel); border-radius: 14px; }
+.fig, .mj-card, .phase, .tip, .box, .card, .series, .pick__item, .prompt, .graph, .pnode, .mj-grid a, .frame, .story { border-color: transparent; }
+.series { background: rgba(255,255,255,.025); }
+.card__change { background: rgba(255,43,214,.06); }
+.phase__quote { padding-left: 0; }
+.tag, .chip, .search, .btn, .badge, .extras summary, .step, .card__play, .gb__send, .gb__toggle, .pick__when { border-color: transparent; background-color: rgba(255,255,255,.07); }
+.gb__form.is-ready .gb__send { background-color: var(--c); }
+.prompt__bar { background: rgba(255,255,255,.03); }
+.gb__summary { margin-top: 56px; }
+.card.is-final { border-color: transparent; background: linear-gradient(180deg, rgba(255,43,214,.07), transparent 40%), var(--panel); }
+.badge.is-final, .step.is-final { border-color: transparent; background-color: rgba(255,43,214,.2); }
+@media (max-width: 960px) { .nav a { border-color: transparent; background: rgba(255,255,255,.06); } .side { border: 0 !important; } }
 </style>
 </head>
 <body>
