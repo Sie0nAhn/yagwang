@@ -521,6 +521,9 @@ section.sec { padding-top: 56px; }
 .gb__track { display: flex; gap: 14px; width: max-content; animation: gbFlow var(--dur, 60s) linear infinite; }
 .gb__lane.is-rev .gb__track { animation-direction: reverse; }
 .gb__flow:hover .gb__track { animation-play-state: paused; }
+.gb__flow.is-still { -webkit-mask-image: none; mask-image: none; overflow-x: auto; scrollbar-width: none; }
+.gb__flow.is-still::-webkit-scrollbar { display: none; }
+.gb__lane.is-still .gb__track { animation: none; }
 @keyframes gbFlow { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 7px)); } }
 .gb__grid { display: none; grid-template-columns: repeat(auto-fill, minmax(var(--gb-w), 1fr)); gap: 14px; }
 .gb__board.is-all .gb__flow { display: none; }
@@ -755,7 +758,7 @@ section.sec { padding-top: 56px; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=19" defer></script>
+<script src="guestbook.js?v=20" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;

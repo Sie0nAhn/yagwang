@@ -58,15 +58,20 @@
   function draw() {
     const n = entries.length, cards = entries.map((e, i) => card(e, n - i));
     grid.innerHTML = cards.join('');
-    // 흐르는 줄: 메모 수에 따라 1~3줄. 줄마다 방향과 속도를 달리해요
-    const lanes = n < 5 ? 1 : n < 14 ? 2 : 3;
-    const rows = Array.from({ length: lanes }, () => []);
-    cards.forEach((c, i) => rows[i % lanes].push(c));
-    flow.innerHTML = rows.map((r, i) => {
-      let items = r.slice(); while (items.length && items.length < 7) items = items.concat(r); // 화면보다 길게
-      const html = items.join('');
-      return `<div class="gb__lane${i % 2 ? ' is-rev' : ''}"><div class="gb__track" style="--dur:${Math.round(items.length * (i % 2 ? 11 : 9))}s">${html}${html}</div></div>`;
-    }).join('');
+    // 흐르는 줄: 한 줄에 서로 다른 메모가 6장 이상일 때만 흐르게 해요.
+    // 메모가 적으면 같은 메모를 반복하지 않고 한 줄에 가만히 놓아요.
+    const lanes = Math.min(3, Math.floor(n / 6));
+    if (!lanes) {
+      flow.innerHTML = `<div class="gb__lane is-still"><div class="gb__track">${cards.join('')}</div></div>`;
+    } else {
+      const rows = Array.from({ length: lanes }, () => []);
+      cards.forEach((c, i) => rows[i % lanes].push(c));
+      flow.innerHTML = rows.map((r, i) => {
+        const html = r.join('');
+        return `<div class="gb__lane${i % 2 ? ' is-rev' : ''}"><div class="gb__track" style="--dur:${Math.round(r.length * (i % 2 ? 11 : 9))}s">${html}${html}</div></div>`;
+      }).join('');
+    }
+    flow.classList.toggle('is-still', !lanes);
     $('.gb__num').textContent = n;
     root.classList.toggle('is-empty', !n);
     lastAdded = null;
