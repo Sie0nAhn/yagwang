@@ -244,7 +244,11 @@ tap($("bNext"), () => ch.postMessage({ t: "next" }));
 /* 운영자용 — '작품과 연결됨'을 2초 누르면 카메라 위아래 뒤집기 */
 {
   const el = $("link"); let t = 0;
-  el.addEventListener("pointerdown", () => { el.classList.add("charging"); t = setTimeout(() => { ch.postMessage({ t: "rotate" }); el.classList.remove("charging"); }, 2000); });
+  el.addEventListener("pointerdown", () => { el.classList.add("charging"); t = setTimeout(() => {
+    if (window.__local && window.__local.ok && window.__local.rotate) window.__local.rotate();   // 이 창 카메라를 뒤집는다
+    else ch.postMessage({ t: "rotate" });                                                     // 작품 창 카메라를 뒤집는다
+    el.classList.remove("charging");
+  }, 2000); });
   const cancel = () => { clearTimeout(t); el.classList.remove("charging"); };
   el.addEventListener("pointerup", cancel); el.addEventListener("pointercancel", cancel); el.addEventListener("pointerleave", cancel);
 }
@@ -339,9 +343,9 @@ function draw() {
   $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
   // 이 아이패드 창이 카메라를 맡는다 (L) — 못 쓰면 예전처럼 작품 창에서 보내 주는 그림(frame)
   const L = window.__local;
-  const localCam = !!(L && L.ok && L.video.readyState >= 2 && L.video.videoWidth);
-  const img = localCam ? L.video : frame;
-  const iw = localCam ? L.video.videoWidth : frameW, ih = localCam ? L.video.videoHeight : frameH;
+  const localCam = !!(L && L.ok && L.src && L.src.videoWidth);
+  const img = localCam ? L.src : frame;                 // 바로 세운 그림
+  const iw = localCam ? L.src.videoWidth : frameW, ih = localCam ? L.src.videoHeight : frameH;
   $("empty").hidden = !!img && (localCam || live);
   if (!img) {
     if (L && L.err) {
@@ -446,8 +450,35 @@ function showCoach(c) {
    아이패드 사파리는 '마지막으로 만진(또는 전체 화면인) 창'에만 카메라를 준다. 관람객이 만지는 건 이 창이니
    카메라도 여기서 쓴다. 찾은 손 좌표(lms)와 작은 카메라 그림(rframe)을 작품 창으로 보낸다. */
 import { HandLandmarker, FilesetResolver } from "./vendor/mediapipe/vision_bundle.mjs";
-const L = window.__local = { video: document.createElement("video"), ok: false, asking: false, err: null, lms: null, mean: 128 };
+const L = window.__local = { video: document.createElement("video"), src: null, ok: false, asking: false, err: null, lms: null, mean: 128 };
 const video = L.video;
+
+/* ── 카메라 돌리기 ──
+   아이패드를 모니터에 이어 쓰면 카메라가 옆으로 누워(세로로) 들어온다. 세로로 들어오면 돌려서 가로로 세우고,
+   손 인식도 돌린 그림으로 한다. 거꾸로 서 있으면 '작품과 연결됨'을 2초 누르면 위아래가 뒤집힌다 (기기에 기억 — 작품 창과 같은 값) */
+const ROT_KEY = "yk-cam-rot";
+const rot = (() => { try { return Object.assign({ portrait: 90, landscape: 0 }, JSON.parse(localStorage.getItem(ROT_KEY) || "{}")); }
+  catch { return { portrait: 90, landscape: 0 }; } })();
+const rc = document.createElement("canvas"), rx = rc.getContext("2d");
+function upright() {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const r = vh > vw ? rot.portrait : rot.landscape;
+  if (!r) return video;
+  const swap = r % 180 !== 0, w = swap ? vh : vw, h = swap ? vw : vh;
+  if (rc.width !== w || rc.height !== h) { rc.width = w; rc.height = h; }
+  rx.setTransform(1, 0, 0, 1, w / 2, h / 2);
+  rx.rotate((r * Math.PI) / 180);
+  rx.drawImage(video, -vw / 2, -vh / 2, vw, vh);
+  rx.setTransform(1, 0, 0, 1, 0, 0);
+  rc.videoWidth = w; rc.videoHeight = h; rc.readyState = 4;
+  return rc;
+}
+L.upright = upright;                           // 시험용 손잡이
+L.rotate = () => {
+  const k = video.videoHeight > video.videoWidth ? "portrait" : "landscape";
+  rot[k] = (rot[k] + 180) % 360;               // 세로면 90 ↔ 270, 가로면 0 ↔ 180 — 늘 가로로 선다
+  try { localStorage.setItem(ROT_KEY, JSON.stringify(rot)); } catch {}
+};
 video.muted = true; video.playsInline = true; video.autoplay = true;
 
 async function startCam() {
@@ -500,17 +531,20 @@ let frameAt = 0, frameBusy = false, lastT = -1;
 
 function tick() {
   requestAnimationFrame(tick);
-  if (!L.ok || !model || video.readyState < 2 || video.currentTime === lastT) return;
+  if (!L.ok || video.readyState < 2 || video.currentTime === lastT) return;
   lastT = video.currentTime;
+  const src = upright();                       // 세로로 들어오면 돌려서 가로로
+  L.src = src;
+  if (!model) return;                          // 손 모델을 받는 동안에도 카메라는 바로 세워서 보여 준다
   const now = performance.now();
   let res = null;
-  try { res = model.detectForVideo(video, now); } catch {}
+  try { res = model.detectForVideo(src, now); } catch {}
   const lms = (res && res.landmarks && res.landmarks[0]) || null;
   L.lms = lms;
   if (now - meterAt > 500) {
     meterAt = now;
     try {
-      mx.drawImage(video, 0, 0, 32, 24);
+      mx.drawImage(src, 0, 0, 32, 24);
       const d = mx.getImageData(0, 0, 32, 24).data;
       let sum = 0;
       for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
@@ -518,19 +552,20 @@ function tick() {
     } catch {}
   }
   ch.postMessage({ t: "lms", lms: lms ? lms.map((p) => [p.x, p.y, p.z || 0]) : null,
-    w: video.videoWidth, h: video.videoHeight, mean: L.mean });
+    w: src.videoWidth, h: src.videoHeight, mean: L.mean });
   if (!frameBusy && now - frameAt > 125) {
     frameAt = now;
-    const w = 320, h = Math.round((320 * video.videoHeight) / video.videoWidth);
+    const w = 320, h = Math.round((320 * src.videoHeight) / src.videoWidth);
     if (fc.width !== w || fc.height !== h) { fc.width = w; fc.height = h; }
-    fx.drawImage(video, 0, 0, w, h);
+    fx.drawImage(src, 0, 0, w, h);
     frameBusy = true;
     fc.toBlob((b) => { frameBusy = false; if (b) ch.postMessage({ t: "rframe", blob: b, w, h }); }, "image/jpeg", 0.6);
   }
 }
 
 startCam();
-loadModel().then(() => requestAnimationFrame(tick)).catch(() => { L.err = L.err || "model"; });
+requestAnimationFrame(tick);
+loadModel().catch(() => { L.err = L.err || "model"; });
 </script>
 </body>
 </html>
