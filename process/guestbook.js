@@ -50,7 +50,7 @@
   let entries = [], known = null;
   const bodies = new Map();           // id → { e, no, el, x, y, vx, vy, r, base }
   let W = 0, H = 0, scale = 1, awake = false, raf = 0, still = 0, seen = false, drag = null, pointer = null;
-  const short = t => { const one = t.replace(/\s+/g, ' ').trim(); return one.length > 14 ? one.slice(0, 13) + '…' : one; };
+  const short = t => { const one = t.replace(/\s+/g, ' ').trim(); return one.length > 24 ? one.slice(0, 23) + '…' : one; };
   // 글이 길수록 큰 구슬 (짧은 한마디는 작고, 긴 글은 크게)
   const baseR = e => 28 + Math.sqrt(Math.min(e.msg.length, 140) / 140) * 56;
   const light = h => { const n = parseInt(h.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) / 255 > .68; };
@@ -95,7 +95,6 @@
     for (const b of list) {
       if (b === drag?.b) continue;
       b.vy += G; b.vx *= .996; b.vy *= .996;
-      if (pointer) { const dx = b.x - pointer.x, dy = b.y - pointer.y, d = Math.hypot(dx, dy); if (d < b.r + 26 && d > 0) { b.vx += dx / d * .55; b.vy += dy / d * .35; } }
       b.x += b.vx * k; b.y += b.vy * k;
       if (b.y > H - b.r) { b.y = H - b.r; b.vy *= -.28; b.vx *= .965; if (Math.abs(b.vy) < .35) b.vy = 0; }
       if (b.x < b.r) { b.x = b.r; b.vx *= -.45; } if (b.x > W - b.r) { b.x = W - b.r; b.vx *= -.45; }
@@ -133,7 +132,7 @@
   });
   jar.addEventListener('pointermove', ev => {
     const p = local(ev);
-    if (!drag) { if (ev.pointerType === 'mouse') { pointer = p; wake(); } return; }
+    if (!drag) return;
     const b = drag.b; drag.moved += Math.abs(p.x - drag.px) + Math.abs(p.y - drag.py);
     b.vx = (p.x - drag.px) * .9; b.vy = (p.y - drag.py) * .9; drag.px = p.x; drag.py = p.y;
     b.x = Math.min(Math.max(p.x + drag.dx, b.r), W - b.r); b.y = Math.min(p.y + drag.dy, H - b.r);

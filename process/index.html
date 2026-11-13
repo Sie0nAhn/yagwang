@@ -884,6 +884,14 @@ body { background: var(--bg) !important; }
 .gb__orb.is-light span { text-shadow: none; }
 .gb__form.is-light .gb__preview.is-empty { color: rgba(27,18,34,.6); }
 .gb__dlg.is-light .gb__note-sense, .gb__dlg.is-light .gb__note-by { color: rgba(27,18,34,.7) !important; }
+
+/* 구슬 글씨: 가로로, 왼쪽 정렬 (줄어든 폭 때문에 한 글자씩 세로로 쪼개지지 않게 폭을 고정) */
+.gb__orb { justify-content: center; }
+.gb__orb span { width: 72%; max-width: none; text-align: left; word-break: keep-all; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; line-height: 1.25; }
+.gb__paper { align-items: stretch; }
+.gb__preview { width: 100%; text-align: left; }
+.gb__dlg-orb { align-items: stretch; }
+.gb__dlg-orb p, .gb__dlg-orb .gb__note-sense, .gb__dlg-orb .gb__note-by { text-align: left; width: 100%; }
 </style>
 </head>
 <body>
@@ -1179,7 +1187,7 @@ body { background: var(--bg) !important; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=28" defer></script>
+<script src="guestbook.js?v=29" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;
