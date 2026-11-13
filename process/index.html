@@ -737,6 +737,30 @@ body { background: var(--bg) !important; }
   .web-two, .web-stack { grid-template-columns: 1fr; }
   .web-log li { grid-template-columns: 54px 1fr; } .web-log span { grid-column: 1 / -1; }
 }
+
+/* ── 시도 카드: 한 장의 설명으로 읽히게 ── */
+.rail > .card { grid-template-areas: "head head" "media body" "change body"; grid-template-rows: auto auto 1fr; background: var(--panel); border-radius: 18px; overflow: hidden; }
+.card__head { grid-area: head; display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: #15121d; }
+.card__head .card__code { font-size: 22px; }
+.card__head .badge { margin-left: auto; }
+.card__step { font-family: var(--font-mono); font-size: 12px; color: #fff; background: #2a2140; border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
+.rail > .card .card__media { padding: 16px 0 0 16px; background: transparent; }
+.rail > .card .card__screen { border-radius: 12px; overflow: hidden; }
+.rail > .card .card__body { padding: 16px 20px 18px; }
+.card__change, .rail > .card .card__change { background: transparent !important; padding: 14px 0 18px 16px; min-height: 0; display: flex; flex-direction: column; gap: 10px; font-size: 14.5px; line-height: 1.7; }
+.chg { padding: 12px 14px; border-radius: 12px; background: #15121d; }
+.chg__k { display: inline-block; margin-bottom: 4px; font-size: 12px; font-weight: 700; color: #ff5bd9; }
+.chg + .chg .chg__k { color: #b98cff; }
+.chg p { margin: 0; color: var(--fg); }
+.card__change.is-first .chg__k { color: var(--dim); }
+.card__change.is-first p { color: var(--fg-2); }
+@media (max-width: 960px) {
+  .rail > .card { grid-template-areas: "head" "media" "change" "body"; grid-template-rows: auto; }
+  .card__head { flex-wrap: wrap; padding: 14px 16px; }
+  .rail > .card .card__media { padding: 14px 14px 0; }
+  .card__change, .rail > .card .card__change { padding: 12px 14px 0; }
+  .rail > .card .card__body { padding: 14px 16px 16px; }
+}
 </style>
 </head>
 <body>
@@ -1208,9 +1232,10 @@ function card(e, inRail) {
   const fin = e.final ? `<span class="badge is-final">최종 · ${esc(e.final.label)} ${tc(e.final.start)}</span>` : e.imported ? `<span class="badge">에펙 미사용</span>` : '';
   const main = e.prompts.map((p, i) => [p, i]).filter(([p]) => !p.bypass), old = e.prompts.map((p, i) => [p, i]).filter(([p]) => p.bypass);
   const clamp = inRail ? 360 : 620, sr = e.series;
+  const step = inRail && sr ? `<span class="card__step">시도 ${sr.idx + 1} / ${sr.n}</span>` : '';
   const change = inRail && sr ? (sr.note
-    ? `<dl class="card__change"><span class="stepno">시도 ${sr.idx + 1} / ${sr.n}</span><div><dt>바뀐 점</dt><dd>${esc(fill(sr.note[0]))}</dd></div><div><dt>이유</dt><dd>${esc(fill(sr.note[1]))}</dd></div></dl>`
-    : `<div class="card__change is-first"><span class="stepno">시도 1 / ${sr.n}</span>첫 시도입니다. 이후 시도는 이 버전을 기준으로 수정했습니다.</div>`) : '';
+    ? `<div class="card__change"><div class="chg"><span class="chg__k">바뀐 점</span><p>${esc(fill(sr.note[0]))}</p></div><div class="chg"><span class="chg__k">이유</span><p>${esc(fill(sr.note[1]))}</p></div></div>`
+    : `<div class="card__change is-first"><div class="chg"><span class="chg__k">첫 시도</span><p>이후 시도는 이 버전을 기준으로 고쳤습니다.</p></div></div>`) : '';
   const extras = [
     old.length ? `<details><summary>이전 프롬프트 ${old.length}</summary><div class="panel">${old.map(([p, i]) => promptBox(e, p, i, clamp)).join('')}</div></details>` : '',
     e.frames.length ? `<details><summary>입력 이미지 ${e.frames.length}</summary><div class="panel"><div class="frames">${e.frames.map((f, k) =>
@@ -1220,10 +1245,11 @@ function card(e, inRail) {
     e.final && e.final.fx.length ? `<details><summary>에펙 이펙트</summary><div class="panel"><div class="chips">${fxList(e.final.fx).map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div></div></details>` : '',
   ].join('');
   return `<article class="card ${e.final ? 'is-final' : ''}" id="${e.id}" data-final="${e.final ? 1 : 0}" data-model="${esc(e.model)}" data-search="${esc((e.code + ' ' + e.prompts.map(p => p.text + ' ' + (p.ko || '')).join(' ')).toLowerCase())}">
-    ${change}
+    ${inRail ? `<header class="card__head"><div class="card__code">${e.code}<small>${esc(groupName[e.group])}</small></div>${step}${fin}</header>` : ''}
     <div class="card__media"><div class="card__screen">${media}</div></div>
+    ${change}
     <div class="card__body">
-      <div class="card__top"><div class="card__code">${e.code}<small>${esc(groupName[e.group])}</small></div>${fin}</div>
+      ${inRail ? '' : `<div class="card__top"><div class="card__code">${e.code}<small>${esc(groupName[e.group])}</small></div>${fin}</div>`}
       <div class="meta">${esc(meta)}${e.seed != null ? ` · seed ${e.seed}` : ''}${e.imageModels.length ? ` · 프레임 편집 <b>${esc(e.imageModels.map(m => m === 'FLUX' ? 'FLUX(이미지 작은 수정)' : m === 'GPT Image 2' ? 'GPT Image 2(이미지 큰 수정)' : m).join(', '))}</b>` : ''}</div>
       ${main.map(([p, i]) => promptBox(e, p, i, clamp)).join('') || '<p class="meta">텍스트 프롬프트 없음</p>'}
       <div class="extras">${extras}</div>
