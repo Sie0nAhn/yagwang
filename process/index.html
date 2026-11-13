@@ -858,6 +858,32 @@ body { background: var(--bg) !important; }
 .gb__status { color: var(--dim); }
 .gb__paper:focus-within { outline: 2px solid rgba(255,255,255,.7); outline-offset: 6px; }
 @media (max-width: 960px) { .gb__write { display: none; } }
+
+/* 쓰는 칸은 오른쪽 입력창, 왼쪽 구슬은 미리보기 */
+.gb__paper { display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; padding: 0 16%; box-sizing: border-box; }
+.gb__preview { margin: 0; font-family: "Orbit", var(--font-kr); font-size: 18px; line-height: 1.35; text-align: center; color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.45); word-break: keep-all; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+.gb__preview.is-empty { color: rgba(255,255,255,.7); }
+.gb__paper figcaption { position: absolute; bottom: -30px; left: 0; right: 0; text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; color: var(--dim); }
+.gb__paper:focus-within { outline: 0; }
+.gb__box { position: relative; }
+.gb__box textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; line-height: 1.6; color: var(--fg); background: #15121d; border: 1.5px solid #2a2438; border-radius: 14px; padding: 12px 14px 28px; resize: none; outline: none; transition: border-color .2s, box-shadow .2s; }
+.gb__box textarea::placeholder { color: rgba(255,255,255,.4); }
+.gb__box textarea:focus { border-color: var(--c, #9a5aff); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, #9a5aff) 25%, transparent); }
+.gb__box .gb__count { position: absolute; right: 14px; bottom: 9px; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+.gb__field input { border: 1.5px solid #2a2438; }
+.gb__field input:focus { border-color: var(--c, #9a5aff); }
+.gb__write { display: none !important; }
+@media (max-width: 960px) { .gb__paper { width: min(200px, 60%) !important; } .gb__paper figcaption { bottom: -26px; } .gb__ctrl { margin-top: 26px; } }
+
+/* 구슬 질감은 은은하게: 감각 색을 한 겹 덮어 marble 무늬를 약하게 */
+.gb__orb, .gb__paper, .gb__dlg-orb {
+  background: linear-gradient(color-mix(in srgb, var(--c) 58%, transparent), color-mix(in srgb, var(--c) 58%, transparent)), url(../assets/marble.png) center / cover no-repeat, var(--c) !important;
+  background-blend-mode: normal, luminosity, normal !important; }
+.gb__sense { background: linear-gradient(color-mix(in srgb, var(--c) 50%, transparent), color-mix(in srgb, var(--c) 50%, transparent)), url(../assets/marble.png) center / cover no-repeat, var(--c) !important; background-blend-mode: normal, luminosity, normal !important; }
+.gb__orb.is-light, .gb__form.is-light .gb__preview, .gb__dlg.is-light .gb__dlg-orb { color: #1b1222; text-shadow: none; }
+.gb__orb.is-light span { text-shadow: none; }
+.gb__form.is-light .gb__preview.is-empty { color: rgba(27,18,34,.6); }
+.gb__dlg.is-light .gb__note-sense, .gb__dlg.is-light .gb__note-by { color: rgba(27,18,34,.7) !important; }
 </style>
 </head>
 <body>
@@ -1123,13 +1149,13 @@ body { background: var(--bg) !important; }
         <p class="sec__desc">작품을 보고 남은 생각을 남겨 주세요. 남긴 메모는 구슬이 되어 병 속으로 떨어지고, 다른 관객의 구슬과 함께 쌓여요. 구슬을 누르면 읽을 수 있고, 집어서 굴려 볼 수도 있어요.</p></div></div>
       <div class="gb">
         <form class="gb__form" autocomplete="off">
-          <div class="gb__paper"><textarea id="gb-msg" maxlength="140" placeholder="여기를 눌러 메모를 적어 주세요" aria-label="메모"></textarea><span class="gb__count">0 / 140</span></div>
+          <figure class="gb__paper" aria-hidden="true"><p class="gb__preview"></p><figcaption>미리보기</figcaption></figure>
           <ol class="gb__ctrl">
             <li class="gb__field"><span class="gb__label"><b>1</b>어떤 감각을 선호하시나요?</span>
               <div class="gb__row"><div class="gb__senses" role="radiogroup" aria-label="감각"></div></div>
               <span class="gb__sense-name"></span></li>
             <li class="gb__field"><span class="gb__label"><b>2</b>메모 쓰기</span>
-              <button type="button" class="gb__write">← 왼쪽 구슬 안에 적어 주세요</button></li>
+              <div class="gb__box"><textarea id="gb-msg" maxlength="140" rows="3" placeholder="작품을 보고 남은 생각을 적어 주세요" aria-label="메모"></textarea><span class="gb__count">0 / 140</span></div></li>
             <li class="gb__field"><span class="gb__label"><b>3</b>이름 <em>(선택)</em></span>
               <input id="gb-name" maxlength="16" placeholder="비워 두면 익명의 관객" aria-label="이름" /></li>
             <li class="gb__field gb__field--send"><button class="gb__send" type="submit">구슬로 남기기 ↓</button><p class="gb__status" role="status">남기면 아래 병 속으로 떨어져요.</p></li>
@@ -1153,7 +1179,7 @@ body { background: var(--bg) !important; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=25" defer></script>
+<script src="guestbook.js?v=27" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;

@@ -6,10 +6,11 @@
   // 본 사이트의 감각 9가지. 카드 색은 벽에서 또렷하게 보이도록 채도를 높였어요.
   // 본 사이트 아카이브와 같은 감각 색 — 구슬은 사이트의 marble 이미지를 이 색으로 물들여요
   // 부드러운 감각 색 — 영상의 라벤더빛 해 질 녘 톤에 맞춰 채도를 낮췄어요. 구슬은 사이트의 marble 이미지를 이 색으로 물들여요
+  // 감각 색 — 피그마 팔레트(1132:90). 구슬은 사이트의 marble 이미지를 이 색으로 물들여요
   const SENSES = [
-    ['서늘한 새벽공기', '#9ea9d8'], ['오후 4시의 햇살', '#e9b896'], ['윤슬의 빤짝임', '#9fc8cf'],
-    ['계절의 경계면', '#aec7a8'], ['고요한 정적의 소리', '#bcb1dc'], ['낯선 타인의 온기', '#e2aa9e'],
-    ['비 오는 날의 흙냄새', '#cbbd9c'], ['이유없는 설렘', '#dda7c2'], ['첫눈을 보던 감각', '#c8d2e2']
+    ['서늘한 새벽공기', '#6541f2'], ['오후 4시의 햇살', '#f2f845'], ['윤슬의 빤짝임', '#00bdde'],
+    ['계절의 경계면', '#58cf04'], ['고요한 정적의 소리', '#c648ff'], ['낯선 타인의 온기', '#ff5e00'],
+    ['비 오는 날의 흙냄새', '#b98f53'], ['이유없는 설렘', '#f553da'], ['첫눈을 보던 감각', '#00aeff']
   ];
   const $ = s => root.querySelector(s);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -50,12 +51,14 @@
   const bodies = new Map();           // id → { e, no, el, x, y, vx, vy, r, base }
   let W = 0, H = 0, scale = 1, awake = false, raf = 0, still = 0, seen = false, drag = null, pointer = null;
   const short = t => { const one = t.replace(/\s+/g, ' ').trim(); return one.length > 14 ? one.slice(0, 13) + '…' : one; };
-  const baseR = e => 46 + Math.min(e.msg.length, 140) / 140 * 26;
+  // 글이 길수록 큰 구슬 (짧은 한마디는 작고, 긴 글은 크게)
+  const baseR = e => 28 + Math.sqrt(Math.min(e.msg.length, 140) / 140) * 56;
+  const light = h => { const n = parseInt(h.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) / 255 > .68; };
 
   function orbEl(e) {
     const [name, col] = SENSES[e.sense] || SENSES[0];
     const el = document.createElement('button');
-    el.type = 'button'; el.className = 'gb__orb'; el.style.setProperty('--c', col);
+    el.type = 'button'; el.className = 'gb__orb' + (light(col) ? ' is-light' : ''); el.style.setProperty('--c', col);
     el.setAttribute('aria-label', `${name} — ${e.msg} (${e.name || '익명의 관객'})`);
     el.innerHTML = `<span>${esc(short(e.msg))}</span>`;
     el.dataset.id = e.id; jar.appendChild(el); return el;
@@ -147,7 +150,7 @@
   const dlg = $('.gb__dlg');
   function openNote(b) {
     const e = b.e, [name, col] = SENSES[e.sense] || SENSES[0];
-    dlg.style.setProperty('--c', col);
+    dlg.style.setProperty('--c', col); dlg.classList.toggle('is-light', light(col));
     dlg.querySelector('.gb__dlg-orb').innerHTML = `<span class="gb__note-sense">No.${String(b.no).padStart(4, '0')} · ${esc(name)}</span><p>${esc(e.msg)}</p><span class="gb__note-by">${esc(e.name || '익명의 관객')} · ${fmt(e.t)}</span>`;
     dlg.showModal();
   }
@@ -179,13 +182,13 @@
   const setSense = i => {
     sense = i;
     root.querySelectorAll('.gb__sense').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.i === i)));
-    form.style.setProperty('--c', SENSES[i][1]); $('.gb__sense-name').textContent = SENSES[i][0];
+    form.style.setProperty('--c', SENSES[i][1]); form.classList.toggle('is-light', light(SENSES[i][1])); $('.gb__sense-name').textContent = SENSES[i][0];
   };
   $('.gb__senses').addEventListener('click', ev => { const b = ev.target.closest('.gb__sense'); if (b) setSense(+b.dataset.i); });
   setSense(sense);
-  const grow = () => { const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
+  const preview = $('.gb__preview');
+  const grow = () => { preview.textContent = msg.value.trim() || '여기에 쓴 메모가 구슬에 비쳐요'; preview.classList.toggle('is-empty', !msg.value.trim()); const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
   msg.addEventListener('input', grow); grow();
-  $('.gb__write').addEventListener('click', () => msg.focus());
   msg.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); form.requestSubmit(); } });
 
   form.addEventListener('submit', async ev => {
