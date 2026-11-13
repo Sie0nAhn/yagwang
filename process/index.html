@@ -903,13 +903,33 @@ body { background: var(--bg) !important; }
 .gb__pv .gb__preview-sense, .gb__pv .gb__preview-by { margin: 0; width: auto; font-size: 11.5px; font-weight: 500; }
 .gb__pv .gb__preview { width: auto; margin: 2px 0; font-size: 15px; line-height: 1.5; -webkit-line-clamp: 4; }
 .gb__dlg-orb { gap: 14px; padding-left: calc(min(420px, 82vw) * .17) !important; padding-right: calc(min(420px, 82vw) * .17) !important; }
+
+/* 첫 화면: 프롬프트 북임을 크게 */
+.hero__pb { display: flex; align-items: baseline; gap: 16px; margin-top: 18px; }
+.hero__pb-ko { font-family: var(--font-kr); font-weight: 800; font-size: clamp(34px, 4.6vw, 60px); letter-spacing: -.04em; line-height: 1; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,.5); }
+.hero__pb-en { font-family: var(--font-mono); font-size: clamp(12px, 1.2vw, 15px); letter-spacing: .24em; color: #fff; background: #ff2bd6; padding: 6px 10px 5px; border-radius: 6px; transform: translateY(-6px); }
+.hero__inner .hero__tag { margin-top: 14px !important; }
+
+/* ── 옆으로 넘기는 영역: 세로 흐름과 구분되게 ── */
+.hscroll { position: relative; margin: 6px 0 4px; padding: 14px 0 6px; border-radius: 18px; background: #0d0b13; }
+.hscroll__hint { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 12px 16px; padding: 5px 12px; border-radius: 999px; background: #2a1430; font-family: var(--font-kr); font-size: 12.5px; font-weight: 600; color: #ff8fe6; }
+.hscroll__hint i { font-style: normal; display: inline-block; animation: hsNudge 1.8s ease-in-out infinite; }
+@keyframes hsNudge { 50% { transform: translateX(5px); } }
+.hscroll .rail, .hscroll .web-tl { padding-left: 16px !important; padding-right: 16px !important; scrollbar-width: thin; scrollbar-color: #ff5bd9 #1b1724; }
+.hscroll .rail::-webkit-scrollbar, .hscroll .web-tl::-webkit-scrollbar { display: block; height: 6px; }
+.hscroll .rail::-webkit-scrollbar-track, .hscroll .web-tl::-webkit-scrollbar-track { background: #1b1724; border-radius: 3px; margin: 0 16px; }
+.hscroll .rail::-webkit-scrollbar-thumb, .hscroll .web-tl::-webkit-scrollbar-thumb { background: #ff5bd9; border-radius: 3px; }
+.hscroll::after { content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 64px; border-radius: 0 18px 18px 0; background: linear-gradient(90deg, transparent, #0d0b13); pointer-events: none; transition: opacity .3s; }
+.hscroll.is-end::after { opacity: 0; }
+.series .hscroll { background: transparent; padding-top: 4px; margin: 0; }
+.series .hscroll::after { background: linear-gradient(90deg, transparent, #110f17); }
+@media (prefers-reduced-motion: reduce) { .hscroll__hint i { animation: none; } }
 </style>
 </head>
 <body>
 <div class="layout">
   <aside class="side">
     <div>
-      <div class="side__brand">감각자원관리공단<br />제작 기록부</div>
       <a class="side__logo" href="#top"><svg class="logo logo--side" viewBox="0 0 995 164" fill="none" aria-label="야광(夜光) 당신이 모르는 사이" role="img">
         <defs><clipPath id="clip-side"><rect width="50.7536" height="92.4441" fill="white" transform="translate(435.611 60.9587)"/></clipPath></defs>
         <g transform="translate(-231.5 0)"><g class="logo__line logo__line--1">
@@ -943,7 +963,7 @@ body { background: var(--bg) !important; }
           <video muted playsinline preload="auto" src="../film2.mp4#t=0,95"></video>
         </div>
         <div class="hero__inner">
-      <div class="eyebrow">제작 기록 · AI PROMPT BOOK</div>
+      <div class="eyebrow">PROMPT BOOK · 제작 기록</div>
       <h1 class="hero__logo"><svg class="logo logo--hero" viewBox="0 0 995 164" fill="none" aria-label="야광(夜光) 당신이 모르는 사이" role="img">
         <defs><clipPath id="clip-hero"><rect width="50.7536" height="92.4441" fill="white" transform="translate(435.611 60.9587)"/></clipPath></defs>
         <g transform="translate(-231.5 0)"><g class="logo__line logo__line--1">
@@ -964,9 +984,10 @@ body { background: var(--bg) !important; }
           <path d="M80.4323 236.186C81.5742 238.143 79.7797 242.385 79.7797 242.385C79.7797 242.385 66.7288 253.968 58.8982 261.309C56.1249 263.756 52.6991 267.182 50.5783 269.302C52.0465 269.629 53.3516 270.281 54.983 270.771C58.572 274.523 65.2606 283.985 65.5868 288.063C65.4237 292.957 62.8135 297.525 58.4088 302.093C49.7626 310.739 46.9893 312.534 35.4066 320.69C29.8599 324.606 25.129 322.974 21.8662 319.875C19.4192 316.612 14.8513 309.434 14.6882 306.008C14.5251 301.93 15.8302 298.341 16.4827 294.262C18.9298 290.51 20.7243 287.411 28.2285 280.722L67.2182 246.137C70.6441 243.037 66.4025 242.548 64.608 242.874L56.6143 252.01C56.6143 252.01 51.2308 256.741 51.5571 248.91L51.7202 243.853C41.4426 253.152 23.3344 270.771 16.6458 271.586C12.4043 267.997 9.14155 261.309 3.75804 256.088C3.75804 253.478 1.96354 251.684 2.45295 249.4C3.26864 244.995 4.41059 242.222 7.02078 237.164C10.2835 230.802 12.5674 227.376 16.6458 222.808C17.9509 221.666 23.987 216.283 23.987 216.283C15.3408 221.014 0.658448 228.518 0.00590109 227.539C-0.157236 225.908 3.1055 220.035 4.41059 218.404L8.65215 219.219C17.6247 214.162 20.398 213.347 29.5336 206.984C30.5125 206.495 32.7964 204.374 34.4277 203.558C37.3642 201.111 41.1163 201.764 43.074 202.253C42.4214 204.537 40.7901 210.247 36.3854 212.368C34.2646 213.673 34.4277 213.51 32.7964 214.162C30.5125 216.609 21.0505 224.766 17.6247 232.923C15.3407 238.306 13.5462 243.037 14.1988 244.342C15.5039 247.279 18.2772 256.741 23.8239 257.067C34.9172 254.131 47.805 237.164 52.6991 231.781L55.4724 198.501C55.6355 195.565 55.4724 195.075 53.3516 196.054L47.805 200.785L45.3579 196.543C47.3155 194.749 57.1037 185.613 62.9767 179.577C67.0551 172.725 68.8496 179.74 68.8496 179.74L64.9343 237.001L74.3962 233.902C79.1272 234.065 79.2903 233.412 80.4323 236.186ZM52.3728 289.694C52.6991 287.411 47.805 282.19 46.3367 280.559C43.074 279.743 41.7689 278.275 39.6481 280.069C35.7328 282.19 29.8599 288.553 26.434 293.773C25.4552 296.22 25.6184 298.504 25.6184 300.788C26.7603 303.561 29.8599 308.129 31.9807 311.065C33.9383 312.044 34.754 312.37 38.1799 310.902C44.0528 306.334 49.2732 300.788 50.5783 298.83C52.5359 295.894 53.1885 293.12 52.3728 289.694Z" fill="white"/>
         </g>
       </g></svg></h1>
-      <p class="hero__tag">Yagwang: Without Your Knowing — Prompt Book</p>
+      <div class="hero__pb"><span class="hero__pb-ko">프롬프트 북</span><span class="hero__pb-en">PROMPT BOOK</span></div>
+      <p class="hero__tag">Yagwang: Without Your Knowing — AI 영상 제작 기록</p>
           <div class="hero__foot">
-            <p class="hero__intro">AI 영상을 만든 과정과 프롬프트를 모았어요.</p>
+            <p class="hero__intro">작품 〈야광〉의 AI 영상 제작 과정과 프롬프트를 기록한 문서입니다.</p>
             <a class="hero__cue" href="#about">아래로<span></span></a>
           </div>
         </div>
@@ -1498,6 +1519,22 @@ $$('video[data-src]').forEach(v => { io.observe(v); v.addEventListener('play', (
   v.addEventListener('ended', loop);
   v.play().catch(() => {});
   new IntersectionObserver(([en]) => { vis = en.isIntersecting; en.isIntersecting ? v.play().catch(() => {}) : v.pause(); }).observe(document.querySelector('.hero__stage'));
+})();
+
+/* 옆으로 넘기는 영역 표시: 띠 배경 · 안내 · 끝에 닿으면 흐림 없앰 */
+(() => {
+  const mark = el => {
+    if (el.closest('.hscroll')) return;
+    const n = el.children.length;
+    const wrap = document.createElement('div'); wrap.className = 'hscroll';
+    el.parentNode.insertBefore(wrap, el);
+    wrap.innerHTML = `<div class="hscroll__hint"><i>⇆</i> 옆으로 넘겨 보기${n > 1 ? ` · ${n}개` : ''}</div>`;
+    wrap.appendChild(el);
+    const upd = () => wrap.classList.toggle('is-end', el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+    el.addEventListener('scroll', upd, { passive: true }); new ResizeObserver(upd).observe(el); upd();
+  };
+  const run = () => document.querySelectorAll('.rail, .web-tl').forEach(mark);
+  run(); new MutationObserver(run).observe(document.querySelector('main'), { childList: true, subtree: true });
 })();
 </script>
 </body>
