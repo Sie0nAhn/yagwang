@@ -195,6 +195,21 @@ async function keepAwake() { try { if (navigator.wakeLock) await navigator.wakeL
 keepAwake();
 document.addEventListener("visibilitychange", () => { if (!document.hidden) keepAwake(); });
 
+/* ── 전체 화면 ──
+   사파리 주소창·탭 줄을 없앤다. 브라우저 규칙상 화면을 한 번 눌러야 들어간다 — 아무 데나 처음 누르면 들어가고,
+   빠져나오면 다음에 누를 때 다시 들어간다.
+   (홈 화면 웹앱으로 열면 사파리와 저장 공간이 따로라 작품 창과 이어지지 않아 카메라가 안 보인다 — 사파리 + 전체 화면으로 쓴다) */
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+function goFullscreen() {
+  if (fsEl()) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  try { const r = req.call(el); if (r && r.catch) r.catch(() => {}); } catch {}
+}
+window.addEventListener("pointerdown", goFullscreen, true);
+window.addEventListener("touchend", goFullscreen, true);
+
 // 두 번 눌러 확대·길게 눌러 메뉴 같은 아이패드 기본 동작을 막는다
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 document.addEventListener("dblclick", (e) => e.preventDefault());
