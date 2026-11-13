@@ -52,7 +52,7 @@
   let W = 0, H = 0, scale = 1, awake = false, raf = 0, still = 0, seen = false, drag = null, pointer = null;
   const short = t => { const one = t.replace(/\s+/g, ' ').trim(); return one.length > 24 ? one.slice(0, 23) + '…' : one; };
   // 글이 길수록 큰 구슬 (짧은 한마디는 작고, 긴 글은 크게)
-  const baseR = e => 28 + Math.sqrt(Math.min(e.msg.length, 140) / 140) * 56;
+  const baseR = e => 22 + Math.pow(Math.min(e.msg.length, 90) / 90, .7) * 78;   // 한두 글자 ≈ 지름 50px, 긴 글 ≈ 200px
   const light = h => { const n = parseInt(h.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) / 255 > .68; };
 
   function orbEl(e) {
@@ -67,7 +67,7 @@
     W = jar.clientWidth; H = jar.clientHeight;
     // 구슬이 많아지면 조금씩 작아져서 병에 다 들어가게
     let area = 0; bodies.forEach(b => { area += Math.PI * b.base * b.base; });
-    scale = area ? Math.min(1, Math.sqrt(W * H * .5 / area)) : 1;
+    scale = area ? Math.min(1, Math.sqrt(W * H * .55 / area)) : 1;
     bodies.forEach(b => { b.r = Math.max(16, b.base * scale); b.el.style.width = b.el.style.height = b.r * 2 + 'px'; b.el.style.setProperty('--fs', Math.max(9, b.r * .26) + 'px'); });
   }
   function place(b) { b.el.style.transform = `translate(${b.x - b.r}px, ${b.y - b.r}px)`; }
@@ -179,18 +179,21 @@
 
   /* ---------- 쓰기 ---------- */
   const form = $('.gb__form'), msg = $('#gb-msg'), name = $('#gb-name'), count = $('.gb__count'), status = $('.gb__status');
-  let sense = Math.floor(Math.random() * SENSES.length);
+  let sense = Math.floor(Math.random() * SENSES.length), refresh = () => {};
   $('.gb__senses').innerHTML = SENSES.map(([n, c], i) => `<button type="button" class="gb__sense" role="radio" data-i="${i}" style="--c:${c}" title="${n}" aria-label="${n}" aria-checked="false"></button>`).join('');
   const setSense = i => {
     sense = i;
     root.querySelectorAll('.gb__sense').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.i === i)));
-    form.style.setProperty('--c', SENSES[i][1]); form.classList.toggle('is-light', light(SENSES[i][1])); $('.gb__sense-name').textContent = SENSES[i][0];
+    form.style.setProperty('--c', SENSES[i][1]); form.classList.toggle('is-light', light(SENSES[i][1])); refresh(); $('.gb__sense-name').textContent = SENSES[i][0];
   };
   $('.gb__senses').addEventListener('click', ev => { const b = ev.target.closest('.gb__sense'); if (b) setSense(+b.dataset.i); });
   setSense(sense);
   const preview = $('.gb__preview');
-  const grow = () => { preview.textContent = msg.value.trim() || '여기에 쓴 메모가 구슬에 비쳐요'; preview.classList.toggle('is-empty', !msg.value.trim()); const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
-  msg.addEventListener('input', grow); grow();
+  const by = $('.gb__preview-by'), psense = $('.gb__preview-sense');
+  refresh = () => grow();
+  const grow = () => { by.textContent = '— ' + (name.value.trim() || '익명의 관객'); psense.textContent = SENSES[sense][0]; preview.textContent = msg.value.trim() || '여기에 쓴 메모가 구슬에 비쳐요'; preview.classList.toggle('is-empty', !msg.value.trim()); const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
+  // 한글 조합 중에도 미리보기가 바로 바뀌게 여러 이벤트에 걸어 둬요
+  ['input', 'keyup', 'compositionupdate', 'compositionend', 'change'].forEach(t => { msg.addEventListener(t, () => requestAnimationFrame(grow)); name.addEventListener(t, () => requestAnimationFrame(grow)); }); grow();
   msg.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); form.requestSubmit(); } });
 
   form.addEventListener('submit', async ev => {
