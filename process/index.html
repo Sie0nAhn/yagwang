@@ -896,6 +896,13 @@ body { background: var(--bg) !important; }
 .gb__preview-sense, .gb__preview-by { width: 100%; text-align: left; font-family: var(--font-kr); font-size: 12px; font-weight: 600; color: rgba(255,255,255,.85); text-shadow: 0 1px 6px rgba(0,0,0,.4); }
 .gb__preview-sense { margin-bottom: 8px; } .gb__preview-by { margin-top: 10px; }
 .gb__form.is-light .gb__preview-sense, .gb__form.is-light .gb__preview-by { color: rgba(27,18,34,.7); text-shadow: none; }
+
+/* 미리보기: '크게 보기' 구슬과 같은 배치 — 위 감각, 가운데 글, 아래 이름 */
+.gb__paper { position: relative; display: block !important; padding: 0 !important; }
+.gb__pv { position: absolute; inset: 0; box-sizing: border-box; padding: 0 19%; display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 10px; }
+.gb__pv .gb__preview-sense, .gb__pv .gb__preview-by { margin: 0; width: auto; font-size: 11.5px; font-weight: 500; }
+.gb__pv .gb__preview { width: auto; margin: 2px 0; font-size: 15px; line-height: 1.5; -webkit-line-clamp: 4; }
+.gb__dlg-orb { gap: 14px; padding-left: calc(min(420px, 82vw) * .17) !important; padding-right: calc(min(420px, 82vw) * .17) !important; }
 </style>
 </head>
 <body>
@@ -1161,7 +1168,7 @@ body { background: var(--bg) !important; }
         <p class="sec__desc">작품을 보고 남은 생각을 남겨 주세요. 남긴 메모는 구슬이 되어 아래쪽으로 떨어지고, 다른 관객의 구슬과 함께 쌓여요. 구슬을 누르면 읽을 수 있고, 집어서 굴려 볼 수도 있어요.</p></div></div>
       <div class="gb">
         <form class="gb__form" autocomplete="off">
-          <figure class="gb__paper" aria-hidden="true"><span class="gb__preview-sense"></span><p class="gb__preview"></p><span class="gb__preview-by"></span><figcaption>미리보기</figcaption></figure>
+          <figure class="gb__paper" aria-hidden="true"><div class="gb__pv"><span class="gb__preview-sense"></span><p class="gb__preview"></p><span class="gb__preview-by"></span></div><figcaption>미리보기</figcaption></figure>
           <ol class="gb__ctrl">
             <li class="gb__field"><span class="gb__label"><b>1</b>어떤 감각을 선호하시나요?</span>
               <div class="gb__row"><div class="gb__senses" role="radiogroup" aria-label="감각"></div></div>
@@ -1191,7 +1198,7 @@ body { background: var(--bg) !important; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=33" defer></script>
+<script src="guestbook.js?v=34" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;

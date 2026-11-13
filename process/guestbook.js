@@ -172,6 +172,7 @@
     known = new Set(list.map(e => e.id));
     $('.gb__num').textContent = n;
     root.classList.toggle('is-empty', !n);
+    if (typeof refresh === 'function') refresh();
   }
   const toggle = $('.gb__toggle');
   const setView = all => { board.classList.toggle('is-all', all); toggle.textContent = all ? '구슬로 보기' : '모두 펼쳐 보기'; if (!all) { measure(); wake(); } };
@@ -191,7 +192,7 @@
   const preview = $('.gb__preview');
   const by = $('.gb__preview-by'), psense = $('.gb__preview-sense');
   refresh = () => grow();
-  const grow = () => { by.textContent = '— ' + (name.value.trim() || '익명의 관객'); psense.textContent = SENSES[sense][0]; preview.textContent = msg.value.trim() || '여기에 쓴 메모가 구슬에 비쳐요'; preview.classList.toggle('is-empty', !msg.value.trim()); const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
+  const grow = () => { by.textContent = (name.value.trim() || '익명의 관객') + ' · 지금'; psense.textContent = 'No.' + String(entries.length + 1).padStart(4, '0') + ' · ' + SENSES[sense][0]; preview.textContent = msg.value.trim() || '오른쪽 칸에 쓴 메모가 여기에 비쳐요'; preview.classList.toggle('is-empty', !msg.value.trim()); const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
   // 한글 조합 중에도 미리보기가 바로 바뀌게 여러 이벤트에 걸어 둬요
   ['input', 'keyup', 'compositionupdate', 'compositionend', 'change'].forEach(t => { msg.addEventListener(t, () => requestAnimationFrame(grow)); name.addEventListener(t, () => requestAnimationFrame(grow)); }); grow();
   msg.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); form.requestSubmit(); } });
