@@ -697,6 +697,11 @@ section.sec { padding-top: 140px; }
 .mj-grid span { padding: 9px 12px 2px; font-size: 13.5px; color: var(--fg); }
 .mj-grid small { display: block; padding: 2px 12px 12px; font-size: 12.5px; line-height: 1.55; color: var(--dim); }
 @media (max-width: 960px) { .mj-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+/* 섹션 머리: 번호 위, 제목 아래로 */
+.sec__head { flex-direction: column; align-items: flex-start; gap: 10px; }
+.sec__no { width: auto; }
+.sec__title { font-size: 34px; }
 </style>
 </head>
 <body>
