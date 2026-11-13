@@ -673,6 +673,23 @@ section.sec { padding-top: 140px; }
 .wfx__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
 .wfx__list li { position: relative; padding-left: 14px; font-size: 13.5px; line-height: 1.6; color: var(--fg-2); }
 .wfx__list li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 5px; height: 5px; border-radius: 50%; background: #64b5f6; }
+
+/* 영상 생성 블록: 그라데이션 없이 맑은 단색으로 */
+.wfx__sub { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; font-size: 15px; font-weight: 700; color: var(--fg); }
+.wfx__sub span { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--acc); }
+.wfx__item.is-pick { background: #1d0f1d; box-shadow: inset 0 0 0 1.5px #ff5bd9; }
+.wfx__item.is-pick .wfx__n { color: #ff5bd9; }
+.wfx__why { background: #15131c !important; }
+.wfx__diagram b { background: #ff5bd9; }
+.wfx__diagram b.is-free { background: transparent; border-top: 2px dashed #ff5bd9; height: 0; border-radius: 0; }
+.wfx__diagram i { background: transparent; outline: 1.5px dashed rgba(100,181,246,.55); }
+.wfx__diagram i.is-on { background: #64b5f6; outline: 0; box-shadow: none; }
+.wfx__diagram i.is-ref { background: #64b5f6; }
+.wfm__bar { gap: 4px; }
+.wfm__bar span { color: #000; font-weight: 600; }
+.wfm__bar span.is-25 { background: #ff5bd9; }
+.wfm__bar span.is-20 { background: #b98cff; }
+.wfm__bar span.is-etc { background: #64b5f6; padding: 0; }
 </style>
 </head>
 <body>
@@ -773,15 +790,39 @@ section.sec { padding-top: 140px; }
           <div class="pick__cuts">C21 · C22 · C34 · C36–C38</div>
         </div>
       </div>
-      <h3 class="wfx__h">프레임을 넣는 방법</h3>
-      <p class="wfx__lede">같은 Seedance 노드라도 무엇을 넣느냐에 따라 영상이 끝나는 모습이 달라져요. 장면마다 셋 중 하나를 골라 썼어요.</p>
+      <h3 class="wfx__h">영상 생성 — 모델과 입력 방식</h3>
+      <p class="wfx__lede">영상은 모두 ComfyUI의 Seedance 노드로 만들었어요. 어떤 모델을 골랐는지, 그리고 그 노드에 이미지를 어떻게 넣었는지 정리했어요.</p>
+
+      <div class="wfx__sub"><span>01</span>모델 선택</div>
+      <div class="wfm">
+        <div class="wfm__bar" role="img" aria-label="ComfyUI 생성 41컷 중 Seedance 2.5 36컷, Seedance 2.0 4컷, 이미지 1컷">
+          <span style="flex:36" class="is-25">Seedance 2.5 · 36컷</span><span style="flex:4" class="is-20">2.0 · 4</span><span style="flex:1" class="is-etc"></span>
+        </div>
+        <div class="wfx wfx--3">
+          <div class="wfx__item">
+            <div class="wfx__top"><span class="wfx__name">Kling</span><span class="wfx__n">시험</span></div>
+            <p>움직임은 크고 역동적이지만, 컷마다 점토·펠트 질감과 야광귀의 모양이 원본에서 조금씩 벗어났어요.</p>
+          </div>
+          <div class="wfx__item">
+            <div class="wfx__top"><span class="wfx__name">Veo</span><span class="wfx__n">시험</span></div>
+            <p>빛과 공기는 사실적이지만, 화면이 실사 쪽으로 바뀌어 손으로 빚은 듯한 작품의 질감과 멀어졌어요.</p>
+          </div>
+          <div class="wfx__item is-pick">
+            <div class="wfx__top"><span class="wfx__name">Seedance 2.5</span><span class="wfx__n">36 / 41컷</span></div>
+            <p>첫·끝 프레임으로 넣은 이미지의 질감과 캐릭터를 끝까지 지켰고, 0–2s · 2–5s처럼 시간대별로 적은 동작도 순서대로 따라왔어요.</p>
+            <p class="wfx__why">40개가 넘는 컷에서 질감과 캐릭터를 한결같이 유지하고, 시간대별 연출을 그대로 옮기기 위해 Seedance 2.5를 주로 사용하였습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="wfx__sub"><span>02</span>프레임 입력 방식</div>
       <div class="wfx wfx--3">
         <div class="wfx__item">
           <div class="wfx__top"><span class="wfx__name">첫 프레임 + 끝 프레임</span><span class="wfx__n">32컷</span></div>
           <div class="wfx__diagram" aria-hidden="true"><i class="is-on"></i><b></b><i class="is-on"></i></div>
           <p>시작과 끝 장면을 둘 다 정해 두고, 그 사이에서 일어나는 움직임만 프롬프트로 연출했어요.</p>
           <ul class="wfx__list"><li>카메라가 어디에서 멈출지 정해져 있을 때</li><li>구슬이 떠올라 닿을 위치, 캐릭터가 걸어가 설 자리가 정해져 있을 때</li><li>앞 컷과 다음 컷을 이어 붙여야 할 때</li></ul>
-          <p class="wfx__why">앞 컷의 끝 프레임을 다음 컷의 첫 프레임으로 그대로 쓰면 컷이 바뀌어도 자세와 빛이 이어집니다. 끝 장면까지 고정해 두어, 40개가 넘는 컷이 한 편처럼 끊김 없이 이어지게 하기 위해서.</p>
+          <p class="wfx__why">앞 컷의 끝 프레임을 다음 컷의 첫 프레임으로 그대로 이어, 컷이 바뀌어도 자세와 빛이 끊기지 않도록 하기 위해 사용하였습니다.</p>
           <div class="wfx__cuts">연못 · 계단 오르기 · 떠오르는 구슬 등 대부분</div>
         </div>
         <div class="wfx__item">
@@ -789,7 +830,7 @@ section.sec { padding-top: 140px; }
           <div class="wfx__diagram" aria-hidden="true"><i class="is-on"></i><b></b><i></i></div>
           <p>시작 장면만 넣고 끝은 비워 뒀어요. 장면의 느낌이 끝으로 갈수록 확 바뀌어야 하는 컷이에요.</p>
           <ul class="wfx__list"><li>문이 닫히면서 화면이 어둠으로 바뀌는 컷 (C2 · C3)</li><li>카메라가 단말기 화면으로 빠르게 돌진하는 컷 (C22)</li><li>화면 속 이미지가 다른 모습으로 변하는 컷 (C36 · C37)</li></ul>
-          <p class="wfx__why">끝 장면을 정해 두면 마지막에 그 이미지로 억지로 맞춰지면서 변화가 약해집니다. 어두워지거나, 돌진하거나, 부서지는 큰 변화를 모델이 자유롭게 만들어 내도록 끝을 열어 두기 위해서.</p>
+          <p class="wfx__why">끝 장면에 억지로 맞춰지지 않고, 어두워지거나 돌진하거나 부서지는 큰 변화를 모델이 자유롭게 만들어 내도록 하기 위해 사용하였습니다.</p>
           <div class="wfx__cuts">C2 · C3 · C22 · C36 · C37</div>
         </div>
         <div class="wfx__item">
@@ -797,31 +838,8 @@ section.sec { padding-top: 140px; }
           <div class="wfx__diagram" aria-hidden="true"><i class="is-ref"></i><b class="is-free"></b><i class="is-ref"></i></div>
           <p>정해진 프레임 없이 캐릭터와 공간 이미지를 참고로만 넣었어요. 생김새는 같아야 하지만 연기나 시간이 바뀌는 컷이에요.</p>
           <ul class="wfx__list"><li>야광귀가 고개를 갸웃거리는 연기 (C12)</li><li>하늘이 새벽으로 바뀌고 해가 뜨는 엔딩 (C40 · C41)</li></ul>
-          <p class="wfx__why">프레임을 고정하면 표정과 하늘빛이 처음 이미지에 묶여 버립니다. 야광귀의 생김새와 공단의 분위기는 지키면서, 동작과 시간의 흐름은 새로 만들어지게 하기 위해서.</p>
+          <p class="wfx__why">야광귀의 생김새와 공단의 분위기는 지키면서, 표정과 하늘빛처럼 바뀌어야 하는 부분은 새로 만들어지도록 하기 위해 사용하였습니다.</p>
           <div class="wfx__cuts">C12 · C40 · C41</div>
-        </div>
-      </div>
-
-      <h3 class="wfx__h">왜 Seedance 2.5였나</h3>
-      <p class="wfx__lede">Kling, Veo, Seedance를 같이 시험해 보고, 마지막에는 거의 모든 컷을 Seedance 2.5로 만들었어요.</p>
-      <div class="wfm">
-        <div class="wfm__bar" aria-label="ComfyUI 생성 41컷 중 모델별 비율">
-          <span style="flex:36" class="is-main">Seedance 2.5 · 36컷</span><span style="flex:4">2.0 · 4</span><span style="flex:1"></span>
-        </div>
-        <div class="wfx wfx--3">
-          <div class="wfx__item">
-            <div class="wfx__top"><span class="wfx__name">Kling</span><span class="wfx__n">시험</span></div>
-            <p>움직임은 크고 시원했지만, 컷마다 점토·펠트 질감과 야광귀 모양이 조금씩 달라졌어요.</p>
-          </div>
-          <div class="wfx__item">
-            <div class="wfx__top"><span class="wfx__name">Veo</span><span class="wfx__n">시험</span></div>
-            <p>빛과 공기는 사실적이었지만, 화면이 실사 쪽으로 바뀌어 작품의 손으로 만든 듯한 질감과 멀어졌어요.</p>
-          </div>
-          <div class="wfx__item is-pick">
-            <div class="wfx__top"><span class="wfx__name">Seedance 2.5</span><span class="wfx__n">36 / 41컷</span></div>
-            <p>첫·끝 프레임을 넣으면 그 이미지의 질감과 캐릭터를 끝까지 지켰어요. 0–2s, 2–5s처럼 시간대별로 적은 동작도 순서대로 따라왔어요.</p>
-            <p class="wfx__why">컷이 40개 넘게 이어지는 영상에서 질감과 캐릭터를 한결같이 유지하고, 시간대별 연출을 그대로 옮기기 위해서.</p>
-          </div>
         </div>
       </div>
     </section>
