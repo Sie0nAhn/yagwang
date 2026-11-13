@@ -10,7 +10,7 @@ import {
   HandLandmarker,
   FilesetResolver,
 } from "./vendor/mediapipe/vision_bundle.mjs";       // @mediapipe/tasks-vision 0.10.14 — 오프라인용으로 폴더에 둔다
-import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113h";   // ?v= 는 index.html 과 같이 올린다
+import { unlockSound, setScene, chime, soundAllowed } from "./sound.js?v=20261113i";   // ?v= 는 index.html 과 같이 올린다
 
 /* 영상 색보정·질감은 잠시 꺼둠. true 로 바꾸면 그대로 되살아난다. */
 const VIDEO_FX = false;
@@ -1494,7 +1494,9 @@ async function toFilm(segment) {
       gsap.set(filmEl, { autoAlpha: 1 });
       loadFilmFile(seg);
       await filmReady();
-      if (!hold) await playFilm();
+      // 재생 약속이 안 끝나도(아이패드에서 이 창을 안 만지고 있으면 그럴 수 있다) 1.5초 뒤엔 넘어간다 —
+      // 기다리면 화면이 계속 잠겨 아이패드의 '이전 인터랙션으로'·'영상 건너뛰기'가 먹지 않았다
+      if (!hold) await Promise.race([playFilm(), new Promise((r) => setTimeout(r, 1500))]);
     } else {
       gsap.set(filmEl, { autoAlpha: 0 });
       filmEl.pause();
@@ -2465,8 +2467,8 @@ if (monitorCh) {
     if (m.t === "select") padSelect();
     if (m.t === "next") padNext();
     if (m.t === "back" && current === "orb" && !locked) back();   // 아이패드 '다시 고르기'
-    if (m.t === "filmPrev") filmPrev();   // 아이패드 '이전 인터랙션으로' (영상 중)
-    if (m.t === "filmSkip") filmSkip();   // 아이패드 '영상 건너뛰기' (영상 중)
+    if (m.t === "filmPrev") whenUnlocked(filmPrev);   // 화면이 넘어가는 중에 눌렀으면 끝나자마자   // 아이패드 '이전 인터랙션으로' (영상 중)
+    if (m.t === "filmSkip") whenUnlocked(filmSkip);   // 아이패드 '영상 건너뛰기' (영상 중)
   };
 }
 
