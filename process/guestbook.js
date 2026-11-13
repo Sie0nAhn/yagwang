@@ -95,6 +95,8 @@
     for (const b of list) {
       if (b === drag?.b) continue;
       b.vy += G; b.vx *= .996; b.vy *= .996;
+      // 마우스가 지나가는 방향으로만 살짝 쓸려 가요 (멈춘 커서는 밀지 않아 잡을 수 있어요)
+      if (pointer && pointer.sp > 2.5) { const dx = b.x - pointer.x, dy = b.y - pointer.y; if (dx * dx + dy * dy < (b.r + 14) ** 2) { b.vx += pointer.vx * .12; b.vy += pointer.vy * .12 - .4; } }
       b.x += b.vx * k; b.y += b.vy * k;
       if (b.y > H - b.r) { b.y = H - b.r; b.vy *= -.28; b.vx *= .965; if (Math.abs(b.vy) < .35) b.vy = 0; }
       if (b.x < b.r) { b.x = b.r; b.vx *= -.45; } if (b.x > W - b.r) { b.x = W - b.r; b.vx *= -.45; }
@@ -114,6 +116,7 @@
   function frame(t) {
     const dt = Math.min(2, (t - (frame.t || t)) / 16.67 || 1); frame.t = t;
     step(dt / 2); step(dt / 2);
+    if (pointer) { pointer.sp *= .6; pointer.vx *= .6; pointer.vy *= .6; }
     let e = 0; bodies.forEach(b => { place(b); e += Math.abs(b.vx) + Math.abs(b.vy); });
     still = e / Math.max(1, bodies.size) < .03 && !drag && !pointer ? still + 1 : 0;
     if (still > 90) { awake = false; raf = 0; frame.t = 0; return; }
@@ -132,7 +135,7 @@
   });
   jar.addEventListener('pointermove', ev => {
     const p = local(ev);
-    if (!drag) return;
+    if (!drag) { if (ev.pointerType === 'mouse') { const q = pointer || p; pointer = { x: p.x, y: p.y, vx: p.x - q.x, vy: p.y - q.y, sp: Math.hypot(p.x - q.x, p.y - q.y) }; if (pointer.sp > 2.5) wake(); } return; }
     const b = drag.b; drag.moved += Math.abs(p.x - drag.px) + Math.abs(p.y - drag.py);
     b.vx = (p.x - drag.px) * .9; b.vy = (p.y - drag.py) * .9; drag.px = p.x; drag.py = p.y;
     b.x = Math.min(Math.max(p.x + drag.dx, b.r), W - b.r); b.y = Math.min(p.y + drag.dy, H - b.r);
