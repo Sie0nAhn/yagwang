@@ -440,7 +440,8 @@ function draw() {
     if (L && L.err) {
       $("emptyT").textContent = L.err === "NotAllowedError" ? "카메라가 막혀 있어요" : "카메라를 열지 못했어요";
       $("emptyS").textContent = "이 화면을 한 번 누르면 다시 물어요. 허용 창이 뜨면 '허용'을 눌러 주세요.";
-    } else if (L && L.asking) {
+    } else if (L && L.asking && performance.now() - (L.askAt || 0) > 1500) {
+      // 1.5초 넘게 기다리는 중일 때만 — 사파리 설정이 '허용'이면 허용 창이 없어 바로 켜지므로 이 말이 뜨지 않는다
       $("emptyT").textContent = "카메라 허용 창에서 '허용'을 눌러 주세요";
       $("emptyS").textContent = "이 아이패드 화면에 뜬 창이에요.";
     } else {
@@ -576,6 +577,7 @@ video.muted = true; video.playsInline = true; video.autoplay = true;
 async function startCam() {
   if (L.asking || L.ok) return;
   L.asking = true;
+  L.askAt = performance.now();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 640, height: 480, facingMode: "user", frameRate: { ideal: 30 } }, audio: false,
