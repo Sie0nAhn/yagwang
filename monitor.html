@@ -5,23 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>야광 · 손 인식과 조작</title>
 <!--
-  아이패드 쪽에 띄워 두는 화면 — 관람객용. 배치는 피그마 '영상캡스톤' iPad Pro 12.9" 화면(1123:9)을 따른다.
-    위: 둥근 카메라 칸 (손 인식이 보는 비율 그대로, 남는 곳은 검정) — 왼쪽 위에 연결·손 상태, 오른쪽 아래에 손 인식 안내
-    아래 왼쪽: 글 안내 · 아래 가운데: 십자 버튼 · 아래 오른쪽: 큰 버튼
-  버튼은 참고 이미지(말랑한 젤리 버튼 + 꽉 찬 알약)를 그대로, 색만 작품에 맞게.
+  아이패드 쪽에 띄워 두는 화면 — 관람객용.
+  배치·색은 피그마 '영상캡스톤' 1126:5 (iPad Pro 12.9" 1366×1024) 그대로. 화면 크기가 달라도 이 판을 통째로 줄이거나 키워 맞춘다.
+    왼쪽 위: 장면 이름(Interaction1 …)과 한 줄 설명
+    왼쪽: 카메라 칸 (회색 #2c2c2c, 흰 테두리) — 안쪽 왼쪽 위 연결·손 상태, 오른쪽 아래 손 인식 안내
+    오른쪽: '조작하기' · 십자 버튼 · 큰 버튼 둘 (위 고르기/구슬 열기, 아래 다음 영상으로)
+  버튼 색: 쓸 수 있으면 보라 #a54cef, 쓸 수 없으면 회색 #1d1d1d.
   작품(index.html)은 모니터 쪽 사파리 창에, 이 화면은 아이패드 쪽 사파리 창에 연다.
   둘은 BroadcastChannel 로 이어진다 — 같은 사파리의 일반 창끼리만 된다.
 
   운영자용: 카메라 칸 왼쪽 위 '작품과 연결됨'을 2초 누르고 있으면 카메라 위아래가 뒤집힌다.
 -->
+<link rel="stylesheet" href="vendor/fonts/roboto-mono.css" />
+<!-- 영문 — 작품 사이트와 같은 TT Autonomous Mono (Adobe Fonts). 못 받으면 Roboto Mono 로 -->
+<link rel="stylesheet" href="https://use.typekit.net/pgv0czs.css" media="print" onload="this.media='all'" />
 <style>
   @font-face { font-family: "Orbit"; src: url("assets/fonts/Orbit-Regular.woff2") format("woff2"); }
   :root {
-    --bg: #000;              /* 검정 — 작품 화면(모니터)과 같은 바탕 */
-    --pill: #9a5aff;         /* 참고 이미지의 파란 FILTER 자리 — 작품의 보라 (style.css --boot · 타이틀 도장 夜光) */
+    --on: #a54cef;           /* 쓸 수 있는 버튼 — 보라 */
+    --on-down: #b96bff;      /* 누르는 중 */
+    --off: #1d1d1d;          /* 쓸 수 없는 버튼 — 회색 */
+    --s: 1;                  /* 판 배율 (JS) */
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: #fff; overflow: hidden;
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden;
     font-family: "Orbit", "Pretendard", -apple-system, system-ui, sans-serif; word-break: keep-all;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent; touch-action: none; }
@@ -29,190 +36,133 @@
   button { font: inherit; color: inherit; border: 0; padding: 0; background: none;
     touch-action: none; cursor: pointer; -webkit-appearance: none; appearance: none; }
 
-  /* ── 전체 배치 — 카메라 칸과 아래 줄이 같은 폭으로, 위아래·양옆 여백이 같게 ──
-     카메라 칸은 카메라 비율(--arn, 보통 4:3) 그대로라 검은 띠가 생기지 않는다. 아래 줄은 카메라 칸 양끝에 맞춘다. */
-  :root {
-    --m: 44px;          /* 바깥 여백 (위·아래·양옆) */
-    --gap: 30px;        /* 카메라 칸과 아래 줄 사이 */
-    --pad-h: 216px;     /* 아래 줄 높이 = 십자 버튼 높이 */
-    --arn: 1.3333;      /* 카메라 가로÷세로 — 그림이 오면 맞춘다 */
-    --w: min(calc((100dvh - 2 * var(--m) - var(--gap) - var(--pad-h)) * var(--arn)), calc(100vw - 2 * var(--m)));
-  }
-  .col { position: fixed; inset: 0; padding: var(--m);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap); }
+  /* 1366×1024 판 — 화면에 맞춰 통째로 줄이거나 키운다 */
+  .stage { position: absolute; left: 50%; top: 50%; width: 1366px; height: 1024px;
+    transform: translate(-50%, -50%) scale(var(--s)); transform-origin: 50% 50%; }
+  .abs { position: absolute; }
 
-  /* ── 카메라 칸 ── */
-  .cam {
-    position: relative; flex: none;
-    width: var(--w); aspect-ratio: var(--arn);
-    border-radius: 36px; overflow: hidden;
-    background: #0d0a14;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);   /* 검정 바탕에서 칸이 보이게 */
-  }
-  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* ── 왼쪽 위: 장면 이름 · 설명 ── */
+  .scene { left: 102px; top: 70px; margin: 0; font-family: "tt-autonomous-mono", "Roboto Mono", ui-monospace, monospace;
+    font-weight: 400; font-size: 60px; line-height: 1.4; white-space: nowrap; }
+  .scene-sub { left: 101px; top: 172px; margin: 0; font-size: 20px; line-height: 1.4; white-space: nowrap; }
+  .scene-sub .time { margin-left: 14px; color: rgba(255,255,255,.6); }
 
-  /* 카메라 칸 안쪽 여백 — 위·아래·양옆 모두 같게 (상태 알약은 왼쪽 위, 손 인식 안내는 오른쪽 아래) */
-  .cam { --in: 24px; }
-  .chips { position: absolute; left: var(--in); top: var(--in); right: var(--in); display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px;
-    font-size: 15px; font-weight: 700; color: #fff; background: rgba(255, 255, 255, .16);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-  .chip i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.4); }
+  /* ── 카메라 칸 (x101 y319, 810×610) ── */
+  .cam { left: 101px; top: 319px; width: 810px; height: 610px; padding: 20px;
+    background: #2c2c2c; border: 4px solid rgba(255,255,255,.4); border-radius: 30px; overflow: hidden; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 26px; }
+
+  /* 유리 — 피그마 Windows/Glass (#808080 30% · 흐림 15) */
+  .glass { background: rgba(128,128,128,.3); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+
+  .chips { position: absolute; left: 20px; top: 20px; right: 20px; display: flex; gap: 4px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 50px;
+    font-size: 14px; line-height: 1.4; white-space: nowrap; }
+  .chip i { width: 16px; height: 16px; border-radius: 50%; background: #d9d9d9; }
   .chip.on i { background: #3ee07a; }
-  .chip.hand.on { background: rgba(154, 90, 255, .7); }
-  .chip.hand.on i { background: #d4b8ff; }
+  .chip.hand.on i { background: #c38bff; box-shadow: 0 0 8px #a54cef; }
   .chip.pinch { display: none; }
-  .chip.pinch.on { display: inline-flex; background: rgba(255, 43, 214, .6); }
-  .chip.pinch.on i { background: #fff; }
-  .chip.charging { background: rgba(255, 63, 200, .7); }
+  .chip.pinch.on { display: inline-flex; }
+  .chip.pinch.on i { background: #ff2bd6; box-shadow: 0 0 8px #ff2bd6; }
+  .chip.charging { background: rgba(165,76,239,.6); }
 
   .empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px;
     padding: 24px; font-size: 20px; line-height: 1.5; }
   .empty small { font-size: 15px; color: rgba(255,255,255,.65); }
 
-  /* 손 인식 안내 — 카메라 칸 오른쪽 아래 (x626 y556, 488×105) */
-  .coach {
-    position: absolute; right: var(--in); bottom: var(--in); width: auto; max-width: calc(100% - 2 * var(--in));
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 20px 12px 12px; border-radius: 18px;
-    background: rgba(20, 0, 50, .72);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    font-size: 17px; font-weight: 800; line-height: 1.35;
-    animation: coachIn .35s cubic-bezier(.2,.9,.3,1);
-  }
-  .coach small { display: block; margin-top: 1px; font-size: 13px; font-weight: 500; color: rgba(240, 228, 255, .8); }
-  .coach__ic { flex: none; width: 34px; height: 34px; border-radius: 32%; display: grid; place-items: center;
-    background: #ffd6f7; color: #ff4fc3; font-size: 18px; font-weight: 800;
-    box-shadow: inset 0 0 8px 2px rgba(255,255,255,.8); }
-  .coach.ok .coach__ic { background: #d9f7b0; color: #4da82a; }
+  /* 손 인식 안내 — 카메라 칸 오른쪽 아래 */
+  .coach { position: absolute; right: 20px; bottom: 20px;
+    display: flex; align-items: center; gap: 8px; padding: 12px 20px;
+    border: 1.4px solid rgba(255,255,255,.4); border-radius: 20px;
+    animation: coachIn .35s cubic-bezier(.2,.9,.3,1); }
+  .coach__ic { flex: none; width: 42px; height: 42px; border-radius: 8px; background: #d9d9d9;
+    display: grid; place-items: center; color: var(--on); font-size: 24px; font-weight: 800; }
+  .coach.ok .coach__ic { color: #3aa85a; }
+  .coach__t { display: flex; flex-direction: column; gap: 4px; font-size: 18px; line-height: 1.4; white-space: nowrap; }
   @keyframes coachIn { from { opacity: 0; transform: translateY(10px); } }
 
-  /* ── 아래 줄 — 왼쪽 글 · 가운데 십자 · 오른쪽 큰 버튼 ── */
-  .pad {
-    position: relative; flex: none;
-    width: var(--w); height: var(--pad-h);
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 36px;
-    align-items: start;    /* 글은 위로 */
-  }
-  .pad .dpad { align-self: end; }   /* 버튼은 아래로 */
+  /* ── 오른쪽: 조작하기 ── */
+  .ctl-h { left: 1002px; top: 322px; margin: 0; font-size: 24px; line-height: 1.4; }
+  .ctl-p { left: 1001px; top: 364px; margin: 0; font-size: 16px; line-height: 1.4; white-space: nowrap; }
 
-  /* 글 — 짧게 세 줄: 제목 · 할 일 · 버튼 안내 */
-  .say { padding-left: 6px; align-self: start; }
-  .say h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; }
-  .say p { white-space: pre-line; margin: 10px 0 0; font-size: 17px; line-height: 1.45; color: rgba(255,255,255,.92); }
-  .say .tip { margin-top: 6px; font-size: 14px; font-weight: 700; color: rgba(228, 210, 255, .85); }
-
-  /* 영상 진행 막대 */
-  .prog { margin-top: 18px; max-width: 520px; }
-  .prog__bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.14); overflow: hidden; }
-  .prog__bar i { display: block; height: 100%; width: 0; border-radius: inherit;
-    background: linear-gradient(90deg, #9a5aff, #ff2bd6); transition: width .25s linear; }
-  .say .prog__time { margin: 10px 0 0; font-size: 20px;
-    color: rgba(255,255,255,.7); letter-spacing: .02em; }
-  .prog__time b { color: #fff; font-weight: 700; }
-
-  /* 오른쪽 — 큰 버튼 (정원에서 기억을 읽으면 위에 '다음 영상으로'가 붙는다) */
-  .acts { display: flex; flex-direction: column; gap: 10px; }
-
-  /* 젤리 — 참고 이미지 그대로: 연한 몸통 · 가장자리 안쪽 하얀 빛 · 아래쪽만 살짝 진하게.
-     아이콘은 같은 색 진하게, 둘레로 연한 같은 색 빛 */
-  .jelly {
-    display: grid; place-items: center;
-    border-radius: 30%;
-    background: var(--body);
-    box-shadow:
-      inset 0 0 10px 3px rgba(255, 255, 255, .8),
-      inset 0 -9px 14px -6px var(--deep);
-    color: var(--ink);
-    transition: transform .1s ease, box-shadow .15s ease;
-  }
-  .jelly svg { width: 32px; height: 32px; fill: currentColor;
-    filter: drop-shadow(0 0 3px var(--soft)) drop-shadow(0 0 8px var(--soft)); }
-  .jelly svg path { stroke: currentColor; stroke-width: 3.4; stroke-linejoin: round; stroke-linecap: round; }
-  .jelly.down { transform: scale(.92); box-shadow: inset 0 0 14px 5px rgba(255,255,255,.92), inset 0 -6px 12px -6px var(--deep); }
-  .c-pink   { --body: #ffd6f7; --deep: rgba(255, 120, 210, .5); --ink: #ff4fc3; --soft: #ffadea; }
-  .c-lav    { --body: #e8d8ff; --deep: rgba(168, 118, 255, .5); --ink: #8b3dff; --soft: #c9a8ff; }
-  .c-peri   { --body: #dcdfff; --deep: rgba(120, 128, 255, .5); --ink: #5a5cff; --soft: #aeb2ff; }
-  .c-orchid { --body: #f4d9ff; --deep: rgba(200, 110, 255, .5); --ink: #b63dff; --soft: #e2a8ff; }
-  .c-sun    { --body: #ffe58c; --deep: rgba(255, 196, 70, .6); --ink: #f08a00; --soft: #fff0b8; }
-  /* 쓸 수 없을 때 — 참고 이미지 아래 줄처럼 색이 빠진 연회색 */
-  .jelly.off { pointer-events: none;
-    --body: #d9e1ea; --ink: #b5c9de; --soft: transparent;
-    box-shadow: inset 0 4px 8px -2px rgba(120, 140, 170, .3); }
-
-  /* 십자 — 가운데는 비워 둔다 */
-  /* 버튼 판 — 십자 3칸 + 띄움 + 오른쪽 열. 모든 버튼이 같은 66px 줄에 맞춰 선다 */
-  .dpad { display: grid; gap: 9px; grid-template-columns: repeat(3, 66px) 10px 200px; grid-template-rows: repeat(3, 66px); }
-  .dpad .jelly { width: 66px; height: 66px; }
-  .dpad svg { width: 28px; height: 28px; }
-  .dpad .k-up    { grid-area: 1 / 2; }
-  .dpad .k-left  { grid-area: 2 / 1; }
-  .dpad .k-right { grid-area: 2 / 3; }
-  .dpad .k-down  { grid-area: 3 / 2; }
-
-  /* 큰 버튼 — 참고 이미지의 FILTER: 꽉 찬 색, 그림자 없이. 가운데 줄 (← → 와 같은 높이) */
-  /* 고르기·구슬 열기는 언제나 ◀ ▶ 와 같은 가운데 줄. '다음 영상으로'는 그 아래 (▼ 옆) */
-  .act { grid-area: 2 / 5; width: 200px; height: 66px; border-radius: 999px; background: var(--pill); color: #fff;
-    font-size: 18px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap;
+  /* 버튼 공통 — 보라 + 안쪽 흰 빛, 쓸 수 없으면 회색 */
+  .btn { display: flex; align-items: center; justify-content: center;
+    background: var(--on); color: #fff;
+    box-shadow: inset 0 0 30px rgba(255,255,255,.4);
+    filter: drop-shadow(0 0 2px rgba(255,255,255,.25));
     transition: transform .1s ease, background .15s ease; }
-  .act.down { transform: scale(.96); background: #8443f2; }
+  .btn.down { background: var(--on-down); transform: scale(.95); }
+  .btn.off { background: var(--off); color: rgba(255,255,255,.28); box-shadow: inset 0 0 30px rgba(76,76,76,.4); pointer-events: none; }
 
-  /* 다음 영상으로 — 노란 젤리 알약 (정원에서 기억을 읽은 뒤) */
-  /* 다음 영상으로 — 고르기와 같은 크기, 바로 아랫줄 */
-  .dpad .pill, .pill { grid-area: 3 / 5; display: block; width: 200px; height: 66px; border-radius: 999px;
-    font-size: 18px; font-weight: 800; }
+  /* 십자 (위 1101,483 · 왼 1018,554 · 오른 1185,554 · 아래 1101,627 · 66px) */
+  .key { width: 66px; height: 66px; border-radius: 10px; }
+  .k-up    { left: 1101px; top: 483px; }
+  .k-left  { left: 1018px; top: 554px; }
+  .k-right { left: 1185px; top: 554px; }
+  .k-down  { left: 1101px; top: 627px; }
+  .key svg { width: 48px; height: 48px; overflow: visible; }
+  .k-up svg { transform: rotate(180deg); } .k-left svg { transform: rotate(90deg); } .k-right svg { transform: rotate(-90deg); }
+  /* 아이콘 — 피그마 picon:south (켜짐: 보라 두 겹 · 꺼짐: 검정 두 겹) */
+  .key .i1 { fill: #6d00c6; stroke: #9e37f3; stroke-width: 10; }
+  .key .i2 { fill: #7500d4; stroke: #7500d4; stroke-width: 3; }
+  .key.off .i1 { fill: #171717; stroke: #333; }
+  .key.off .i2 { fill: #1c1c1c; stroke: #1c1c1c; }
+
+  /* 큰 버튼 (x1004 · 258×63 · y784 / y863) */
+  .big { left: 1004px; width: 258px; height: 63px; border-radius: 20px; font-size: 24px; line-height: 1.4; white-space: nowrap; }
+  #bSel { top: 784px; }
+  #bNext { top: 863px; }
 </style>
 </head>
 <body>
+<div class="stage" id="stage">
 
-<main class="col">
-<section class="cam">
-  <canvas id="view"></canvas>
-  <div class="empty" id="empty">
-    <b id="emptyT">작품 화면을 기다리는 중이에요</b>
-    <small id="emptyS">같은 사파리의 다른 창에서 작품을 열어 두세요.<br />작품 쪽 카메라가 켜지면 여기 크게 보여요.</small>
-  </div>
-  <div class="chips">
-    <span class="chip" id="link"><i></i><span id="linkText">연결 안 됨</span></span>
-    <span class="chip hand" id="hand"><i></i><span id="handText">손을 카메라에 비춰 주세요</span></span>
-    <span class="chip pinch" id="pinch"><i></i><span>집었어요</span></span>
-  </div>
-  <!-- 손 인식 안내 — 왜 잘 안 되는지 (너무 가까움·멂·어두움·화면 끝) -->
-  <div class="coach" id="coach" hidden><span class="coach__ic" id="coachIc">!</span><span id="coachText"></span></div>
-</section>
+  <h1 class="abs scene" id="scene">Yagwang</h1>
+  <p class="abs scene-sub" id="sub">손으로, 또는 버튼으로 조작해요</p>
 
-<section class="pad" id="pad">
-  <div class="say">
-    <h1 id="title">조작하기</h1>
-    <p id="hint">손으로, 또는 버튼으로</p>
-    <p class="tip" id="tip">손이 잘 안 되면 버튼을 눌러 보세요</p>
-    <!-- 영상이 나오는 동안 — 지금 보는 영상 이름 · 얼마나 봤는지 · 전체 길이 -->
-    <div class="prog" id="prog" hidden>
-      <p class="prog__time"><b id="progNow">0초</b> / <span id="progDur">0초</span></p>
+  <section class="abs cam">
+    <canvas id="view"></canvas>
+    <div class="empty" id="empty">
+      <b id="emptyT">작품 화면을 기다리는 중이에요</b>
+      <small id="emptyS">같은 사파리의 다른 창에서 작품을 열어 두세요.<br />작품 쪽 카메라가 켜지면 여기 크게 보여요.</small>
     </div>
+    <div class="chips">
+      <span class="chip glass" id="link"><i></i><span id="linkText">연결 안 됨</span></span>
+      <span class="chip glass hand" id="hand"><i></i><span id="handText">손을 카메라에 비춰 주세요</span></span>
+      <span class="chip glass pinch" id="pinch"><i></i><span>집었어요</span></span>
+    </div>
+    <!-- 손 인식 안내 — 왜 잘 안 되는지 (너무 가까움·멂·어두움·화면 끝·카메라 멈춤) -->
+    <div class="coach glass" id="coach" hidden><span class="coach__ic" id="coachIc">!</span><span class="coach__t" id="coachText"></span></div>
+  </section>
+
+  <div id="ctl">
+    <p class="abs ctl-h">조작하기</p>
+    <p class="abs ctl-p">손이 잘 안되면 버튼을 눌러보세요</p>
+
+    <button class="abs btn key k-up" data-key="up" type="button" aria-label="앞으로"><svg viewBox="0 0 48 48"><path class="i1" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/><path class="i2" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/></svg></button>
+    <button class="abs btn key k-left" data-key="left" type="button" aria-label="왼쪽"><svg viewBox="0 0 48 48"><path class="i1" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/><path class="i2" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/></svg></button>
+    <button class="abs btn key k-right" data-key="right" type="button" aria-label="오른쪽"><svg viewBox="0 0 48 48"><path class="i1" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/><path class="i2" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/></svg></button>
+    <button class="abs btn key k-down" data-key="down" type="button" aria-label="뒤로"><svg viewBox="0 0 48 48"><path class="i1" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/><path class="i2" d="M13.7868 20C13.0956 20 12.7297 20.8173 13.19 21.3328L23.9032 33.3316C24.2213 33.6879 24.7787 33.6879 25.0968 33.3316L35.81 21.3328"/></svg></button>
+
+    <button class="abs btn big" id="bSel" type="button"><span id="selText">선택</span></button>
+    <button class="abs btn big off" id="bNext" type="button">다음 영상으로</button>
   </div>
 
-  <div class="dpad" id="dpad">
-    <button class="jelly c-lav k-up" data-key="up" type="button" aria-label="앞으로">
-      <svg viewBox="0 0 24 24"><path d="M12 6l7 9H5z"/></svg></button>
-    <button class="jelly c-pink k-left" data-key="left" type="button" aria-label="왼쪽">
-      <svg viewBox="0 0 24 24"><path d="M6 12l9-7v14z"/></svg></button>
-    <button class="jelly c-orchid k-right" data-key="right" type="button" aria-label="오른쪽">
-      <svg viewBox="0 0 24 24"><path d="M18 12l-9 7V5z"/></svg></button>
-    <button class="jelly c-peri k-down" data-key="down" type="button" aria-label="뒤로">
-      <svg viewBox="0 0 24 24"><path d="M12 18l-7-9h14z"/></svg></button>
-    <!-- 오른쪽 열 — 아래로 맞춘다: 맨 아랫줄 '고르기', 그 위 '다음 영상으로' -->
-    <button class="pill jelly c-sun" id="bNext" type="button" hidden>다음 영상으로</button>
-    <button class="act" id="bSel" type="button"><span id="selText">선택</span></button>
-  </div>
-</section>
-</main>
+</div>
 
 <script>
 const ch = new BroadcastChannel("yk-monitor");
 const cv = document.getElementById("view");
 const g = cv.getContext("2d");
 const $ = (id) => document.getElementById(id);
+
+/* 1366×1024 판을 화면에 맞춘다 */
+let stageScale = 1;
+function fit() {
+  stageScale = Math.min(innerWidth / 1366, innerHeight / 1024);
+  document.documentElement.style.setProperty("--s", stageScale);
+}
+fit(); addEventListener("resize", fit);
 
 let frame = null, frameW = 4, frameH = 3;     // 마지막 카메라 그림
 let state = null, ui = null, lastMsg = 0, uiAt = 0;
@@ -225,9 +175,7 @@ ch.onmessage = async (e) => {
     try {
       const bmp = await createImageBitmap(m.blob);
       if (frame && frame.close) frame.close();
-      frame = bmp;
-      if (m.w !== frameW || m.h !== frameH) document.documentElement.style.setProperty("--arn", (m.w / m.h).toFixed(4));
-      frameW = m.w; frameH = m.h;
+      frame = bmp; frameW = m.w; frameH = m.h;
     } catch {}
   } else if (m.t === "hand") state = m;
   else if (m.t === "ui") { ui = m; uiAt = performance.now(); layout(); showFilm(m.film); }
@@ -278,15 +226,15 @@ tap($("bNext"), () => ch.postMessage({ t: "next" }));
   el.addEventListener("pointerup", cancel); el.addEventListener("pointercancel", cancel); el.addEventListener("pointerleave", cancel);
 }
 
-/* ── 장면마다 글과 버튼 ──
+/* ── 장면마다 이름 · 설명 · 켜지는 버튼 ──
    작품에서 장면을 못 받고 있으면(예전 작품 화면 등) 'any' — 방향 네 개 + 선택을 다 켠다. */
-const COPY = {
-  any:    ["조작하기", "손으로, 또는 버튼으로"],
-  boot:   ["시작하기", "손을 비추거나 ‘시작하기’"],
-  grid:   ["파편 고르기", "◀ ▶ 돌리기 · 마음에 들면 ‘고르기’"],
-  orb:    ["구슬이 되었어요", "‘확인하러 가기’ · ◀ 다시 고르기"],
-  film:   ["영상 보는 중", ""],
-  garden: ["구슬빛 정원", "◀ ▶ 둘러보기 · ▲ ▼ 걷기\n고리가 뜬 구슬이 열려요"],
+const SCENE = {
+  any:    ["Yagwang",      "손으로, 또는 버튼으로 조작해요"],
+  boot:   ["Yagwang",      "손을 카메라에 비추거나 ‘시작하기’를 눌러요"],
+  grid:   ["Interaction1", "◀ ▶ 로 고리를 돌리고, 마음에 드는 파편을 골라요"],
+  orb:    ["Interaction1", "‘확인하러 가기’를 누르거나 ◀ 로 다시 골라요"],
+  film:   ["Film",         ""],
+  garden: ["Interaction2", "◀ ▶ 둘러보기 · ▲ ▼ 걷기 · 고리가 뜬 구슬이 열려요"],
 };
 const ON = {
   any: ["left", "up", "down", "right"],
@@ -302,24 +250,20 @@ function layout() {
   const key = sc + "|" + (ui && ui.canNext) + "|" + (ui && ui.reading) + "|" + (ui && ui.same);
   if (key === shown) return;
   shown = key;
-  const [title, hint] = COPY[sc] || COPY.any;
-  $("title").textContent = title;
-  $("hint").textContent = hint;
-  $("hint").hidden = !hint;
+  const [name, sub] = SCENE[sc] || SCENE.any;
+  $("scene").textContent = name;
+  $("sub").textContent = sub;
 
-  // 쓸 수 없는 방향은 연회색 (참고 이미지의 비활성 줄)
+  // 쓸 수 없는 버튼은 회색
   const on = ON[sc] || ON.any;
   for (const k of ["left", "up", "down", "right"]) document.querySelector(".k-" + k).classList.toggle("off", !on.includes(k));
-
-  $("tip").hidden = sc === "film" || sc === "boot";
-  $("bNext").hidden = !(sc === "garden" && ui && ui.canNext);
-  $("dpad").classList.toggle("two", !$("bNext").hidden);
-  $("bSel").hidden = sc === "film";
-  $("dpad").hidden = sc === "film";        // 영상이 나오는 동안엔 버튼을 다 감춘다 (건너뛸 수 없으니 누를 것이 없다)
+  $("bNext").classList.toggle("off", !(sc === "garden" && ui && ui.canNext));
+  $("bSel").classList.toggle("off", sc === "film");
+  $("ctl").hidden = sc === "film";          // 영상이 나오는 동안엔 버튼을 다 감춘다 (건너뛸 수 없으니 누를 것이 없다)
   $("selText").textContent =
     sc === "boot" ? "시작하기" :
     sc === "orb" ? "확인하러 가기" :
-    sc === "garden" ? (ui && ui.reading && ui.same ? "구슬 설명 닫기" : "이 구슬 열기") :
+    sc === "garden" ? (ui && ui.reading && ui.same ? "구슬 설명 닫기" : "구슬 열기") :
     sc === "grid" ? "고르기" : "선택";
 
   // 장면이 바뀌면 누르고 있던 방향은 놓는다
@@ -328,17 +272,20 @@ function layout() {
 setInterval(layout, 400);
 layout();
 
-/* ── 영상 진행 — 이름은 제목 자리에, 막대와 시간은 그 아래 ── */
+/* ── 영상 — 이름 아래에 'Film 1' 과 영상 제목 · 몇 초 중 몇 초 ── */
 // '12초' · 1분이 넘으면 '1분 05초'
 const mmss = (sec) => { sec = Math.max(0, Math.floor(sec || 0)); const m = Math.floor(sec / 60), r = sec % 60;
   return m ? m + "분 " + String(r).padStart(2, "0") + "초" : r + "초"; };
 function showFilm(f) {
-  const on = !!(f && ui && ui.scene === "film");
-  $("prog").hidden = !on;
-  if (!on) return;
-  $("title").textContent = f.title;
-  $("progNow").textContent = mmss(f.t);
-  $("progDur").textContent = f.dur ? mmss(f.dur) : "—";
+  if (!(f && ui && ui.scene === "film")) return;
+  const n = (f.title.match(/\d+/) || [""])[0];
+  $("scene").textContent = "Film" + (n ? " " + n : "");
+  $("sub").innerHTML = "";
+  $("sub").append(f.title);
+  const t = document.createElement("span");
+  t.className = "time";
+  t.textContent = mmss(f.t) + " / " + (f.dur ? mmss(f.dur) : "—");
+  $("sub").append(t);
 }
 
 /* ── 카메라 + 손 그리기 ── */
@@ -347,45 +294,43 @@ const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,1
 
 function draw() {
   requestAnimationFrame(draw);
-  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const dpr = Math.min(devicePixelRatio || 1, 2) * stageScale;   // 판을 키운 만큼 촘촘하게
   const W = Math.round(cv.clientWidth * dpr), H = Math.round(cv.clientHeight * dpr);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   g.clearRect(0, 0, W, H);
 
   const live = performance.now() - lastMsg < 2000;
+  const fresh = ui && performance.now() - uiAt < 1500;
   $("link").classList.toggle("on", live);
   $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
   $("empty").hidden = live && !!frame;
-  if (live && !frame) { $("emptyT").textContent = "카메라를 켜는 중이에요"; $("emptyS").textContent = "조금만 기다려 주세요. 아래 버튼으로도 조작할 수 있어요."; }
-  if (ui && performance.now() - uiAt < 1500 && (ui.camOff || ui.camAsk || ui.camDenied)) {
+  if (live && !frame) { $("emptyT").textContent = "카메라를 켜는 중이에요"; $("emptyS").textContent = "조금만 기다려 주세요. 오른쪽 버튼으로도 조작할 수 있어요."; }
+  if (fresh && (ui.camOff || ui.camAsk || ui.camDenied)) {
     $("empty").hidden = false;
     $("emptyT").textContent = ui.camAsk ? "모니터에 카메라 허용 창이 떠 있어요" : ui.camDenied ? "카메라가 막혀 있어요" : "카메라가 멈췄어요";
-    $("emptyS").textContent = (ui.camAsk ? "모니터 쪽 창에서 '허용'을 눌러 주세요." : "모니터 쪽 작품 화면을 한 번 눌러 주세요.") + " 아래 버튼으로는 계속 조작할 수 있어요.";
+    $("emptyS").textContent = (ui.camAsk ? "모니터 쪽 창에서 '허용'을 눌러 주세요." : "모니터 쪽 작품 화면을 한 번 눌러 주세요.") + " 오른쪽 버튼으로는 계속 조작할 수 있어요.";
   }
   if (!frame) return;
 
-  // 카메라 그림을 비율 그대로 전부 보이게 (손 인식이 보는 범위 그대로) — 남는 양옆은 검정. 거울처럼 좌우를 뒤집는다
-  const s = Math.min(W / frameW, H / frameH);
+  // 카메라 그림을 칸에 꽉 차게 (칸이 카메라와 같은 4:3 이라 거의 잘리지 않는다) — 거울처럼 좌우를 뒤집는다
+  const s = Math.max(W / frameW, H / frameH);
   const dw = frameW * s, dh = frameH * s, dx = (W - dw) / 2, dy = (H - dh) / 2;
   g.save();
-  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";   // 키울 때 덜 뭉개지게
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
   g.translate(W, 0); g.scale(-1, 1);
   g.drawImage(frame, W - dx - dw, dy, dw, dh);
   g.restore();
-  if (!live) { g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(dx, dy, dw, dh); }
+  if (!live) { g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, 0, W, H); }
 
   const st = state || {};
   const hand = live ? st.hand : null;
-  const filming = ui && ui.scene === "film" && performance.now() - uiAt < 1500;
+  const filming = fresh && ui.scene === "film";
   // 카메라가 멈췄으면 그 안내가 먼저 — 모니터 쪽 창을 눌러야 사파리가 카메라를 다시 열어 준다
-  const fresh = ui && performance.now() - uiAt < 1500;
   const camMsg = !fresh ? null
     : ui.camAsk ? { kind: "black", text: "모니터에 카메라 허용 창이 떠 있어요", sub: "모니터 쪽 창에서 '허용'을 눌러 주세요" }
     : ui.camDenied ? { kind: "black", text: "카메라가 막혀 있어요", sub: "모니터 쪽 작품 화면을 한 번 누르면 다시 물어요" }
     : ui.camOff ? { kind: "black", text: "카메라가 멈췄어요", sub: "모니터 쪽 작품 화면을 한 번 눌러 주세요" } : null;
-  const camOff = !!camMsg;
-  showCoach(camMsg ? camMsg
-    : live && !filming ? st.coach : null);   // 영상 중엔 손 안내도 띄우지 않는다
+  showCoach(camMsg ? camMsg : live && !filming ? st.coach : null);   // 영상 중엔 손 안내도 띄우지 않는다
   $("hand").classList.toggle("on", !!hand);
   $("handText").textContent = hand ? "손을 찾았어요" : "손을 카메라에 비춰 주세요";
   $("pinch").classList.toggle("on", !!(hand && st.pinch));
@@ -417,8 +362,8 @@ function draw() {
   for (const p0 of hp) { const p = P(p0); g.beginPath(); g.arc(p.x, p.y, 3 * k, 0, Math.PI * 2); g.fill(); }
   for (const i of [4, 8, 12, 16, 20]) {
     const p = P(hp[i]), big = i === 8, r = (big ? 10 : 6) * k;
-    g.save(); g.shadowColor = "rgba(154,90,255,.95)"; g.shadowBlur = (big ? 24 : 12) * k;
-    g.fillStyle = big ? "#9a5aff" : "#b48cff"; g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI * 2); g.fill(); g.restore();
+    g.save(); g.shadowColor = "rgba(165,76,239,.95)"; g.shadowBlur = (big ? 24 : 12) * k;
+    g.fillStyle = big ? "#a54cef" : "#c38bff"; g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI * 2); g.fill(); g.restore();
   }
   if (st.gauge > 0) {
     const p = P(hp[8]), r = 26 * k;
@@ -441,7 +386,7 @@ function showCoach(c) {
   if (!c) return;
   $("coach").classList.toggle("ok", c.kind === "ok");
   $("coachIc").textContent = c.kind === "ok" ? "✓" : "!";
-  $("coachText").innerHTML = c.text + (c.sub ? "<small>" + c.sub + "</small>" : "");
+  $("coachText").innerHTML = "<span>" + c.text + "</span>" + (c.sub ? "<span>" + c.sub + "</span>" : "");
 }
 </script>
 </body>
