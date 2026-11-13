@@ -83,6 +83,10 @@
   .restcover { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; gap: 10px; text-align: center;
     background: #2c2c2c; font-size: 22px; line-height: 1.5; }
   .restcover small { font-size: 16px; color: rgba(255,255,255,.6); }
+  /* 카메라가 다시 켜지는 동안 도는 고리 */
+  .spin { justify-self: center; width: 46px; height: 46px; margin-bottom: 6px; border-radius: 50%;
+    border: 4px solid rgba(255,255,255,.15); border-top-color: #a54cef; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px;
     padding: 24px; font-size: 20px; line-height: 1.5; }
   .empty small { font-size: 15px; color: rgba(255,255,255,.65); }
@@ -156,8 +160,9 @@
     <canvas id="view"></canvas>
     <!-- 영상이 나오는 동안 — 아이패드가 카메라를 잠깐 쉬게 하므로 꺼졌다 켜지는 모습 대신 이 화면을 둔다 -->
     <div class="restcover" id="restcover" hidden>
-      <b>영상이 나오는 동안 카메라는 잠시 쉬어요</b>
-      <small>영상이 끝나면 다시 켜져요</small>
+      <i class="spin" id="restSpin" hidden></i>
+      <b id="restT">영상이 나오는 동안 카메라는 잠시 쉬어요</b>
+      <small id="restS">영상이 끝나면 다시 켜져요</small>
     </div>
     <div class="empty" id="empty">
       <b id="emptyT">작품 화면을 기다리는 중이에요</b>
@@ -380,7 +385,7 @@ const mmss = (sec) => { sec = Math.max(0, Math.floor(sec || 0)); const m = Math.
   return m ? m + "분 " + String(r).padStart(2, "0") + "초" : r + "초"; };
 function showFilm(f) {
   if (!(f && ui && ui.scene === "film")) return;
-  const n = (f.title.match(/\d+/) || [""])[0];
+  const n = f.n || "";                         // 몇 번째 영상인지 — 제목 속 숫자(2087 등)와 헷갈리지 않게 따로 받는다
   $("scene").textContent = "Film" + (n ? " " + n : "");
   $("sub").innerHTML = "";
   $("sub").append(f.title);
@@ -405,17 +410,32 @@ function draw() {
   const fresh = ui && performance.now() - uiAt < 1500;
   $("link").classList.toggle("on", live);
   $("linkText").textContent = live ? "작품과 연결됨" : "연결 안 됨";
-  // 영상 중엔 덮개
-  $("restcover").hidden = !(fresh && ui.scene === "film");
   // 이 아이패드 창이 카메라를 맡는다 (L) — 못 쓰면 예전처럼 작품 창에서 보내 주는 그림(frame)
   const L = window.__local;
   const lt = L && L.video.srcObject && L.video.srcObject.getVideoTracks()[0];
-  const waking = !!(L && L.ok && lt && lt.muted);       // 영상 소리 때문에 멈춘 카메라가 깨어나는 중
+  const filmOn = fresh && ui.scene === "film";
+  // 영상 소리 때문에 멈춘 카메라가 깨어나는 중이거나, 다시 여는 중 (한 번 켜진 적이 있을 때만)
+  const muted = !!(L && L.ok && lt && lt.muted);
+  const reopening = !!(L && L.everOk && !L.ok && L.err !== "NotAllowedError");
+  const waking = !filmOn && (muted || reopening);
+  if (filmOn) {
+    $("restcover").hidden = false; $("restSpin").hidden = true;
+    $("restT").textContent = "영상이 나오는 동안 카메라는 잠시 쉬어요";
+    $("restS").textContent = "영상이 끝나면 다시 켜져요";
+  } else if (waking) {
+    // 멈춘 카메라는 8초까지 스스로 풀리기를 기다리고, 그래도 안 되면 새로 연다 — 남은 시간을 대략 알려 준다
+    const since = (L.mutedSince || L.afterFilm || performance.now());
+    const left = Math.max(1, Math.ceil((since + 8000 - performance.now()) / 1000));
+    $("restcover").hidden = false; $("restSpin").hidden = false;
+    $("restT").textContent = "카메라를 다시 켜는 중이에요";
+    $("restS").textContent = reopening ? "곧 손 인식이 다시 돼요" : "약 " + left + "초 뒤에 손 인식이 다시 돼요";
+  } else {
+    $("restcover").hidden = true;
+  }
   const localCam = !!(L && L.ok && L.src && L.src.videoWidth);
   const img = localCam ? L.src : frame;                 // 바로 세운 그림
   const iw = localCam ? L.src.videoWidth : frameW, ih = localCam ? L.src.videoHeight : frameH;
-  $("empty").hidden = !!img && (localCam || live) && !waking;
-  if (waking) { $("emptyT").textContent = "카메라를 다시 켜는 중이에요"; $("emptyS").textContent = "잠시만 기다려 주세요. 오른쪽 버튼으로도 조작할 수 있어요."; }
+  $("empty").hidden = (!!img && (localCam || live)) || waking;
   if (!img) {
     if (L && L.err) {
       $("emptyT").textContent = L.err === "NotAllowedError" ? "카메라가 막혀 있어요" : "카메라를 열지 못했어요";
@@ -586,6 +606,7 @@ function restartCam() {
 }
 // 영상이 끝나 인터랙션으로 넘어온 순간 — 기다리지 않고 바로 살핀다. 멈췄거나 꺼졌으면 곧장 다시 켠다
 L.recover = () => {
+  L.afterFilm = performance.now();
   const t = video.srcObject && video.srcObject.getVideoTracks()[0];
   if (!L.everOk || L.asking || L.err === "NotAllowedError") return;
   // 끝난(ended) 카메라만 새로 연다. 멈춤(muted)은 영상 소리가 끝나면 저절로 풀리니 기다린다 — 새로 열면 꺼졌다 켜진다
@@ -602,6 +623,7 @@ setInterval(() => {
   // 멈춤이 영상 밖에서 오래(8초) 이어질 때만 새로 연다 — 영상 직후엔 저절로 풀리기를 먼저 기다린다
   if (L.ok && t && t.muted && !filming) { mutedSince = mutedSince || now; if (now - mutedSince > 8000) { mutedSince = 0; restartCam(); } }
   else mutedSince = 0;
+  L.mutedSince = mutedSince;
   // 꺼졌으면 다시 켠다 — 허용해 둔 뒤라 허용 창은 다시 뜨지 않는다 (거절된 때는 누를 때까지 기다린다)
   if (!L.ok && !L.asking && !filming && L.err !== "NotAllowedError" && L.everOk) startCam();
 }, 2000);
