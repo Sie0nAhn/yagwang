@@ -761,6 +761,88 @@ body { background: var(--bg) !important; }
   .card__change, .rail > .card .card__change { padding: 12px 14px 0; }
   .rail > .card .card__body { padding: 14px 16px 16px; }
 }
+
+/* ── 웹 인터랙션: 체험 구조 그림 · 타임라인 ── */
+.webg-wrap { margin-bottom: 8px; }
+.webg__lane { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; fill: rgba(255,255,255,.35); }
+.webg__link { fill: none; stroke-width: 2.5; stroke-linecap: round; }
+.webg__link--flow { stroke: #ffffff; opacity: .55; stroke-width: 3; }
+.webg__link--in { stroke: #64b5f6; opacity: .7; }
+.webg__link--out { stroke: #b98cff; opacity: .6; stroke-dasharray: 4 6; }
+.webg__pulse--flow { fill: #fff; filter: drop-shadow(0 0 5px #fff); }
+.webg__pulse--in { fill: #d7ecff; filter: drop-shadow(0 0 5px #64b5f6); }
+.webg__pulse--out { fill: #e8dcff; }
+.webg__scene rect { fill: #221d2b; }
+.webg__scene--int rect { fill: #9a5aff; }
+.webg__scene--film rect { fill: #ff5bd9; }
+.webg__t { font-size: 15px; font-weight: 700; fill: #fff; }
+.webg__s { font-size: 11.5px; fill: rgba(255,255,255,.7); }
+.webg__scene--int .webg__t, .webg__scene--film .webg__t { fill: #12081c; }
+.webg__scene--int .webg__s, .webg__scene--film .webg__s { fill: rgba(18,8,28,.75); }
+.webg__port { fill: #0a0910; stroke: rgba(255,255,255,.6); stroke-width: 1.5; }
+.webg__dot { fill: #64b5f6; } .webg__tech--out .webg__dot { fill: #b98cff; }
+.webg__tech .wf__tool { font-family: var(--font-mono); font-size: 11.5px; fill: #9ccfff; }
+.webg__tech--out .wf__tool { fill: #cdb3ff; }
+.webg__tech .wf__desc { font-size: 12px; fill: rgba(255,255,255,.72); }
+@media (prefers-reduced-motion: reduce) { .webg__pulse { display: none; } }
+/* 타임라인: 가로 줄 위 점 */
+.web-tl { list-style: none; margin: 0; padding: 26px 0 8px; display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; position: relative; }
+.web-tl::-webkit-scrollbar { display: none; }
+.web-tl li { position: relative; flex: 0 0 210px; padding: 22px 18px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.web-tl li::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: #2a2140; }
+.web-tl li::after { content: ""; position: absolute; left: 0; top: -6px; width: 14px; height: 14px; border-radius: 50%; background: #ff5bd9; box-shadow: 0 0 0 4px #0a0910; }
+.web-tl li:nth-child(3n+2)::after { background: #9a5aff; } .web-tl li:nth-child(3n)::after { background: #64b5f6; }
+.web-tl li:last-child::after { background: #fff; }
+.web-tl time { font-family: var(--font-mono); font-size: 13px; color: #fff; }
+.web-tl b { font-size: 15px; font-weight: 700; }
+.web-tl span { font-size: 13.5px; line-height: 1.6; color: var(--fg-2); }
+@media (max-width: 960px) { .webg-wrap .wf__svg { min-width: 820px; } .web-tl li { flex-basis: 180px; } }
+
+/* ── 방명록: 파스텔 구슬 병 ── */
+.gb__flow { display: none !important; }
+.gb__jar { position: relative; height: 400px; border-radius: 24px; background: #100e16; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.gb__board.is-all .gb__jar { display: none; }
+#guestbook.is-empty .gb__jar { display: block; }
+.gb__orb { position: absolute; left: 0; top: 0; padding: 0; border: 0; border-radius: 50%; cursor: grab; color: #2b2340; will-change: transform;
+  background: radial-gradient(circle at 32% 26%, #fff 0 9%, color-mix(in srgb, var(--c) 45%, #fff) 26%, var(--c) 62%, color-mix(in srgb, var(--c) 82%, #6e6390) 100%);
+  box-shadow: 0 0 26px -8px var(--c), inset -6px -8px 16px rgba(80,60,120,.18); display: flex; align-items: center; justify-content: center; }
+.gb__orb span { max-width: 74%; font-family: "Orbit", var(--font-kr); font-size: var(--fs, 12px); line-height: 1.2; text-align: center; word-break: keep-all; pointer-events: none; }
+.gb__orb:hover { box-shadow: 0 0 40px -6px var(--c), inset -6px -8px 16px rgba(80,60,120,.18); }
+.gb__orb.is-held { cursor: grabbing; z-index: 2; }
+.gb__orb:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.gb__empty { position: absolute; left: 0; right: 0; top: 40%; z-index: 1; pointer-events: none; }
+.gb__board { position: relative; }
+/* 모두 펼쳐 보기 */
+.gb__grid { display: none; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.gb__board.is-all .gb__grid { display: grid; }
+.gb__card { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 18px; background: var(--c); color: #2b2340; }
+.gb__card-top, .gb__card-by { display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: rgba(43,35,64,.65); }
+.gb__card p { margin: 0; font-family: "Orbit", var(--font-kr); font-size: 16px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; word-break: keep-all; }
+.gb__card-by { margin-top: auto; }
+/* 쓰는 칸과 크게 보기도 같은 파스텔 구슬 */
+.gb__paper, .gb__dlg-orb { --orb: radial-gradient(circle at 32% 26%, #fff 0 9%, color-mix(in srgb, var(--c) 45%, #fff) 26%, var(--c) 62%, color-mix(in srgb, var(--c) 82%, #6e6390) 100%); color: #2b2340; }
+.gb__paper textarea { color: #2b2340; } .gb__paper textarea::placeholder { color: rgba(43,35,64,.45); }
+.gb__paper .gb__count { color: rgba(43,35,64,.55); }
+.gb__sense { background: radial-gradient(circle at 32% 26%, #fff 0 12%, var(--c) 60%, color-mix(in srgb, var(--c) 82%, #6e6390) 100%); }
+.gb__form.is-ready .gb__send { color: #2b2340; }
+.gb__orb.is-new { animation: none; }
+@media (max-width: 960px) { .gb__jar { height: 400px; border-radius: 18px; } .gb__grid { grid-template-columns: 1fr; } }
+
+/* 구슬 질감: 본 사이트의 marble 이미지를 감각 색으로 물들여요 */
+.gb__orb, .gb__paper, .gb__dlg-orb, .gb__sense {
+  background: url(../assets/marble.png) center / cover no-repeat, var(--c) !important;
+  background-blend-mode: luminosity, normal !important; }
+.gb__orb { box-shadow: 0 0 30px -6px var(--c), 0 6px 14px -6px rgba(0,0,0,.6); color: #fff; }
+.gb__orb span { text-shadow: 0 1px 6px rgba(0,0,0,.45); }
+.gb__orb:hover { box-shadow: 0 0 46px -4px var(--c), 0 6px 14px -6px rgba(0,0,0,.6); }
+.gb__paper { box-shadow: 0 0 80px -16px var(--c); color: #fff; }
+.gb__paper textarea { color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.4); }
+.gb__paper textarea::placeholder { color: rgba(255,255,255,.75); }
+.gb__paper .gb__count { color: rgba(255,255,255,.8); }
+.gb__dlg-orb { color: #fff; text-shadow: 0 1px 10px rgba(0,0,0,.45); box-shadow: 0 0 120px -10px var(--c); }
+.gb__dlg-orb .gb__note-sense, .gb__dlg-orb .gb__note-by { color: rgba(255,255,255,.85); }
+.gb__sense { box-shadow: none; } .gb__sense[aria-checked="true"] { box-shadow: 0 0 18px -2px var(--c); }
+.gb__card { color: #1b1222; } .gb__form.is-ready .gb__send { color: #1b1222; }
 </style>
 </head>
 <body>
@@ -987,16 +1069,8 @@ body { background: var(--bg) !important; }
         <h2 class="sec__title">웹 인터랙션</h2>
         <p class="sec__desc">관객이 손으로 감각을 고르고, 구슬을 받아 정원으로 들어가는 두 개의 인터랙션을 웹으로 만들었어요. 영상 두 편 사이에 끼워 한 편의 흐름으로 이어지게 했어요.</p></div></div>
 
-      <div class="wfx__sub"><span>01</span>체험 흐름</div>
-      <ol class="web-flow">
-        <li><b>로딩</b><small>타이틀 · 손으로 시작</small></li>
-        <li class="is-int"><b>인터랙션 1</b><small>감각 자원 아카이브</small></li>
-        <li><b>구슬</b><small>고른 감각이 응축</small></li>
-        <li class="is-film"><b>영상 1</b><small>자동문으로 넘어감</small></li>
-        <li class="is-int"><b>인터랙션 2</b><small>구슬빛 정원</small></li>
-        <li class="is-film"><b>영상 2</b><small>환해지며 넘어감</small></li>
-        <li><b>처음으로</b><small>다음 관객</small></li>
-      </ol>
+      <div class="wfx__sub"><span>01</span>체험 구조</div>
+      <div class="wf webg-wrap"><svg class="wf__svg webg" viewBox="0 0 1000 530" role="img" aria-label="체험 구조: 웹캠과 손 인식, 아이패드 조작판이 두 인터랙션으로 들어가고, 장면은 로딩부터 영상 2까지 이어지며, 화면과 소리는 Canvas, GSAP, Three.js, Web Audio, Service Worker가 맡아요."><defs><pattern id="wgdot" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(255,255,255,.06)"/></pattern></defs><rect width="1000" height="530" fill="url(#wgdot)"/><text class="webg__lane" x="20" y="24">입력</text><text class="webg__lane" x="20" y="218">장면 흐름</text><text class="webg__lane" x="20" y="404">화면 · 소리 · 전시</text><path id="wg0" class="webg__link webg__link--flow" d="M154,264 C170,264 170,264 185,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg0"/></animateMotion></circle><path id="wg1" class="webg__link webg__link--flow" d="M319,264 C335,264 335,264 350,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg1"/></animateMotion></circle><path id="wg2" class="webg__link webg__link--flow" d="M484,264 C500,264 500,264 516,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg2"/></animateMotion></circle><path id="wg3" class="webg__link webg__link--flow" d="M650,264 C665,264 665,264 681,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg3"/></animateMotion></circle><path id="wg4" class="webg__link webg__link--flow" d="M815,264 C830,264 830,264 846,264"/><circle class="webg__pulse webg__pulse--flow" r="3"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#wg4"/></animateMotion></circle><path id="wg5" class="webg__link webg__link--in" d="M240,79 C285,79 285,79 330,79"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg5"/></animateMotion></circle><path id="wg6" class="webg__link webg__link--in" d="M390,118 C390,175 252,175 252,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg6"/></animateMotion></circle><path id="wg7" class="webg__link webg__link--in" d="M470,118 C470,175 734,175 734,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg7"/></animateMotion></circle><path id="wg8" class="webg__link webg__link--in" d="M740,118 C740,175 775,175 775,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg8"/></animateMotion></circle><path id="wg9" class="webg__link webg__link--in" d="M680,118 C680,175 292,175 292,232"/><circle class="webg__pulse webg__pulse--in" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg9"/></animateMotion></circle><path id="wg10" class="webg__link webg__link--out" d="M239,296 C239,358 108,358 108,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg10"/></animateMotion></circle><path id="wg11" class="webg__link webg__link--out" d="M417,296 C417,358 286,358 286,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg11"/></animateMotion></circle><path id="wg12" class="webg__link webg__link--out" d="M583,296 C583,358 339,358 339,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg12"/></animateMotion></circle><path id="wg13" class="webg__link webg__link--out" d="M734,296 C734,358 500,358 500,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg13"/></animateMotion></circle><path id="wg14" class="webg__link webg__link--out" d="M279,296 C279,358 661,358 661,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg14"/></animateMotion></circle><path id="wg15" class="webg__link webg__link--out" d="M775,296 C775,358 731,358 731,420"/><circle class="webg__pulse webg__pulse--out" r="3"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#wg15"/></animateMotion></circle><g class="webg__scene webg__scene--etc" transform="translate(20 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">로딩</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">타이틀 · 손으로 시작</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--int" transform="translate(185 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">인터랙션 1</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">감각 자원 아카이브</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--etc" transform="translate(350 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">구슬</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">고른 감각이 응축</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--film" transform="translate(516 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">영상 1</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">자동문 전환</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--int" transform="translate(681 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">인터랙션 2</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">구슬빛 정원</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="webg__scene webg__scene--film" transform="translate(846 232)"><rect width="134" height="64" rx="14"/><text class="webg__t" x="67.0" y="28" text-anchor="middle">영상 2</text><text class="webg__s" x="67.0" y="48" text-anchor="middle">환해지며 전환</text><circle class="webg__port" cx="0" cy="32.0" r="4.5"/><circle class="webg__port" cx="134" cy="32.0" r="4.5"/></g><g class="wf__node webg__tech webg__tech--in" transform="translate(40 40)"><rect class="wf__box" width="200" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h176 a12,12 0 0 1 12,12 v18 h-200 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">웹캠 · 손</text><text class="wf__tool" x="12" y="48">getUserMedia</text><text class="wf__desc" x="12" y="66">640×480 · 어두우면 밝게</text></g><g class="wf__node webg__tech webg__tech--in" transform="translate(330 40)"><rect class="wf__box" width="200" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h176 a12,12 0 0 1 12,12 v18 h-200 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">손 인식</text><text class="wf__tool" x="12" y="48">MediaPipe Hands</text><text class="wf__desc" x="12" y="66">손끝 → 커서 · 꾹 누르기</text></g><g class="wf__node webg__tech webg__tech--in" transform="translate(640 40)"><rect class="wf__box" width="200" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h176 a12,12 0 0 1 12,12 v18 h-200 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">아이패드 조작판</text><text class="wf__tool" x="12" y="48">BroadcastChannel</text><text class="wf__desc" x="12" y="66">손 인식 화면 · 관람객 버튼</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(20 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">글자 화면</text><text class="wf__tool" x="12" y="48">Canvas 2D · Worker</text><text class="wf__desc" x="12" y="66">영상을 ASCII로 · 볼록하게</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(216 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">전환</text><text class="wf__tool" x="12" y="48">GSAP</text><text class="wf__desc" x="12" y="66">고리 회전 · 장면 전환</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(412 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">3D 정원</text><text class="wf__tool" x="12" y="48">Three.js · Bloom</text><text class="wf__desc" x="12" y="66">구슬 · 유리 계단 · 물</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(608 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">공간 소리</text><text class="wf__tool" x="12" y="48">Web Audio</text><text class="wf__desc" x="12" y="66">파일 없이 직접 합성</text></g><g class="wf__node webg__tech webg__tech--out" transform="translate(804 420)"><rect class="wf__box" width="176" height="78" rx="12"/><path class="wf__head" d="M0,12 a12,12 0 0 1 12,-12 h152 a12,12 0 0 1 12,12 v18 h-176 z"/><circle class="webg__dot" cx="16" cy="15" r="4.5"/><text class="wf__title" x="28" y="20" style="font-size:14px">오프라인</text><text class="wf__tool" x="12" y="48">Service Worker</text><text class="wf__desc" x="12" y="66">아이패드 홈 화면 앱</text></g></svg></div>
 
       <div class="wfx__sub"><span>02</span>두 인터랙션</div>
       <div class="wfx web-two">
@@ -1014,18 +1088,8 @@ body { background: var(--bg) !important; }
         </div>
       </div>
 
-      <div class="wfx__sub"><span>03</span>쓴 기술</div>
-      <div class="web-stack">
-        <div><b>손 인식</b><span>MediaPipe Tasks Vision (HandLandmarker)</span><small>손끝 위치와 손가락 모으기를 읽어 커서와 '꾹 누르기'로 썼어요. GPU가 안 되는 기기에서는 CPU로 바꿔 돌려요.</small></div>
-        <div><b>화면 · 애니메이션</b><span>Canvas 2D · Web Worker · GSAP</span><small>글자 화면의 픽셀 읽기는 워커로 따로 돌려 렉을 줄였어요. 고리 회전과 장면 전환은 GSAP로 움직였어요.</small></div>
-        <div><b>3D 정원</b><span>Three.js (WebGL)</span><small>구슬, 유리 계단, 물을 3D로 만들고 블룸으로 빛 번짐을 넣었어요.</small></div>
-        <div><b>소리</b><span>Web Audio API</span><small>소리 파일 없이 직접 만들었어요. 아카이브는 마른 바람, 정원은 긴 울림과 화음·물방울로 서로 다른 공간처럼 들리게 했어요.</small></div>
-        <div><b>오프라인</b><span>Service Worker</span><small>아이패드 홈 화면 앱으로 저장해 두면 인터넷 없이도 전시장에서 돌아가요.</small></div>
-        <div><b>전시 구성</b><span>BroadcastChannel · monitor.html</span><small>큰 모니터에는 작품을, 아이패드에는 손 인식 화면과 관람객용 버튼을 띄워 둘이 함께 움직이게 했어요.</small></div>
-      </div>
-
-      <div class="wfx__sub"><span>04</span>만든 과정</div>
-      <ol class="web-log">
+      <div class="wfx__sub"><span>03</span>만든 과정</div>
+      <ol class="web-tl">
         <li><time>09.28</time><b>첫 버전</b><span>아카이브에서 감각을 골라 구슬로 받고, 본편 영상으로 이어지는 흐름을 만들었어요.</span></li>
         <li><time>10.12</time><b>아카이브 · 정원 다듬기</b><span>아카이브를 세 겹 고리로 바꾸고, 정원 손 인식을 교체하고, 영상 전환 효과를 넣었어요.</span></li>
         <li><time>10.15</time><b>손 조작 쉽게</b><span>손을 올려 두기만 해도 고를 수 있게 하고, 손 인식 렉을 줄였어요.</span></li>
@@ -1041,12 +1105,12 @@ body { background: var(--bg) !important; }
     <section class="sec" id="guestbook">
       <div class="sec__head"><div class="sec__no">07 — GUESTBOOK</div><div>
         <h2 class="sec__title">방명록</h2>
-        <p class="sec__desc">작품을 보고 남은 생각을 메모로 남겨 주세요. 남긴 메모는 다른 관객의 메모와 함께 천천히 흘러가요.</p></div></div>
+        <p class="sec__desc">작품을 보고 남은 생각을 남겨 주세요. 남긴 메모는 구슬이 되어 병 속으로 떨어지고, 다른 관객의 구슬과 함께 쌓여요. 구슬을 누르면 읽을 수 있고, 집어서 굴려 볼 수도 있어요.</p></div></div>
       <div class="gb">
         <form class="gb__form" autocomplete="off">
           <div class="gb__paper"><textarea id="gb-msg" maxlength="140" placeholder="작품을 보고 남은 생각을 적어주세요" aria-label="남길 말"></textarea><span class="gb__count">0 / 140</span></div>
           <div class="gb__ctrl">
-            <div class="gb__field"><span class="gb__label">01 — 어떤 감각이 남았나요?</span>
+            <div class="gb__field"><span class="gb__label">01 — 어떤 감각을 선호하시나요?</span>
               <div class="gb__senses" role="radiogroup" aria-label="감각"></div>
               <span class="gb__sense-name"></span></div>
             <div class="gb__field"><span class="gb__label">02 — 이름</span>
@@ -1056,7 +1120,7 @@ body { background: var(--bg) !important; }
         </form>
         <div class="gb__summary"><span><b class="gb__num">0</b>개의 메모<span class="gb__dot"> · </span><span class="gb__where">불러오는 중…</span></span><button type="button" class="gb__toggle">모두 펼쳐 보기</button></div>
         <div class="gb__board">
-          <div class="gb__flow"></div>
+          <div class="gb__jar" aria-label="방명록 구슬 — 구슬을 누르면 메모를 크게 볼 수 있어요"></div>
           <div class="gb__grid"></div>
           <p class="gb__empty">아직 남겨진 메모가 없어요. 첫 메모를 남겨 주세요.</p>
         </div>
@@ -1072,7 +1136,7 @@ body { background: var(--bg) !important; }
 
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
-<script src="guestbook.js?v=21" defer></script>
+<script src="guestbook.js?v=24" defer></script>
 <script>
 (() => {
 const D = window.PROCESS, E = D.entries;

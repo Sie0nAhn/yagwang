@@ -1,13 +1,14 @@
-/* 방명록 — 감각 색 메모가 천천히 흘러가요 */
+/* 방명록 — 남긴 메모가 파스텔 구슬이 되어 병에 떨어지고 쌓여요 */
 (() => {
   const root = document.getElementById('guestbook');
   if (!root) return;
 
   // 본 사이트의 감각 9가지. 카드 색은 벽에서 또렷하게 보이도록 채도를 높였어요.
+  // 본 사이트 아카이브와 같은 감각 색 — 구슬은 사이트의 marble 이미지를 이 색으로 물들여요
   const SENSES = [
-    ['서늘한 새벽공기', '#3d6bff'], ['오후 4시의 햇살', '#ff6a1f'], ['윤슬의 빤짝임', '#14a6d9'],
-    ['계절의 경계면', '#16b26a'], ['고요한 정적의 소리', '#b9a2ef'], ['낯선 타인의 온기', '#ff5a4e'],
-    ['비 오는 날의 흙냄새', '#8f6a4f'], ['이유없는 설렘', '#ff4fc1'], ['첫눈을 보던 감각', '#e8edf3']
+    ['서늘한 새벽공기', '#6f83e8'], ['오후 4시의 햇살', '#ff9b4d'], ['윤슬의 빤짝임', '#4fd2e6'],
+    ['계절의 경계면', '#7fdc9b'], ['고요한 정적의 소리', '#b9b4e8'], ['낯선 타인의 온기', '#ff8a70'],
+    ['비 오는 날의 흙냄새', '#c9c076'], ['이유없는 설렘', '#ff77b8'], ['첫눈을 보던 감각', '#bcd8f5']
   ];
   const $ = s => root.querySelector(s);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -41,66 +42,134 @@
     }
   };
 
-  /* ---------- 보드: 색 메모가 여러 줄로 천천히 흘러가요 (전체 보기에서는 격자로) ---------- */
-  const board = $('.gb__board'), flow = $('.gb__flow'), grid = $('.gb__grid');
+  /* ---------- 구슬 병: 남긴 메모가 구슬이 되어 떨어지고, 쌓이고, 굴러다녀요 ---------- */
+  const board = $('.gb__board'), jar = $('.gb__jar'), grid = $('.gb__grid');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let entries = [], known = null, lastAdded = null;
-  const sizeOf = n => n <= 12 ? 's-xl' : n <= 28 ? 's-l' : n <= 60 ? 's-m' : 's-s';
+  let entries = [], known = null;
+  const bodies = new Map();           // id → { e, no, el, x, y, vx, vy, r, base }
+  let W = 0, H = 0, scale = 1, awake = false, raf = 0, still = 0, seen = false, drag = null, pointer = null;
+  const short = t => { const one = t.replace(/\s+/g, ' ').trim(); return one.length > 14 ? one.slice(0, 13) + '…' : one; };
+  const baseR = e => 46 + Math.min(e.msg.length, 140) / 140 * 26;
 
-  function card(e, no) {
+  function orbEl(e) {
     const [name, col] = SENSES[e.sense] || SENSES[0];
-    return `<article class="gb__note ${sizeOf(e.msg.length)}${e.id === lastAdded ? ' is-new' : ''}" style="--c:${col}" tabindex="0" data-no="${no}" data-i="${entries.indexOf(e)}">
-      <span class="gb__note-sense">${esc(name)}</span>
-      <p>${esc(e.msg)}</p>
-      <span class="gb__note-by">${esc(e.name || '익명의 관객')}</span></article>`;
+    const el = document.createElement('button');
+    el.type = 'button'; el.className = 'gb__orb'; el.style.setProperty('--c', col);
+    el.setAttribute('aria-label', `${name} — ${e.msg} (${e.name || '익명의 관객'})`);
+    el.innerHTML = `<span>${esc(short(e.msg))}</span>`;
+    el.dataset.id = e.id; jar.appendChild(el); return el;
   }
+  function measure() {
+    W = jar.clientWidth; H = jar.clientHeight;
+    // 구슬이 많아지면 조금씩 작아져서 병에 다 들어가게
+    let area = 0; bodies.forEach(b => { area += Math.PI * b.base * b.base; });
+    scale = area ? Math.min(1, Math.sqrt(W * H * .5 / area)) : 1;
+    bodies.forEach(b => { b.r = Math.max(16, b.base * scale); b.el.style.width = b.el.style.height = b.r * 2 + 'px'; b.el.style.setProperty('--fs', Math.max(9, b.r * .26) + 'px'); });
+  }
+  function place(b) { b.el.style.transform = `translate(${b.x - b.r}px, ${b.y - b.r}px)`; }
 
-  function draw() {
-    const n = entries.length, cards = entries.map((e, i) => card(e, n - i));
-    grid.innerHTML = cards.join('');
-    // 흐르는 줄: 한 줄에 서로 다른 메모가 6장 이상일 때만 흐르게 해요.
-    // 메모가 적으면 같은 메모를 반복하지 않고 한 줄에 가만히 놓아요.
-    const lanes = Math.min(3, Math.floor(n / 6));
-    if (!lanes) {
-      flow.innerHTML = `<div class="gb__lane is-still"><div class="gb__track">${cards.join('')}</div></div>`;
-    } else {
-      const rows = Array.from({ length: lanes }, () => []);
-      cards.forEach((c, i) => rows[i % lanes].push(c));
-      flow.innerHTML = rows.map((r, i) => {
-        const html = r.join('');
-        return `<div class="gb__lane${i % 2 ? ' is-rev' : ''}"><div class="gb__track" style="--dur:${Math.round(r.length * (i % 2 ? 11 : 9))}s">${html}${html}</div></div>`;
-      }).join('');
+  function sync(list) {
+    const ids = new Set(list.map(e => e.id));
+    for (const [id, b] of bodies) if (!ids.has(id)) { b.el.remove(); bodies.delete(id); }
+    const first = !known; let fresh = 0;
+    list.slice().reverse().forEach((e, k) => {
+      if (bodies.has(e.id)) return;
+      const b = { e, el: orbEl(e), vx: 0, vy: 0, base: baseR(e), r: 0, x: 0, y: 0 };
+      bodies.set(e.id, b);
+      if (first) { b.x = 60 + Math.random() * Math.max(1, (jar.clientWidth || 600) - 120); b.y = -60 - k * 46 - Math.random() * 40; }
+      else { b.x = (jar.clientWidth || 600) * (.35 + Math.random() * .3); b.y = -70 - fresh * 80; b.vx = (Math.random() - .5) * 2; b.el.classList.add('is-new'); fresh++; }
+    });
+    measure();
+    bodies.forEach(b => { if (b.r && !b.placed) { b.x = Math.min(Math.max(b.x, b.r), W - b.r); b.placed = true; } place(b); });
+    if (reduce) settle(); else if (seen) wake();
+  }
+  // 동작 줄이기: 떨어지는 모습 없이 바로 쌓인 상태로
+  function settle() { bodies.forEach(b => { b.y = Math.min(b.y, H - b.r); }); for (let i = 0; i < 400; i++) step(1); bodies.forEach(place); }
+
+  function step(k) {
+    const list = [...bodies.values()], G = .42 * k;
+    for (const b of list) {
+      if (b === drag?.b) continue;
+      b.vy += G; b.vx *= .996; b.vy *= .996;
+      if (pointer) { const dx = b.x - pointer.x, dy = b.y - pointer.y, d = Math.hypot(dx, dy); if (d < b.r + 26 && d > 0) { b.vx += dx / d * .55; b.vy += dy / d * .35; } }
+      b.x += b.vx * k; b.y += b.vy * k;
+      if (b.y > H - b.r) { b.y = H - b.r; b.vy *= -.28; b.vx *= .965; if (Math.abs(b.vy) < .35) b.vy = 0; }
+      if (b.x < b.r) { b.x = b.r; b.vx *= -.45; } if (b.x > W - b.r) { b.x = W - b.r; b.vx *= -.45; }
     }
-    flow.classList.toggle('is-still', !lanes);
-    $('.gb__num').textContent = n;
-    root.classList.toggle('is-empty', !n);
-    lastAdded = null;
+    for (let it = 0; it < 4; it++) for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], c = list[j], dx = c.x - a.x, dy = c.y - a.y, m = a.r + c.r, d2 = dx * dx + dy * dy;
+      if (d2 >= m * m || d2 === 0) continue;
+      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, over = m - d;
+      const ma = a === drag?.b ? 0 : a.r * a.r, mc = c === drag?.b ? 0 : c.r * c.r, tot = ma + mc || 1;
+      a.x -= nx * over * mc / tot; a.y -= ny * over * mc / tot; c.x += nx * over * ma / tot; c.y += ny * over * ma / tot;
+      const rv = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny;
+      if (rv < 0) { const j2 = -(1.2) * rv / 2; a.vx -= j2 * nx * (mc / tot) * 2; a.vy -= j2 * ny * (mc / tot) * 2; c.vx += j2 * nx * (ma / tot) * 2; c.vy += j2 * ny * (ma / tot) * 2; }
+      // 위에 얹힌 구슬은 옆으로 살짝 굴러 내려가게
+      if (Math.abs(nx) < .25 && ny !== 0) { const top = ny > 0 ? a : c; top.vx += (Math.random() - .5) * .08; }
+    }
   }
-
-  function render(list) {
-    if (known) { const fresh = list.find(e => !known.has(e.id)); if (fresh) lastAdded = fresh.id; }
-    known = new Set(list.map(e => e.id));
-    entries = list; draw();
+  function frame(t) {
+    const dt = Math.min(2, (t - (frame.t || t)) / 16.67 || 1); frame.t = t;
+    step(dt / 2); step(dt / 2);
+    let e = 0; bodies.forEach(b => { place(b); e += Math.abs(b.vx) + Math.abs(b.vy); });
+    still = e / Math.max(1, bodies.size) < .03 && !drag && !pointer ? still + 1 : 0;
+    if (still > 90) { awake = false; raf = 0; frame.t = 0; return; }
+    raf = requestAnimationFrame(frame);
   }
+  function wake() { if (reduce) return; still = 0; if (!awake) { awake = true; raf = requestAnimationFrame(frame); } }
+  new IntersectionObserver(([en]) => { if (en.isIntersecting && !seen) { seen = true; wake(); } }, { threshold: .25 }).observe(jar);
+  new ResizeObserver(() => { const w = W; measure(); if (w && w !== W) bodies.forEach(b => { b.x = Math.min(b.x, W - b.r); }); wake(); }).observe(jar);
 
-  // 구슬을 누르면 크게 펼쳐서 전체 글을 보여줘요
-  const dlg = $('.gb__dlg');
-  const openNote = el => {
-    const e = entries[+el.dataset.i]; if (!e) return;
-    const [name, col] = SENSES[e.sense] || SENSES[0];
-    dlg.style.setProperty('--c', col);
-    dlg.querySelector('.gb__dlg-orb').innerHTML = `<span class="gb__note-sense">No.${String(el.dataset.no).padStart(4, '0')} · ${esc(name)}</span><p>${esc(e.msg)}</p><span class="gb__note-by">${esc(e.name || '익명의 관객')} · ${fmt(e.t)}</span>`;
-    dlg.showModal();
+  // 집어서 던지기 · 누르면 크게 보기 · 손을 대면 살짝 밀려나기
+  const local = ev => { const r = jar.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
+  jar.addEventListener('pointerdown', ev => {
+    const el = ev.target.closest('.gb__orb'); if (!el) return;
+    const b = bodies.get(el.dataset.id), p = local(ev);
+    drag = { b, dx: b.x - p.x, dy: b.y - p.y, px: p.x, py: p.y, moved: 0 }; el.setPointerCapture(ev.pointerId); el.classList.add('is-held'); wake();
+  });
+  jar.addEventListener('pointermove', ev => {
+    const p = local(ev);
+    if (!drag) { if (ev.pointerType === 'mouse') { pointer = p; wake(); } return; }
+    const b = drag.b; drag.moved += Math.abs(p.x - drag.px) + Math.abs(p.y - drag.py);
+    b.vx = (p.x - drag.px) * .9; b.vy = (p.y - drag.py) * .9; drag.px = p.x; drag.py = p.y;
+    b.x = Math.min(Math.max(p.x + drag.dx, b.r), W - b.r); b.y = Math.min(p.y + drag.dy, H - b.r);
+  });
+  jar.addEventListener('pointerleave', () => { pointer = null; });
+  const release = ev => {
+    if (!drag) return; const { b, moved } = drag; b.el.classList.remove('is-held'); drag = null;
+    if (moved < 6) { b.vx = b.vy = 0; openNote(b); } wake();
   };
-  board.addEventListener('click', ev => { const el = ev.target.closest('.gb__note'); if (el) openNote(el); });
-  board.addEventListener('keydown', ev => { const el = ev.target.closest('.gb__note'); if (el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openNote(el); } });
+  jar.addEventListener('pointerup', release); jar.addEventListener('pointercancel', release);
+  jar.addEventListener('keydown', ev => { const el = ev.target.closest('.gb__orb'); if (el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openNote(bodies.get(el.dataset.id)); } });
+
+  // 크게 보기
+  const dlg = $('.gb__dlg');
+  function openNote(b) {
+    const e = b.e, [name, col] = SENSES[e.sense] || SENSES[0];
+    dlg.style.setProperty('--c', col);
+    dlg.querySelector('.gb__dlg-orb').innerHTML = `<span class="gb__note-sense">No.${String(b.no).padStart(4, '0')} · ${esc(name)}</span><p>${esc(e.msg)}</p><span class="gb__note-by">${esc(e.name || '익명의 관객')} · ${fmt(e.t)}</span>`;
+    dlg.showModal();
+  }
   dlg.addEventListener('click', ev => { if (ev.target === dlg || ev.target.closest('.gb__dlg-close')) dlg.close(); });
 
-  // 흐르는 보기 ↔ 모두 펼쳐 보기
+  // 모두 펼쳐 보기: 글을 다 읽을 수 있는 목록
+  function drawGrid() {
+    const n = entries.length;
+    grid.innerHTML = entries.map((e, i) => { const [name, col] = SENSES[e.sense] || SENSES[0];
+      return `<article class="gb__card" style="--c:${col}"><div class="gb__card-top"><span>No.${String(n - i).padStart(4, '0')}</span><span>${esc(name)}</span></div><p>${esc(e.msg)}</p><div class="gb__card-by"><span>${esc(e.name || '익명의 관객')}</span><span>${fmt(e.t)}</span></div></article>`; }).join('');
+  }
+  function render(list) {
+    entries = list; const n = list.length;
+    sync(list);
+    list.forEach((e, i) => { const b = bodies.get(e.id); if (b) b.no = n - i; });
+    drawGrid();
+    known = new Set(list.map(e => e.id));
+    $('.gb__num').textContent = n;
+    root.classList.toggle('is-empty', !n);
+  }
   const toggle = $('.gb__toggle');
-  const setView = all => { board.classList.toggle('is-all', all); toggle.textContent = all ? '흐르게 보기' : '모두 펼쳐 보기'; };
+  const setView = all => { board.classList.toggle('is-all', all); toggle.textContent = all ? '구슬로 보기' : '모두 펼쳐 보기'; if (!all) { measure(); wake(); } };
   toggle.addEventListener('click', () => setView(!board.classList.contains('is-all')));
-  if (reduce) setView(true);
 
   /* ---------- 쓰기 ---------- */
   const form = $('.gb__form'), msg = $('#gb-msg'), name = $('#gb-name'), count = $('.gb__count'), status = $('.gb__status');
@@ -127,7 +196,7 @@
       await store.add({ name: name.value.trim().slice(0, 16), msg: text, sense });
       sessionStorage.setItem('gb-last', String(Date.now()));
       msg.value = ''; grow();
-      status.textContent = '메모가 흘러가기 시작했어요. 고마워요.';
+      status.textContent = '구슬이 병에 떨어졌어요. 고마워요.';
     } catch (err) { console.warn(err); status.textContent = '지금은 저장하지 못했어요. 잠시 뒤에 다시 시도해 주세요.'; }
     setTimeout(() => form.classList.remove('is-sending'), 600);
   });
