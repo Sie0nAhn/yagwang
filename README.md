@@ -24,7 +24,7 @@
 │
 ├── 01-dawn-air.mp4         서늘한 새벽공기   ┐
 ├── 02-afternoon-light.mp4  오후 4시의 햇살    │
-├── 03-water-glitter.mp4    윤슬의 빤짝임      │
+├── 03-water-glitter.mp4    윤슬의 반짝임      │
 ├── 04-season-edge.mp4      계절의 경계면      │ 아카이브 영상 9개
 ├── 05-silence.mp4          고요한 정적의 소리  │ (합계 약 60MB)
 ├── 06-stranger-warmth.mp4  낯선 타인의 온기    │

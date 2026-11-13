@@ -303,9 +303,9 @@ const HANDS = {
   orb:    [["✋", "확인하러 가기", "버튼에 손 올려 두기"],
            ["✋", "다시 고르기", "버튼에 손 올려 두기"],
            ["🤏", "바로 확인", "엄지와 검지 모아 집기"]],
-  garden: [["✋", "둘러보기", "손바닥 펴고 움직이기"],
+  garden: [["✋", "둘러보기", "손바닥 펴고 좌우·위아래로"],
            ["☝️", "구슬 열기", "검지로 가리키고 멈추기"],
-           ["→", "다음 영상", "버튼에 손 커서 1초"]],
+           ["🤏", "바로 다음 영상", "엄지와 검지 모아 집기"]],
 };
 let handsShown = "";
 function showHands(sc) {
@@ -366,7 +366,7 @@ function layout() {
   for (const k of ["left", "up", "down", "right"]) document.querySelector(".k-" + k).classList.toggle("off", !on.includes(k));
   $("bNext").classList.toggle("off", !(sc === "garden" && ui && ui.canNext));
   $("bSel").classList.toggle("off", sc === "film");
-  $("ctl").hidden = sc === "film";          // 영상이 나오는 동안엔 버튼을 다 감춘다 (건너뛸 수 없으니 누를 것이 없다)
+  $("ctl").hidden = false;                  // 영상이 나오는 동안에도 버튼은 보이되, 모두 회색으로 둔다 (건너뛸 수 없다)
   $("selText").textContent =
     sc === "boot" ? "시작하기" :
     sc === "orb" ? "확인하러 가기" :
@@ -640,6 +640,19 @@ setInterval(() => {
   if (!L.ok && !L.asking && !filming && L.err !== "NotAllowedError" && L.everOk) startCam();
 }, 2000);
 
+/* 카메라가 멈춰 그림이 안 들어와도 '아이패드가 카메라를 맡고 있다'고 계속 알린다.
+   이게 끊기면 작품 창이 20초 뒤 제 카메라를 열어 버려서, 영상이 끝난 뒤 두 창이 카메라를 주고받으며 켜졌다 꺼졌다 한다.
+   거절됐거나 영상 밖에서 30초 넘게 못 살리면 알림을 멈춰 작품 창이 대신 열게 둔다 */
+setInterval(() => {
+  const now = performance.now();
+  if (now - (L.sentAt || 0) < 500) return;
+  if (!L.everOk || L.err === "NotAllowedError") return;
+  const filming = typeof ui !== "undefined" && ui && ui.scene === "film" && now - uiAt < 1500;
+  if (!filming && now - Math.max(L.okAt || 0, L.afterFilm || 0) > 30000) return;
+  L.sentAt = now;
+  ch.postMessage({ t: "lms", lms: null, w: video.videoWidth || 640, h: video.videoHeight || 480, mean: L.mean });
+}, 400);
+
 let model = null;
 L.model = "loading";                 // loading · ok · error — 화면에 상태로 보인다
 let modelBusy = false;
@@ -695,6 +708,7 @@ function tick() {
   requestAnimationFrame(tick);
   if (!L.ok || video.readyState < 2 || video.currentTime === lastT) return;
   lastT = video.currentTime;
+  L.okAt = performance.now();                  // 카메라 그림이 들어오고 있다
   const src = upright();                       // 세로로 들어오면 돌려서 가로로
   L.src = src;
   if (!model) return;                          // 손 모델을 받는 동안에도 카메라는 바로 세워서 보여 준다
@@ -702,7 +716,7 @@ function tick() {
   if (typeof ui !== "undefined" && ui && ui.scene === "film" && performance.now() - uiAt < 1500) {
     L.lms = null;
     // 작품 창이 '아이패드가 사라졌다'고 여겨 카메라를 가져가지 않게, 손 없음만 가끔 알린다
-    if (performance.now() - (L.beatAt || 0) > 400) { L.beatAt = performance.now(); ch.postMessage({ t: "lms", lms: null, w: src.videoWidth, h: src.videoHeight, mean: L.mean }); }
+    if (performance.now() - (L.sentAt || 0) > 400) { L.sentAt = performance.now(); ch.postMessage({ t: "lms", lms: null, w: src.videoWidth, h: src.videoHeight, mean: L.mean }); }
     return;
   }
   const now = performance.now();
@@ -730,6 +744,7 @@ function tick() {
       boostTarget = L.mean < 6 ? 0 : Math.max(0, Math.min(2, ((90 - L.mean) / 55) * 2));
     } catch {}
   }
+  L.sentAt = L.okAt = now;
   ch.postMessage({ t: "lms", lms: lms ? lms.map((p) => [p.x, p.y, p.z || 0]) : null,
     w: src.videoWidth, h: src.videoHeight, mean: L.mean });
   if (!frameBusy && now - frameAt > 125) {

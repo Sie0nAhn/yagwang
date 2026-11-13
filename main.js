@@ -30,7 +30,7 @@ const VIDEOS = [
     grade: ["#eb9670", "#ffd6ab", "#fffaee"],
   },
   {
-    name: "윤슬의 빤짝임", file: "03-water-glitter.mp4", en: "sunlight broken on water", tags: ["물", "빛"], tint: "#4fd2e6",
+    name: "윤슬의 반짝임", file: "03-water-glitter.mp4", en: "sunlight broken on water", tags: ["물", "빛"], tint: "#4fd2e6",
     marble: { hue: 169, sat: 0.95, bri: 1.05, glow: "rgba(70,207,230,.32)" },
     grade: ["#6ea7c4", "#abe0e9", "#f8feff"],
   },
