@@ -192,7 +192,7 @@
   const preview = $('.gb__preview');
   const by = $('.gb__preview-by'), psense = $('.gb__preview-sense');
   refresh = () => grow();
-  const grow = () => { by.textContent = (name.value.trim() || '익명의 관객') + ' · 지금'; psense.textContent = 'No.' + String(entries.length + 1).padStart(4, '0') + ' · ' + SENSES[sense][0]; preview.textContent = msg.value.trim() || '오른쪽 칸에 쓴 메모가 여기에 비쳐요'; preview.classList.toggle('is-empty', !msg.value.trim()); const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
+  const grow = () => { by.textContent = (name.value.trim() || '익명의 관객') + ' · 지금'; psense.textContent = 'No.' + String(entries.length + 1).padStart(4, '0') + ' · ' + SENSES[sense][0]; preview.textContent = msg.value.trim() || '오른쪽 칸에 쓴 메모가 여기에 표시됩니다'; preview.classList.toggle('is-empty', !msg.value.trim()); const n = msg.value.length; count.textContent = `${n} / 140`; form.classList.toggle('is-ready', n > 0); };
   // 한글 조합 중에도 미리보기가 바로 바뀌게 여러 이벤트에 걸어 둬요
   ['input', 'keyup', 'compositionupdate', 'compositionend', 'change'].forEach(t => { msg.addEventListener(t, () => requestAnimationFrame(grow)); name.addEventListener(t, () => requestAnimationFrame(grow)); }); grow();
   msg.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); form.requestSubmit(); } });
@@ -201,16 +201,16 @@
     ev.preventDefault();
     const text = msg.value.trim().slice(0, 140); if (!text) { msg.focus(); return; }
     const last = +(sessionStorage.getItem('gb-last') || 0);
-    if (Date.now() - last < 15000) { status.textContent = '잠시 뒤에 다시 남겨 주세요.'; return; }
+    if (Date.now() - last < 15000) { status.textContent = '잠시 후 다시 남겨 주세요.'; return; }
     form.classList.add('is-sending');
     try {
       await store.add({ name: name.value.trim().slice(0, 16), msg: text, sense });
       sessionStorage.setItem('gb-last', String(Date.now()));
       msg.value = ''; grow();
-      status.textContent = '구슬이 아래쪽으로 떨어졌어요. 고마워요.';
-    } catch (err) { console.warn(err); status.textContent = '지금은 저장하지 못했어요. 잠시 뒤에 다시 시도해 주세요.'; }
+      status.textContent = '메모가 구슬로 저장되었습니다. 감사합니다.';
+    } catch (err) { console.warn(err); status.textContent = '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'; }
     setTimeout(() => form.classList.remove('is-sending'), 600);
   });
 
-  store.init(render).then(() => { $('.gb__where').textContent = store.shared ? '모든 관객의 메모가 한곳에 모여요' : '지금은 이 기기에만 저장돼요'; });
+  store.init(render).then(() => { $('.gb__where').textContent = store.shared ? '모든 관객의 메모가 한곳에 모입니다' : '현재 이 기기에만 저장됩니다'; });
 })();
