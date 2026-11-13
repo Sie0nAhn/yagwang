@@ -456,7 +456,10 @@ function draw() {
     : ui.camOff ? { kind: "black", text: "카메라가 멈췄어요", sub: "모니터 쪽 작품 화면을 한 번 눌러 주세요" } : null;
   showCoach(camMsg ? camMsg : live && !filming ? st.coach : null);   // 영상 중엔 손 안내도 띄우지 않는다
   $("hand").classList.toggle("on", !!hand);
-  $("handText").textContent = hand ? "손을 찾았어요" : "손을 카메라에 비춰 주세요";
+  $("handText").textContent = hand ? "손을 찾았어요"
+    : localCam && L.model === "loading" ? "손 인식 준비 중"
+    : localCam && L.model === "error" ? "손 인식을 다시 불러오는 중"
+    : "손을 카메라에 비춰 주세요";
   $("pinch").classList.toggle("on", !!(hand && st.pinch));
   if (!hand) { shownHand = null; return; }
 
@@ -604,16 +607,47 @@ setInterval(() => {
 }, 2000);
 
 let model = null;
-async function loadModel() {
+L.model = "loading";                 // loading · ok · error — 화면에 상태로 보인다
+let modelBusy = false;
+async function loadModel(delegateFirst = "GPU") {
+  if (modelBusy) return;
+  modelBusy = true;
+  L.model = "loading";
+  try { await loadModelInner(delegateFirst); L.model = "ok"; }
+  catch (e) { L.model = "error"; console.warn("[hand] 손 모델 실패", e); setTimeout(() => loadModel("CPU"), 3000); }   // 다시 해 본다
+  finally { modelBusy = false; }
+}
+async function loadModelInner(delegateFirst) {
   const fs = await FilesetResolver.forVisionTasks(new URL("vendor/mediapipe/wasm", location.href).href);
   const opts = (delegate) => ({
     baseOptions: { modelAssetPath: new URL("vendor/mediapipe/hand_landmarker.task", location.href).href, delegate },
     runningMode: "VIDEO", numHands: 1,
-    minHandDetectionConfidence: 0.4, minHandPresenceConfidence: 0.25, minTrackingConfidence: 0.25,
+    minHandDetectionConfidence: 0.35, minHandPresenceConfidence: 0.25, minTrackingConfidence: 0.25,
   });
-  try { model = await HandLandmarker.createFromOptions(fs, opts("GPU")); }
-  catch { model = await HandLandmarker.createFromOptions(fs, opts("CPU")); }
+  if (delegateFirst === "GPU") {
+    try { model = await HandLandmarker.createFromOptions(fs, opts("GPU")); return; } catch {}
+  }
+  model = await HandLandmarker.createFromOptions(fs, opts("CPU"));
 }
+
+/* ── 어두운 곳 밝히기 ──
+   어두운 전시장에선 손이 검게 묻혀 손 모델이 못 찾는다. 평균 밝기가 낮으면 손 모델에 넘기는 그림만 부드럽게('screen') 밝힌다.
+   손을 못 찾는 동안엔 밝힌 그림과 원래 그림을 번갈아 넣고, 잡힌 쪽을 계속 쓴다 (화면에 보이는 카메라는 그대로) */
+const dc = document.createElement("canvas"), dx2 = dc.getContext("2d");
+let boost = 0, boostTarget = 0, tryBoost = true;
+function detectInput(src) {
+  boost += (boostTarget - boost) * 0.15;
+  if (boost < 0.05 || !tryBoost) return src;
+  const w = src.videoWidth || src.width, h = src.videoHeight || src.height;
+  if (dc.width !== w || dc.height !== h) { dc.width = w; dc.height = h; }
+  dx2.globalCompositeOperation = "source-over"; dx2.globalAlpha = 1;
+  dx2.drawImage(src, 0, 0, w, h);
+  dx2.globalCompositeOperation = "screen";
+  for (let left = Math.min(2, boost); left > 0.02; left -= 1) { dx2.globalAlpha = Math.min(1, left); dx2.drawImage(src, 0, 0, w, h); }
+  dx2.globalCompositeOperation = "source-over"; dx2.globalAlpha = 1;
+  return dc;
+}
+let failCount = 0;
 
 // 밝기 (작품 창의 '너무 어두워요' 안내에 쓴다)
 const mc = document.createElement("canvas"); mc.width = 32; mc.height = 24;
@@ -639,9 +673,16 @@ function tick() {
   }
   const now = performance.now();
   let res = null;
-  try { res = model.detectForVideo(src, now); } catch {}
+  // 원래 그림(video/rc)과 밝힌 그림(dc)은 크기가 같아 번갈아 넣어도 된다
+  const input = detectInput(src);
+  try { res = model.detectForVideo(input, now); failCount = 0; }
+  catch (e) {
+    // 손 모델이 계속 오류를 내면(그래픽 칩 문제 등) CPU 로 다시 불러온다
+    if (++failCount > 30) { failCount = 0; model = null; loadModel("CPU"); }
+  }
   const lms = (res && res.landmarks && res.landmarks[0]) || null;
   L.lms = lms;
+  if (!lms) tryBoost = !tryBoost;              // 못 찾았으면 다음엔 다른 그림으로
   if (now - meterAt > 500) {
     meterAt = now;
     try {
@@ -650,6 +691,7 @@ function tick() {
       let sum = 0;
       for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
       L.mean = sum / (d.length / 4);
+      boostTarget = L.mean < 6 ? 0 : Math.max(0, Math.min(2, ((90 - L.mean) / 55) * 2));
     } catch {}
   }
   ch.postMessage({ t: "lms", lms: lms ? lms.map((p) => [p.x, p.y, p.z || 0]) : null,
