@@ -1012,10 +1012,13 @@ body { background: var(--bg) !important; }
 .pm__sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); }
 .pm__chev { justify-self: end; font-family: var(--font-mono); font-size: 16px; color: var(--dim); transition: transform .2s; }
 details[open] > summary .pm__chev { transform: rotate(45deg); color: var(--fg); }
-.pm__ex { margin: 0 18px 18px 72px; padding: 12px 14px; border-radius: 10px; background: #07060a; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.75; color: var(--fg-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.pm__ex { grid-column: 2 / 4; grid-row: 2; display: block; margin: 2px 0 0; padding: 10px 14px; border-radius: 10px; background: #07060a; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.75; color: rgba(255,255,255,.62); white-space: pre-wrap; overflow-wrap: anywhere; }
+.pm__exT { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+details[open] .pm__ex { color: var(--fg-2); }
+details[open] .pm__exT { display: block; -webkit-line-clamp: unset; }
 .pm__out { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .pm__out .pm__item summary { grid-template-columns: 34px minmax(0, 1fr) 20px; }
-.pm__out .pm__ex { margin-left: 18px; }
+.pm__out .pm__ex { grid-column: 2 / 3; }
 @media (max-width: 960px) {
   .phx { grid-template-columns: 1fr; } .phx__arrow { justify-self: center; transform: rotate(90deg); }
   .pm__out { grid-template-columns: 1fr; }
@@ -1025,7 +1028,7 @@ details[open] > summary .pm__chev { transform: rotate(45deg); color: var(--fg); 
   .pm__meter { grid-column: 2 / 3; grid-row: 2; }
   .pm__chev, .pm__no { grid-row: 1; align-self: start; padding-top: 2px; }
   .pm__chev { grid-column: 3; }
-  .pm__ex, .pm__out .pm__ex { margin: 0 14px 14px; }
+  .pm__ex, .pm__out .pm__ex { grid-column: 1 / 4; grid-row: 3; }
 }
 </style>
 </head>
@@ -1188,7 +1191,7 @@ details[open] > summary .pm__chev { transform: rotate(45deg); color: var(--fg); 
       <div class="phases" id="phases"></div>
       <div class="pm-head">
         <h3 class="pm-head__t">자주 쓴 순서와 표현</h3>
-        <p class="pm-head__d">실제 프롬프트에 적는 순서대로 정리했습니다. 막대는 영상 프롬프트 40개 가운데 그 방식을 쓴 개수이며, 줄을 누르면 예시 문장이 펼쳐집니다.</p>
+        <p class="pm-head__d">실제 프롬프트에 적는 순서대로 정리했습니다. 막대는 영상 프롬프트 40개 가운데 그 방식을 쓴 개수이며, 줄을 누르면 예시 프롬프트 전체가 보입니다.</p>
       </div>
       <div class="tips" id="tipsList"></div>
       <div class="usage">
@@ -1416,12 +1419,13 @@ const pmItem = (i, no, inPrompt) => {
   const meter = m.n
     ? `<span class="pm__n"><b>${m.n}</b>/ ${TIP_TOTAL}</span><span class="pm__track"><i style="width:${m.n / TIP_TOTAL * 100}%"></i></span>${m.sub ? `<span class="pm__sub">${esc(m.sub)}</span>` : ''}`
     : `<span class="pm__n is-text">${esc(m.txt)}</span>`;
-  return `<li class="pm__item" style="--k:${TIP_C[i]}"><details${no === '01' ? ' open' : ''}><summary>
+  return `<li class="pm__item" style="--k:${TIP_C[i]}"><details><summary>
     <span class="pm__no">${no}</span>
     <span class="pm__main"><span class="pm__top"><b class="pm__t">${esc(t.t)}</b><span class="pm__key">${esc(m.k)}</span></span><span class="pm__b">${esc(t.b)}</span></span>
     ${inPrompt ? `<span class="pm__meter">${meter}</span>` : ''}
     <span class="pm__chev" aria-hidden="true">+</span>
-  </summary><pre class="pm__ex">${esc(fill(t.ex))}</pre></details></li>`;
+    <span class="pm__ex"><span class="pm__exT">${esc(fill(t.ex))}</span></span>
+  </summary></details></li>`;
 };
 $('#tipsList').innerHTML = `<div class="pm">
   <div class="pm__grp">프롬프트 안 — 위에서부터 적는 순서</div>
