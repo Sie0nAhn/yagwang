@@ -985,25 +985,47 @@ body { background: var(--bg) !important; }
 .phx__note { margin: 0; font-size: 14px; line-height: 1.65; color: var(--fg-2); }
 .phx__src { margin-top: auto; font-family: var(--font-mono); font-size: 12px; color: #ff8fe6; text-decoration: none; }
 /* ── 팁: 프롬프트 해부도 + 사용 횟수 ── */
-.anat { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 16px; align-items: start; }
-.anat__doc { position: sticky; top: 20px; padding: 16px; border-radius: 16px; background: #15121d; display: flex; flex-direction: column; gap: 6px; }
-.anat__cap { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--dim); margin-bottom: 4px; }
-.anat__cap--out { margin-top: 12px; }
-.anat__row { display: grid; grid-template-columns: 22px auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #0e0c14; box-shadow: inset 3px 0 0 var(--k); }
-.anat__row b, .anat__no { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--k); color: #0a0910; font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
-.anat__h { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; color: var(--k); white-space: nowrap; }
-.anat__s { font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.anat__row.is-out { grid-template-columns: 22px 1fr; }
-.anat__row.is-out .anat__h { font-family: var(--font-kr); color: var(--fg); }
-.anat__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.anat__list li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--panel); }
-.anat__list strong { display: block; font-size: 14.5px; font-weight: 700; }
-.anat__list p { margin: 3px 0 8px; font-size: 13.5px; line-height: 1.6; color: var(--fg-2); }
-.anat__bar { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
-.anat__bar i { display: block; height: 6px; border-radius: 3px; background: var(--k); }
+.pm-head { margin: 44px 0 16px; }
+.pm-head__t { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.pm-head__d { margin: 6px 0 0; font-size: 14px; color: var(--dim); max-width: 640px; }
+.pm__grp { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; color: var(--dim); }
+.pm__grp::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
+.pm__grp--out { margin-top: 28px; }
+.pm__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pm__item { border-radius: 14px; background: var(--panel); box-shadow: inset 3px 0 0 var(--k); transition: background .2s; }
+.pm__item:hover, .pm__item:has(details[open]) { background: var(--panel-2); }
+.pm__item summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 34px minmax(0, 1fr) 210px 20px; align-items: center; gap: 18px; padding: 16px 18px 16px 20px; }
+.pm__item summary::-webkit-details-marker { display: none; }
+.pm__item summary:focus-visible { outline: 2px solid var(--k); outline-offset: 2px; border-radius: 14px; }
+.pm__no { font-family: var(--font-mono); font-size: 13px; color: var(--k); }
+.pm__main { min-width: 0; }
+.pm__top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.pm__t { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.pm__key { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .03em; color: var(--k); border: 1px solid color-mix(in srgb, var(--k) 45%, transparent); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.pm__b { display: block; margin-top: 3px; font-size: 13.5px; line-height: 1.6; color: var(--fg-2); }
+.pm__meter { display: flex; flex-direction: column; gap: 6px; }
+.pm__n { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+.pm__n b { font-size: 18px; font-weight: 400; color: var(--fg); margin-right: 3px; }
+.pm__n.is-text { font-size: 12px; color: var(--fg-2); }
+.pm__track { display: block; height: 4px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
+.pm__track i { display: block; height: 100%; border-radius: 2px; background: var(--k); }
+.pm__sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); }
+.pm__chev { justify-self: end; font-family: var(--font-mono); font-size: 16px; color: var(--dim); transition: transform .2s; }
+details[open] > summary .pm__chev { transform: rotate(45deg); color: var(--fg); }
+.pm__ex { margin: 0 18px 18px 72px; padding: 12px 14px; border-radius: 10px; background: #07060a; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.75; color: var(--fg-2); white-space: pre-wrap; overflow-wrap: anywhere; border-left: 2px solid var(--k); }
+.pm__out { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.pm__out .pm__item summary { grid-template-columns: 34px minmax(0, 1fr) 20px; }
+.pm__out .pm__ex { margin-left: 18px; }
 @media (max-width: 960px) {
   .phx { grid-template-columns: 1fr; } .phx__arrow { justify-self: center; transform: rotate(90deg); }
-  .anat { grid-template-columns: 1fr; } .anat__doc { position: static; }
+  .pm__out { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .pm__item summary { grid-template-columns: 28px minmax(0, 1fr) 18px; gap: 10px 12px; padding: 14px 14px 14px 16px; }
+  .pm__meter { grid-column: 2 / 3; grid-row: 2; }
+  .pm__chev, .pm__no { grid-row: 1; align-self: start; padding-top: 2px; }
+  .pm__chev { grid-column: 3; }
+  .pm__ex, .pm__out .pm__ex { margin: 0 14px 14px; }
 }
 </style>
 </head>
@@ -1164,7 +1186,10 @@ body { background: var(--bg) !important; }
         <h2 class="sec__title">프롬프트 쓰는 법</h2>
         <p class="sec__desc">짧은 지시에서 시작해, 장면을 정확히 통제하기 위해 카메라·시간·고정 대상을 점차 항목별로 나누어 작성했습니다.</p></div></div>
       <div class="phases" id="phases"></div>
-      <div class="sub-label" style="margin:28px 0 10px">자주 쓴 순서와 표현 — 숫자는 그 방식을 쓴 영상 프롬프트 수 (전체 40)</div>
+      <div class="pm-head">
+        <h3 class="pm-head__t">자주 쓴 순서와 표현</h3>
+        <p class="pm-head__d">실제 프롬프트에 적는 순서대로 정리했습니다. 막대는 영상 프롬프트 40개 가운데 그 방식을 쓴 개수이며, 줄을 누르면 예시 문장이 펼쳐집니다.</p>
+      </div>
       <div class="tips" id="tipsList"></div>
       <div class="usage">
         <div class="box"><div class="sub-label">영상 모델 · 생성 횟수</div><div id="modelBars" style="margin-top:8px"></div></div>
@@ -1369,21 +1394,40 @@ const TIPS = [
     ex: '{{계단.mp4}} → {{계단1.mp4}}  시드만 변경\n{{구슬계단.mp4}} → {{계단구슬!.mp4}}  5초 → 7초\n{{여명.mp4}} → {{마지막3.mp4}}  10초 → 14초' },
 ];
 const TIP_C = ['#ff5bd9', '#64b5f6', '#f1eb84', '#9ce469', '#ff9b4d', '#b98cff', '#4fd2e6', '#ff7a8a', '#c9c4d6', '#e6c88a'];
-// 실제 프롬프트 안에서 각 방법이 놓이는 순서 (9 · 10은 프롬프트 밖의 작업 방식)
+// 프롬프트 안에서 놓이는 키워드 · 개수(전체 40 중) · 보조 설명
+const TIP_META = [
+  { k: '첫 줄', n: 22, sub: '카메라 고정 22 · 스타일 첫 줄 11' },
+  { k: 'SUBJECT: · CAMERA:', n: 29 },
+  { k: '0–2s · 2–5s', n: 14 },
+  { k: 'never · no cuts', n: 28, sub: 'never 28 · no cuts 28' },
+  { k: 'brightness only', n: 7 },
+  { k: '@Image1', n: 5 },
+  { k: 'CONTINUITY', n: 0, txt: '계단 장면' },
+  { k: '빨강 · 초록 점', n: 0, txt: 'FLUX · GPT 편집' },
+  { k: 'speed ramp', n: 33 },
+  { k: '시드 · 길이만 변경', n: 5 },
+];
+const TIP_TOTAL = 40;
+// 실제 프롬프트 안에서 각 방법이 놓이는 순서 (8 · 10번째 방법은 프롬프트 밖의 작업 방식)
 const TIP_ORDER = [0, 1, 2, 4, 5, 6, 8, 3];
-const num = c => { const m = String(c).match(/\d+/g); return m ? Math.max(...m.map(Number)) : 0; };
-const maxN = Math.max(...TIPS.map(t => num(t.c)));
-const snip = t => esc(fill(t.ex).split('\n')[0].replace(/^[^:]{2,40}:\s*/, '').slice(0, 64)) + '…';
-const head = t => { const m = fill(t.ex).match(/^([A-Z0-9 &@–\-()]{3,40}?):/); return m ? m[1] : ''; };
-$('#tipsList').innerHTML = `<div class="anat">
-  <div class="anat__doc"><div class="anat__cap">프롬프트 한 장의 구성 — 위에서부터 쓰는 순서</div>
-    ${TIP_ORDER.map(i => { const t = TIPS[i]; return `<div class="anat__row" style="--k:${TIP_C[i]}"><b>${i + 1}</b><span class="anat__h">${esc(head(t) || t.t)}</span><span class="anat__s">${snip(t)}</span></div>`; }).join('')}
-    <div class="anat__cap anat__cap--out">프롬프트 밖의 작업 방식</div>
-    ${[7, 9].map(i => `<div class="anat__row is-out" style="--k:${TIP_C[i]}"><b>${i + 1}</b><span class="anat__h">${esc(TIPS[i].t)}</span></div>`).join('')}
-  </div>
-  <ol class="anat__list">${TIPS.map((t, i) => { const n = num(t.c);
-    return `<li style="--k:${TIP_C[i]}"><b class="anat__no">${i + 1}</b><div><strong>${esc(t.t)}</strong><p>${esc(t.b)}</p>
-      <div class="anat__bar"><i style="width:${n ? Math.max(6, n / maxN * 100) : 0}%"></i><span>${esc(t.c)}</span></div></div></li>`; }).join('')}</ol>
+const TIP_OUT = [7, 9];
+const pmItem = (i, no, inPrompt) => {
+  const t = TIPS[i], m = TIP_META[i];
+  const meter = m.n
+    ? `<span class="pm__n"><b>${m.n}</b>/ ${TIP_TOTAL}</span><span class="pm__track"><i style="width:${m.n / TIP_TOTAL * 100}%"></i></span>${m.sub ? `<span class="pm__sub">${esc(m.sub)}</span>` : ''}`
+    : `<span class="pm__n is-text">${esc(m.txt)}</span>`;
+  return `<li class="pm__item" style="--k:${TIP_C[i]}"><details${no === '01' ? ' open' : ''}><summary>
+    <span class="pm__no">${no}</span>
+    <span class="pm__main"><span class="pm__top"><b class="pm__t">${esc(t.t)}</b><span class="pm__key">${esc(m.k)}</span></span><span class="pm__b">${esc(t.b)}</span></span>
+    ${inPrompt ? `<span class="pm__meter">${meter}</span>` : ''}
+    <span class="pm__chev" aria-hidden="true">+</span>
+  </summary><pre class="pm__ex">${esc(fill(t.ex))}</pre></details></li>`;
+};
+$('#tipsList').innerHTML = `<div class="pm">
+  <div class="pm__grp">프롬프트 안 — 위에서부터 적는 순서</div>
+  <ol class="pm__list">${TIP_ORDER.map((i, k) => pmItem(i, String(k + 1).padStart(2, '0'), true)).join('')}</ol>
+  <div class="pm__grp pm__grp--out">프롬프트 밖 — 함께 쓴 작업 방식</div>
+  <ul class="pm__list pm__out">${TIP_OUT.map((i, k) => pmItem(i, '+' + (k + 1), false)).join('')}</ul>
 </div>`;
 const mc = {}; E.forEach(e => { const k = e.model || '기타'; mc[k] = (mc[k] || 0) + 1; });
 const mx = Math.max(...Object.values(mc));
