@@ -11,6 +11,14 @@
 <!-- 영문 — TT Autonomous Mono (Adobe Fonts) -->
 <link rel="stylesheet" href="https://use.typekit.net/pgv0czs.css" />
 <link rel="icon" href="../assets/icon-192.png" />
+<!-- 홈 화면 앱 — 갤럭시(크롬·삼성 인터넷)에서 '앱 설치/홈 화면에 추가' 하면 주소창 없이 열린다 -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#000000" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="야광 프롬프트" />
+<link rel="apple-touch-icon" href="../assets/icon-180.png" />
 <style>
 /* 오르빗 (JAMO TYPEFACE · SIL OFL 1.1) — 본 사이트와 같은 글꼴 */
 @font-face { font-family: "Orbit"; src: url("../assets/fonts/Orbit-Regular.woff2") format("woff2"); font-display: swap; }
@@ -1288,6 +1296,9 @@ details[open] .pm__exT { display: block; -webkit-line-clamp: unset; }
   </main>
 </div>
 
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
 <script src="data.js?v=20261112b"></script>
 <script src="guestbook-config.js"></script>
 <script src="guestbook.js?v=36" defer></script>
