@@ -19,8 +19,8 @@
 
 const LEVEL = {
   master: 0.9,
-  archive: 0.3,     // 인터랙션 1 전체
-  orb: 0.13,        // 구슬 화면에서 잦아든 바람
+  archive: 1.0,     // 인터랙션 1 전체 — 0.3 이었을 때 본편 영상보다 26dB 가까이 작아 전시장에선 안 들렸다
+  orb: 0.4,         // 구슬 화면에서 잦아든 바람
   garden: 0.55,     // 인터랙션 2 전체
   crossing: 0.3,    // 넘어가는 순간의 빨려 올라가는 소리
   plunge: 0.5,      // 정원에 잠기는 소리
@@ -208,13 +208,13 @@ function buildArchive(dest) {
   const high = noise(5, "white", true);
   const whistle = ctx.createBiquadFilter();
   whistle.type = "bandpass"; whistle.frequency.value = 1200; whistle.Q.value = 2.5;
-  const highGain = ctx.createGain(); highGain.gain.value = 0.02;   // 대역이 넓어진 만큼 작게
+  const highGain = ctx.createGain(); highGain.gain.value = 0.04;   // 노트북·모니터 스피커는 낮은 바람을 잘 못 내서 이 결이 들려야 바람으로 들린다
   high.connect(whistle).connect(highGain).connect(dest);
 
   // 차가운 공기 — 아주 높고 얇은 쉭 소리
   const air = noise(4, "white", true);
   const airHp = ctx.createBiquadFilter(); airHp.type = "highpass"; airHp.frequency.value = 7000;
-  const airGain = ctx.createGain(); airGain.gain.value = 0.012;
+  const airGain = ctx.createGain(); airGain.gain.value = 0.03;
   air.connect(airHp).connect(airGain).connect(dest);
 
   // 돌풍 — 무작위로 세졌다 약해지고, 휘파람 높이가 미끄러진다
@@ -223,7 +223,7 @@ function buildArchive(dest) {
     const len = rand(2.5, 6);
     lowGain.gain.setTargetAtTime(rand(0.3, 1.0), t, len / 3);
     lowBand.frequency.setTargetAtTime(rand(260, 650), t, len / 3);
-    highGain.gain.setTargetAtTime(rand(0.003, 0.03), t, len / 2);
+    highGain.gain.setTargetAtTime(rand(0.015, 0.06), t, len / 2);
     whistle.frequency.setTargetAtTime(rand(850, 1700), t, len / 2);
     setTimeout(gust, len * 1000);
   })();
